@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "player-relay",
+	"version": "${version}",
+	"name": "Player Relay",
+	"description": "Broadcast and view your friends’ position, health, and XP with simple client-side relays",
+	"authors": ["HintSystem"],
+	"contact": {
+		"sources": "https://github.com/HintSystem/Player-Relay"
+	},
+	"license": "AGPL-3.0",
+	"icon": "assets/player-relay/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.hintsystem.playerrelay.PlayerRelay"],
+        "modmenu": ["dev.hintsystem.playerrelay.mods.SupportModMenu"]
+	},
+	"mixins": [
+		"player-relay.mixins.json"
+	],
+	"depends": {
+        "java": ">=21",
+        "minecraft": "~1.21.8",
+		"fabricloader": ">=0.17.0",
+		"fabric-api": "*",
+        "yet_another_config_lib_v3": "*"
+	},
+	"suggests": {}
+}
