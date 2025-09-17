@@ -40,7 +40,6 @@ public class P2PMessageHandler {
                     break;
 
                 case CHAT:
-                    handleChatMessage(message);
                     break;
 
                 case PLAYER_INFO:
@@ -86,13 +85,6 @@ public class P2PMessageHandler {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (player == null) { return null; }
         return player.getUuid();
-    }
-
-    private void handleChatMessage(P2PMessage message) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player != null) {
-            //client.player.sendMessage(Text.literal("[P2P] " + message.getData()), false);
-        }
     }
 
     private void handlePlayerInfo(PlayerInfoPayload infoPayload, PeerConnection sender) {

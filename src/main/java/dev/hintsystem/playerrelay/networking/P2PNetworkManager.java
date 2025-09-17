@@ -116,7 +116,7 @@ public class P2PNetworkManager {
 
     /** Connect to a peer using address that can be IP, domain, or IP:port format */
     public void connectToPeer(String address) throws Exception {
-        if (isHost()) { return; }
+        if (isHost()) { throw new Exception("Hosts are not allowed to connect to relays"); } // TODO: Remove this once packet loop prevention is implemented
         running.set(true);
 
         String host;

@@ -50,7 +50,7 @@ public class PlayerRelay implements ClientModInitializer {
                                 );
                             } else {
                                 int port = networkManager.getPort();
-                                String connectCmd = String.format("/prelay connect \"%s\"", networkManager.getConnectionAddress());
+                                String connectCmd = String.format("/prelay connect %s", networkManager.getConnectionAddress());
 
                                 context.getSource().sendFeedback(
                                     Text.literal("Player Relay server started on port " + port)
@@ -74,8 +74,7 @@ public class PlayerRelay implements ClientModInitializer {
                     return 1;
                 }))
             .then(ClientCommandManager.literal("connect")
-                .requires(src -> !networkManager.isHost())
-                .then(ClientCommandManager.argument("address", StringArgumentType.string())
+                .then(ClientCommandManager.argument("address", StringArgumentType.greedyString())
                     .executes(context -> {
                         String address = StringArgumentType.getString(context, "address");
                         networkManager.connectToPeerAsync(address)
@@ -90,14 +89,6 @@ public class PlayerRelay implements ClientModInitializer {
                                     );
                                 }
                             }));
-                        return 1;
-                    })))
-            .then(ClientCommandManager.literal("send")
-                .then(ClientCommandManager.argument("message", StringArgumentType.greedyString())
-                    .executes(context -> {
-                        String message = StringArgumentType.getString(context, "message");
-                        //networkManager.broadcastMessage(new P2PMessage(P2PMessageType.CHAT, message));
-                        context.getSource().sendFeedback(Text.literal("Message sent: " + message));
                         return 1;
                     })))
             .then(ClientCommandManager.literal("players")
