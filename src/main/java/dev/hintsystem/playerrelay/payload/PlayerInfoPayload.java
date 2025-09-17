@@ -37,10 +37,11 @@ public class PlayerInfoPayload implements IPayload {
         read(buf);
     }
 
-    public PlayerListEntry toPlayerListEntry() {
-        String profileName = (this.name != null ? this.name : this.playerId.toString());
+    public PlayerListEntry toPlayerListEntry() { return new PlayerListEntry(toGameProfile(), false); }
 
-        return new PlayerListEntry(new GameProfile(this.playerId, profileName), false);
+    public GameProfile toGameProfile() {
+        String profileName = (this.name != null) ? this.name : this.playerId.toString();
+        return new GameProfile(this.playerId, profileName);
     }
 
     @Override

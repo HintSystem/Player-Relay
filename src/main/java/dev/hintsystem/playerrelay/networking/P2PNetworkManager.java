@@ -238,7 +238,7 @@ public class P2PNetworkManager {
                 System.arraycopy(data, 2, messageData, 0, messageData.length);
 
                 P2PMessage message = P2PMessage.fromBytes(messageData, NetworkProtocol.UDP);
-                PlayerRelay.LOGGER.info("Received UDP message from {}:{}, type: {}", packet.getAddress(), packet.getPort(), message.getType().name());
+                PlayerRelay.LOGGER.debug("Received UDP message from {}:{}, type: {}", packet.getAddress(), packet.getPort(), message.getType().name());
                 handleMessage(senderPeer, message);
             } catch (SocketTimeoutException e) {
                 // Normal timeout, continue loop

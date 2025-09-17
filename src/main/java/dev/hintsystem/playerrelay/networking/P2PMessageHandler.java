@@ -45,18 +45,18 @@ public class P2PMessageHandler {
 
                 case PLAYER_INFO:
                     PlayerInfoPayload infoPayload = new PlayerInfoPayload(message.getPayloadByteBuf());
-                    if (infoPayload.playerId == getClientPlayerUuid()) { break; }
+                    if (infoPayload.playerId.equals(getClientPlayerUuid())) { break; }
 
                     handlePlayerInfo(infoPayload, sender);
                     break;
 
                 case PLAYER_POSITION:
                     PlayerPositionPayload posPayload = new PlayerPositionPayload(message.getPayloadByteBuf());
-                    if (posPayload.playerId == getClientPlayerUuid()) { break; }
+                    if (posPayload.playerId.equals(getClientPlayerUuid())) { break; }
 
                     PlayerInfoPayload existingPlayerInfo = networkManager.connectedPlayers.get(posPayload.playerId);
 
-                    existingPlayerInfo.setPosition(posPayload);
+                    if (existingPlayerInfo != null) existingPlayerInfo.setPosition(posPayload);
                     handlePlayerPosition(posPayload.playerId, posPayload);
                     break;
 

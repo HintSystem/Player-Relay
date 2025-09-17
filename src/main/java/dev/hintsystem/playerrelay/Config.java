@@ -1,23 +1,22 @@
 package dev.hintsystem.playerrelay;
 
+import dev.hintsystem.playerrelay.gui.AnchorPoint;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 
 import dev.isxander.yacl3.api.*;
-import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
-import dev.isxander.yacl3.api.controller.DoubleFieldControllerBuilder;
-import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
-import dev.isxander.yacl3.api.controller.StringControllerBuilder;
+import dev.isxander.yacl3.api.controller.*;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
-import net.minecraft.util.Formatting;
 
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
@@ -35,6 +34,11 @@ public class Config {
 
     public String autoConnectAddress = "";
     public double minPlayerMove = 0.2;
+
+    public boolean showPlayerList = true;
+    public int playerListMaxPlayers = 8;
+    public AnchorPoint playerListAnchorPoint = AnchorPoint.TOP_RIGHT;
+    public Color playerListbackgroundColor = new Color(0, 0, 0, 60);
 
     public boolean showTrackedPlayers = true;
     public boolean showPlayersInOtherDimensions = false;
@@ -118,6 +122,33 @@ public class Config {
                         .binding(DEFAULTS.minPlayerMove, () -> minPlayerMove, val -> minPlayerMove = val)
                         .controller(opt -> DoubleFieldControllerBuilder.create(opt)
                             .range(0.01, 1000.0))
+                        .build())
+                    .build())
+
+                .group(OptionGroup.createBuilder()
+                    .name(Text.literal("HUD Player List"))
+                    .option(Option.<Boolean>createBuilder()
+                        .name(Text.literal("Show"))
+                        .binding(DEFAULTS.showPlayerList, () -> showPlayerList, val -> showPlayerList = val)
+                        .controller(TickBoxControllerBuilder::create)
+                        .build())
+                    .option(Option.<Integer>createBuilder()
+                        .name(Text.literal("Max Visible Players"))
+                        .binding(DEFAULTS.playerListMaxPlayers, () -> playerListMaxPlayers, val -> playerListMaxPlayers = val)
+                        .controller(opt -> IntegerFieldControllerBuilder.create(opt)
+                            .range(1, 20))
+                        .build())
+                    .option(Option.<AnchorPoint>createBuilder()
+                        .name(Text.literal("Anchor Point"))
+                        .binding(DEFAULTS.playerListAnchorPoint, () -> playerListAnchorPoint, val -> playerListAnchorPoint = val)
+                        .controller(opt -> EnumControllerBuilder.create(opt)
+                            .enumClass(AnchorPoint.class))
+                        .build())
+                    .option(Option.<Color>createBuilder()
+                        .name(Text.literal("Background Color"))
+                        .binding(DEFAULTS.playerListbackgroundColor, () -> playerListbackgroundColor, val -> playerListbackgroundColor = val)
+                        .controller(opt -> ColorControllerBuilder.create(opt)
+                            .allowAlpha(true))
                         .build())
                     .build())
                 .build())
