@@ -125,6 +125,12 @@ public class PlayerRelay implements ClientModInitializer {
                     String status = networkManager.getStatus();
                     context.getSource().sendFeedback(Text.literal(status));
                     return 1;
+                }))
+            .then(ClientCommandManager.literal("config")
+                .executes(context -> {
+                    MinecraftClient client = MinecraftClient.getInstance();
+                    client.send(() -> client.setScreen(config.createScreen(null)));
+                    return 1;
                 }))));
     }
 
