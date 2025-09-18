@@ -14,6 +14,8 @@ import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 import net.minecraft.client.gl.RenderPipelines;
 
+import org.joml.Vector2i;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,7 +33,7 @@ public class PlayerList implements HudElement {
 
     public void render(DrawContext context, RenderTickCounter tickCounter) {
         Map<UUID, PlayerInfoPayload> connectedPlayers = PlayerRelay.getNetworkManager().connectedPlayers;
-        if (!PlayerRelay.config.showPlayerList) { return; }
+        if (!PlayerRelay.config.showPlayerList || connectedPlayers.isEmpty()) { return; }
 
         MinecraftClient client = MinecraftClient.getInstance();
 
@@ -48,15 +50,20 @@ public class PlayerList implements HudElement {
             * Math.min(connectedPlayers.size(), PlayerRelay.config.playerListMaxPlayers)
             - entryPadding;
 
-        int[] origin = PlayerRelay.config.playerListAnchorPoint.resolve(context, entryWidth + backgroundPadding, totalHeight);
+        AnchorPoint anchor = PlayerRelay.config.playerListAnchorPoint;
+        Vector2i offset = PlayerRelay.config.playerListOffset;
+        int xOffset = (anchor.x == 1) ? -offset.x : offset.x;
+        int yOffset = (anchor.y == 1) ? -offset.y : offset.y;
+
+        int[] origin = anchor.resolve(context, entryWidth + backgroundPadding, totalHeight);
 
         int i = 0;
-        int y = origin[1];
+        int y = origin[1] + yOffset;
         for (PlayerInfoPayload player : connectedPlayers.values()) {
             i++;
             if (i > PlayerRelay.config.playerListMaxPlayers) break;
 
-            int x = origin[0];
+            int x = origin[0] + xOffset;
 
             context.fill(
                 x, y,

@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
+import org.joml.Vector2i;
 
 import java.awt.*;
 import java.lang.reflect.Field;
@@ -38,6 +39,7 @@ public class Config {
     public boolean showPlayerList = true;
     public int playerListMaxPlayers = 8;
     public AnchorPoint playerListAnchorPoint = AnchorPoint.TOP_RIGHT;
+    public Vector2i playerListOffset = new Vector2i(5, 5);
     public Color playerListbackgroundColor = new Color(0, 0, 0, 60);
 
     public boolean showTrackedPlayers = true;
@@ -143,6 +145,16 @@ public class Config {
                         .binding(DEFAULTS.playerListAnchorPoint, () -> playerListAnchorPoint, val -> playerListAnchorPoint = val)
                         .controller(opt -> EnumControllerBuilder.create(opt)
                             .enumClass(AnchorPoint.class))
+                        .build())
+                    .option(Option.<Integer>createBuilder()
+                        .name(Text.literal("X Offset"))
+                        .binding(DEFAULTS.playerListOffset.x, () -> playerListOffset.x, val -> playerListOffset.x = val)
+                        .controller(IntegerFieldControllerBuilder::create)
+                        .build())
+                    .option(Option.<Integer>createBuilder()
+                        .name(Text.literal("Y Offset"))
+                        .binding(DEFAULTS.playerListOffset.y, () -> playerListOffset.y, val -> playerListOffset.y = val)
+                        .controller(IntegerFieldControllerBuilder::create)
                         .build())
                     .option(Option.<Color>createBuilder()
                         .name(Text.literal("Background Color"))
