@@ -2,7 +2,7 @@ package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
 
 import net.minecraft.network.PacketByteBuf;
 

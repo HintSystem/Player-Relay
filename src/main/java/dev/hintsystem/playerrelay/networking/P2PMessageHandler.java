@@ -2,20 +2,20 @@ package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.mods.SupportXaerosMinimap;
-import dev.hintsystem.playerrelay.payload.PlayerPositionPayload;
-import dev.hintsystem.playerrelay.payload.UdpHandshakePayload;
-import dev.hintsystem.playerrelay.payload.UdpPingPayload;
+import dev.hintsystem.playerrelay.payload.*;
+import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
+import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
-import net.minecraft.client.network.ClientPlayerEntity;
 import nx.pingwheel.common.networking.PingLocationS2CPacket;
 
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
-import org.jetbrains.annotations.Nullable;
 
+import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 public class P2PMessageHandler {
@@ -49,23 +49,14 @@ public class P2PMessageHandler {
                     handlePlayerInfo(infoPayload, sender);
                     break;
 
-                case PLAYER_POSITION:
-                    PlayerPositionPayload posPayload = new PlayerPositionPayload(message.getPayloadByteBuf());
-                    if (posPayload.playerId.equals(getClientPlayerUuid())) { break; }
-
-                    PlayerInfoPayload existingPlayerInfo = networkManager.connectedPlayers.get(posPayload.playerId);
-
-                    if (existingPlayerInfo != null) existingPlayerInfo.setPosition(posPayload);
-                    handlePlayerPosition(posPayload.playerId, posPayload);
-                    break;
-
                 case PLAYER_DISCONNECT:
                     UUID playerId = message.getPayloadByteBuf().readUuid();
 
                     PlayerInfoPayload playerInfo = networkManager.connectedPlayers.remove(playerId);
                     sender.announcedPlayers.remove(playerId);
 
-                    if (playerInfo != null) { ClientCore.onPlayerDisconnected(playerInfo); }
+                    SupportXaerosMinimap.getTrackedPlayerManager().remove(playerId);
+                    if (playerInfo != null) ClientCore.onPlayerDisconnected(playerInfo);
                     break;
 
                 case PACKET:
@@ -95,22 +86,24 @@ public class P2PMessageHandler {
             existingPlayerInfo.merge(infoPayload);
         }
 
-        if (infoPayload.hasNewConnectionFlag() && infoPayload.name != null) {
+        if (infoPayload.hasNewConnectionFlag()
+            && infoPayload.getComponent(PlayerBasicData.class) != null) {
             ClientCore.onPlayerConnected(infoPayload);
         }
 
-        if (infoPayload.hasPosition()) {
-            handlePlayerPosition(infoPayload.playerId, infoPayload.pos);
+        PlayerPositionData positionData = infoPayload.getComponent(PlayerPositionData.class);
+        if (positionData != null) {
+            handlePlayerPosition(infoPayload.playerId, positionData);
         }
     }
 
-    private void handlePlayerPosition(UUID playerId, PlayerPositionPayload positionPayload) {
+    private void handlePlayerPosition(UUID playerId, PlayerPositionData positionData) {
         SupportXaerosMinimap.getTrackedPlayerManager().update(
             playerId,
-            positionPayload.coords.x,
-            positionPayload.coords.y,
-            positionPayload.coords.z,
-            positionPayload.dimension
+            positionData.coords.x,
+            positionData.coords.y,
+            positionData.coords.z,
+            positionData.dimension
         );
     }
 

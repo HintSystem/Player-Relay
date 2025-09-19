@@ -1,7 +1,5 @@
 package dev.hintsystem.playerrelay.networking;
 
-import dev.hintsystem.playerrelay.payload.IPayload;
-
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.CustomPayload;
 
@@ -23,10 +21,6 @@ public class P2PMessage {
 
     public P2PMessage(P2PMessageType type, PacketByteBuf payload) {
         this(type, bytesFromPacketByteBuf(payload), NetworkProtocol.TCP);
-    }
-
-    public P2PMessage(IPayload payload) {
-        this(payload.getMessageType(), payload.bytes(), payload.getPreferredProtocol());
     }
 
     public P2PMessage(CustomPayload packet) {

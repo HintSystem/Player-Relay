@@ -27,6 +27,10 @@ public interface IPayload {
     }
 
     default P2PMessage message() {
-        return new P2PMessage(this);
+        return message(getPreferredProtocol());
+    }
+
+    default P2PMessage message(NetworkProtocol overrideProtocol) {
+        return new P2PMessage(getMessageType(), bytes(), overrideProtocol);
     }
 }

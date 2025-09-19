@@ -1,7 +1,8 @@
 package dev.hintsystem.playerrelay.gui;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
 
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.MinecraftClient;
@@ -60,8 +61,7 @@ public class PlayerList implements HudElement {
         int i = 0;
         int y = origin[1] + yOffset;
         for (PlayerInfoPayload player : connectedPlayers.values()) {
-            i++;
-            if (i > PlayerRelay.config.playerListMaxPlayers) break;
+            if (i++ >= PlayerRelay.config.playerListMaxPlayers) break;
 
             int x = origin[0] + xOffset;
 
@@ -77,22 +77,28 @@ public class PlayerList implements HudElement {
             PlayerSkinDrawer.draw(context, skin, innerX, innerY, headSize);
             innerX += headSize + backgroundPadding;
 
-            context.drawTextWithShadow(client.textRenderer, player.name, innerX, innerY, Colors.WHITE);
+            context.drawTextWithShadow(client.textRenderer, player.getName(), innerX, innerY, Colors.WHITE);
             innerY += 10;
+
+            PlayerStatsData playerStats = player.getComponent(PlayerStatsData.class);
+            if (playerStats == null) playerStats = new PlayerStatsData();
 
             context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, HEART_CONTAINER_TEXTURE, innerX, innerY, 9, 9);
             context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, HEART_TEXTURE, innerX, innerY, 9, 9);
-            context.drawTextWithShadow(client.textRenderer, String.format("%2d", (int)Math.ceil(player.health)), innerX + 11, innerY+1, 0xFFFF6666);
+            context.drawTextWithShadow(client.textRenderer,
+                String.format("%2d", (int)Math.ceil(playerStats.health)), innerX + 11, innerY+1, 0xFFFF6666);
 
             context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, ARMOR_FULL_TEXTURE, innerX + infoGap, innerY, 9, 9);
-            context.drawTextWithShadow(client.textRenderer, String.format("%2d", player.armor), innerX + infoGap + 11, innerY+1, 0xFFafd8ed);
+            context.drawTextWithShadow(client.textRenderer,
+                String.format("%2d", playerStats.armor), innerX + infoGap + 11, innerY+1, 0xFFafd8ed);
 
             context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, FOOD_EMPTY_TEXTURE, innerX + infoGap*2, innerY, 9, 9);
             context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, FOOD_FULL_TEXTURE, innerX + infoGap*2, innerY, 9, 9);
-            context.drawTextWithShadow(client.textRenderer, String.format("%2d", player.hunger), innerX + infoGap*2 + 11, innerY+1, 0xFFba8d4e);
+            context.drawTextWithShadow(client.textRenderer,
+                String.format("%2d", playerStats.hunger), innerX + infoGap*2 + 11, innerY+1, 0xFFba8d4e);
             innerY += 12;
 
-            renderXpBar(context, player.xp, infoWidth - 2, innerX, innerY);
+            renderXpBar(context, playerStats.xp, infoWidth - 2, innerX, innerY);
 
             y += entryHeight + entryPadding;
         }

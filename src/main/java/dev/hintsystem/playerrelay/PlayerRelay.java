@@ -2,7 +2,8 @@ package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.gui.PlayerList;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
-import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ClientModInitializer;
@@ -98,19 +99,18 @@ public class PlayerRelay implements ClientModInitializer {
                             .setStyle(Style.EMPTY.withColor(Formatting.GOLD).withBold(true)));
 
                     for (PlayerInfoPayload player : networkManager.connectedPlayers.values()) {
-                        if (player.name == null) { continue; }
-
-                        MutableText line = Text.empty().append(Text.literal("\n" + player.name + " ")
+                        MutableText line = Text.empty().append(Text.literal("\n" + player.getName() + " ")
                                 .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true)));
 
-                        if (player.hasGeneralInfo()) {
-                            line.append(Text.literal("❤ " + (int)player.health + " ")
+                        PlayerStatsData playerStats = player.getComponent(PlayerStatsData.class);
+                        if (playerStats != null) {
+                            line.append(Text.literal("❤ " + (int)playerStats.health + " ")
                                     .setStyle(Style.EMPTY.withColor(Formatting.RED)))
-                                .append(Text.literal("✦ " + (int)player.xp + " ")
+                                .append(Text.literal("✦ " + (int)playerStats.xp + " ")
                                     .setStyle(Style.EMPTY.withColor(Formatting.GREEN)))
-                                .append(Text.literal("\uD83C\uDF56 " + player.hunger + " ")
+                                .append(Text.literal("\uD83C\uDF56 " + playerStats.hunger + " ")
                                     .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
-                                .append(Text.literal("🛡 " + player.armor)
+                                .append(Text.literal("🛡 " + playerStats.armor)
                                     .setStyle(Style.EMPTY.withColor(Formatting.BLUE)));
                         }
 
