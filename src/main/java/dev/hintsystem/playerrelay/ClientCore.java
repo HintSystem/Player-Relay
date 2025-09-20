@@ -1,6 +1,7 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.networking.NetworkProtocol;
+import dev.hintsystem.playerrelay.networking.PeerConnection;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
@@ -19,12 +20,12 @@ public class ClientCore {
 
     private static PlayerInfoPayload clientInfo;
 
-    private static void initClientInfo(ClientPlayerEntity player) {
+    public static void updateClientInfo(ClientPlayerEntity player) {
         clientInfo = new PlayerInfoPayload(player.getUuid());
         clientInfo.setName(player.getName().getString());
 
-        updateClientPos(player, clientInfo);
-        updateClientInfo(player, clientInfo);
+        updateInfoPayloadPosData(player, clientInfo);
+        updateInfoPayloadGeneralData(player, clientInfo);
     }
 
     @Nullable
@@ -39,14 +40,14 @@ public class ClientCore {
 
     public static void onTickEnd(MinecraftClient client) {
         if (client.player == null) { return; }
-        if (clientInfo == null) { initClientInfo(client.player); }
+        if (clientInfo == null) { updateClientInfo(client.player); }
         if (!PlayerRelay.isNetworkActive()) { return; }
 
         long now = System.currentTimeMillis();
         if (now - lastSentUdpTime > PlayerRelay.config.udpSendIntervalMs) {
             PlayerInfoPayload posPayload = new PlayerInfoPayload(client.player.getUuid());
 
-            if (updateClientPos(client.player, posPayload)) {
+            if (updateInfoPayloadPosData(client.player, posPayload)) {
                 lastSentUdpTime = now;
                 clientInfo.merge(posPayload);
                 PlayerRelay.getNetworkManager().broadcastMessage(posPayload.message(NetworkProtocol.UDP));
@@ -56,7 +57,7 @@ public class ClientCore {
         if (now - lastSentTcpTime > PlayerRelay.config.tcpSendIntervalMs) {
             PlayerInfoPayload infoPayload = new PlayerInfoPayload(client.player.getUuid());
 
-            if (updateClientInfo(client.player, infoPayload)) {
+            if (updateInfoPayloadGeneralData(client.player, infoPayload)) {
                 lastSentTcpTime = now;
                 clientInfo.merge(infoPayload);
                 PlayerRelay.getNetworkManager().broadcastMessage(infoPayload.setNewConnectionFlag(false).message());
@@ -64,7 +65,7 @@ public class ClientCore {
         }
     }
 
-    private static boolean updateClientPos(ClientPlayerEntity player, PlayerInfoPayload info) {
+    private static boolean updateInfoPayloadPosData(ClientPlayerEntity player, PlayerInfoPayload info) {
         double minPlayerMove = PlayerRelay.config.minPlayerMove;
 
         PlayerPositionData currentPosData = clientInfo.getComponent(PlayerPositionData.class);
@@ -76,7 +77,7 @@ public class ClientCore {
         return shouldUpdatePos;
     }
 
-    private static boolean updateClientInfo(ClientPlayerEntity player, PlayerInfoPayload info) {
+    private static boolean updateInfoPayloadGeneralData(ClientPlayerEntity player, PlayerInfoPayload info) {
         PlayerStatsData statsData = new PlayerStatsData(
             player.getHealth(),
             player.experienceLevel + player.experienceProgress,
@@ -106,6 +107,33 @@ public class ClientCore {
             .append(playerInfo.getName())
             .append(Text.literal(" disconnected from PlayerRelay")
                 .setStyle(Style.EMPTY.withColor(Formatting.GRAY).withBold(false))));
+    }
+
+    public static void onConnect(String address) {
+        sendClientMessage(Text.literal("✔ Connected to peer: ")
+                .setStyle(Style.EMPTY.withColor(Formatting.GREEN).withBold(true))
+                .append(Text.literal(address)
+                    .setStyle(Style.EMPTY.withColor(Formatting.YELLOW).withBold(false))));
+    }
+
+    public static void onVersionMismatch(PeerConnection host, int relayNetworkVersion, String relayModVersion) {
+        sendClientMessage(Text.empty().append(
+            Text.literal("❌ Version mismatch detected")
+                .setStyle(Style.EMPTY.withColor(Formatting.RED).withBold(true)))
+                .append(Text.literal("\n\n"))
+                .append(Text.literal("Host requires: ")
+                    .setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
+                .append(Text.literal("mod version " + relayModVersion + ", network v" + relayNetworkVersion)
+                    .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
+                .append(Text.literal("\n"))
+                .append(Text.literal("Your client: ")
+                    .setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
+                .append(Text.literal("mod version " + PlayerRelay.VERSION + ", network v" + PlayerRelay.NETWORK_VERSION)
+                    .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
+                .append(Text.literal("\n\n"))
+                .append(Text.literal("⚠ Please install the matching mod version.")
+                    .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
+        );
     }
 
     public static void onStopping(MinecraftClient client) {

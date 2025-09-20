@@ -13,6 +13,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
@@ -21,9 +22,20 @@ import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeoutException;
+
 public class PlayerRelay implements ClientModInitializer {
     public static final String MOD_ID = "player-relay";
+    public static final int NETWORK_VERSION = 2;
+    public static final String VERSION;
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+
+    static {
+        VERSION = FabricLoader.getInstance()
+            .getModContainer(MOD_ID)
+            .map(c -> c.getMetadata().getVersion().getFriendlyString())
+            .orElse("Unknown Version");
+    }
 
     public static Config config = Config.deserialize();
     private static P2PNetworkManager networkManager;
@@ -43,19 +55,21 @@ public class PlayerRelay implements ClientModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("prelay")
             .then(ClientCommandManager.literal("host")
                 .executes(context -> {
+
+                    context.getSource().sendFeedback(Text.literal("Starting Player Relay server..."));
                     networkManager.startServerAsync()
                         .whenComplete((result, throwable) -> MinecraftClient.getInstance().execute(() -> {
                             if (throwable != null) {
-                                context.getSource().sendError(
-                                    Text.literal("Failed to start Player Relay server: " + throwable.getMessage())
-                                );
+                                context.getSource().sendError(Text.literal(
+                                    "Failed to start Player Relay server: " + throwable.getMessage()
+                                ));
                             } else {
                                 int port = networkManager.getPort();
                                 String connectCmd = String.format("/prelay connect %s", networkManager.getConnectionAddress());
 
                                 context.getSource().sendFeedback(
-                                    Text.literal("Player Relay server started on port " + port)
-                                        .append(Text.literal(" [Copy connect command]")
+                                    Text.literal("Player Relay server started on port " + port + "\n")
+                                        .append(Text.literal("[Copy connect command]")
                                             .styled(style -> style
                                                 .withClickEvent(new ClickEvent.CopyToClipboard(connectCmd))
                                                 .withHoverEvent(new HoverEvent.ShowText(Text.literal("Click to copy (" + connectCmd + ")")))
@@ -71,23 +85,29 @@ public class PlayerRelay implements ClientModInitializer {
             .then(ClientCommandManager.literal("stop")
                 .executes(context -> {
                     networkManager.stopServer();
-                    context.getSource().sendFeedback(Text.literal("Player Relay server stopped"));
+                    context.getSource().sendFeedback(Text.literal("Player Relay stopped"));
                     return 1;
                 }))
             .then(ClientCommandManager.literal("connect")
                 .then(ClientCommandManager.argument("address", StringArgumentType.greedyString())
                     .executes(context -> {
                         String address = StringArgumentType.getString(context, "address");
+
+                        context.getSource().sendFeedback(Text.literal("Connecting to peer..."));
                         networkManager.connectToPeerAsync(address)
-                            .whenComplete((result, throwable) -> MinecraftClient.getInstance().execute(() -> {
+                            .whenComplete((peer, throwable) -> MinecraftClient.getInstance().execute(() -> {
                                 if (throwable != null) {
-                                    context.getSource().sendError(
-                                        Text.literal("Failed to connect: " + throwable.getCause().getMessage())
-                                    );
+                                    context.getSource().sendError(Text.literal(throwable.getCause().getMessage()));
                                 } else {
-                                    context.getSource().sendFeedback(
-                                        Text.literal("Connected to peer: " + address)
-                                    );
+                                    peer.requireVersionHandshake().whenComplete((versionPayload, err) -> {
+                                        if (err instanceof TimeoutException) {
+                                            context.getSource().sendError(Text.empty().append(
+                                                Text.literal("❌ Connection timeout")
+                                                    .setStyle(Style.EMPTY.withColor(Formatting.RED).withBold(true)))
+                                                    .append(Text.literal(" after " + PlayerRelay.config.peerConnectionTimeout + " ms (no version received)")
+                                                        .setStyle(Style.EMPTY.withColor(Formatting.GRAY))));
+                                        } else if (err == null) ClientCore.onConnect(address);
+                                    });
                                 }
                             }));
                         return 1;
@@ -138,7 +158,5 @@ public class PlayerRelay implements ClientModInitializer {
         return networkManager != null && networkManager.getPeerCount() != 0;
     }
 
-    public static P2PNetworkManager getNetworkManager() {
-        return networkManager;
-    }
+    public static P2PNetworkManager getNetworkManager() { return networkManager; }
 }

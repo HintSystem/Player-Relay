@@ -1,15 +1,13 @@
 package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.payload.UdpHandshakePayload;
 import dev.hintsystem.playerrelay.payload.UdpPingPayload;
 
 import java.io.*;
 import java.net.*;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class PeerConnection implements Runnable {
@@ -19,6 +17,11 @@ public class PeerConnection implements Runnable {
     private final P2PNetworkManager manager;
     private volatile boolean connected = true;
 
+    private final CompletableFuture<RelayVersionPayload> versionHandshake = new CompletableFuture<>();
+    private ScheduledFuture<?> versionHandshakeTimeout;
+    private volatile boolean versionHandshakeRequired = false;
+    private final Queue<P2PMessage> pendingIncomingMessages = new ConcurrentLinkedQueue<>();
+
     public Short assignedUdpId;
     private Short peerUdpId;
     private int peerUdpPort;
@@ -26,7 +29,7 @@ public class PeerConnection implements Runnable {
     private volatile boolean udpHealthy = false;
     private final Map<Integer, Long> pendingPings = new ConcurrentHashMap<>();
     private int pingSequence = 0;
-    private final ScheduledExecutorService udpHealthCheckExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService healthCheckExecutor = Executors.newSingleThreadScheduledExecutor();
     private int consecutiveFailedUdpPings = 0;
 
     public Set<UUID> announcedPlayers = new HashSet<>();
@@ -38,8 +41,76 @@ public class PeerConnection implements Runnable {
         this.tcpOutput.flush();
         this.tcpInput = new DataInputStream(socket.getInputStream());
 
-        udpHealthCheckExecutor.scheduleAtFixedRate(this::performUdpHealthCheck,
+        healthCheckExecutor.scheduleAtFixedRate(this::performUdpHealthCheck,
             PlayerRelay.config.udpPingTimeoutMs, PlayerRelay.config.udpPingIntervalMs, TimeUnit.MILLISECONDS);
+    }
+
+    public CompletableFuture<RelayVersionPayload> requireVersionHandshake() {
+        if (versionHandshakeRequired) return versionHandshake;
+        versionHandshakeRequired = true;
+
+        this.versionHandshakeTimeout = healthCheckExecutor.schedule(this::onVersionHandshakeTimeout,
+            PlayerRelay.config.peerConnectionTimeout, TimeUnit.MILLISECONDS);
+
+        versionHandshake.whenComplete((result, throwable) -> {
+            if (versionHandshakeTimeout != null) versionHandshakeTimeout.cancel(false);
+
+            if (throwable != null) {
+                PlayerRelay.LOGGER.error("Version handshake failed: {}", throwable.getMessage());
+                disconnect();
+            } else { processPendingMessages(); }
+        });
+
+        return versionHandshake;
+    }
+
+    public void completeVersionHandshake(RelayVersionPayload versionPayload) {
+        if (!versionHandshake.isDone()) {
+            versionHandshake.complete(versionPayload);
+        }
+    }
+    public void failVersionHandshake(Throwable cause) {
+        if (!versionHandshake.isDone()) {
+            versionHandshake.completeExceptionally(cause);
+        }
+    }
+
+    private void onVersionHandshakeTimeout() {
+        if (!versionHandshake.isDone()) {
+            TimeoutException timeoutException = new TimeoutException(String.format(
+                "Version handshake timeout after %d ms", PlayerRelay.config.peerConnectionTimeout));
+            versionHandshake.completeExceptionally(timeoutException);
+        }
+    }
+
+    private void processPendingMessages() {
+        synchronized (pendingIncomingMessages) {
+            while (!pendingIncomingMessages.isEmpty()) {
+                P2PMessage message = pendingIncomingMessages.poll();
+                try {
+                    manager.handleMessage(this, message);
+                } catch (Exception e) {
+                    PlayerRelay.LOGGER.error("Error processing pending message: {}", e.getMessage(), e);
+                }
+            }
+        }
+    }
+
+    private boolean isVersionHandshake(P2PMessage message) { return message.getType() == P2PMessageType.RELAY_VERSION; }
+
+    private boolean shouldProcessMessage(P2PMessage message) {
+        if (isVersionHandshake(message)) return true;
+
+        // If version handshake is required but not complete, queue other messages
+        if (versionHandshakeRequired && !versionHandshake.isDone()) {
+            synchronized (pendingIncomingMessages) {
+                pendingIncomingMessages.offer(message);
+                PlayerRelay.LOGGER.debug("Queued message type {} until version handshake completes", message.getType());
+            }
+            return false;
+        }
+
+        return true;
     }
 
     private void performUdpHealthCheck() {
@@ -53,8 +124,7 @@ public class PeerConnection implements Runnable {
             UdpPingPayload ping = new UdpPingPayload(timestamp, sequence, false);
             sendUdpMessage(ping.message());
 
-            // Schedule timeout check
-            udpHealthCheckExecutor.schedule(() -> checkPingTimeout(sequence),
+            healthCheckExecutor.schedule(() -> checkPingTimeout(sequence),
                 PlayerRelay.config.udpPingTimeoutMs, TimeUnit.MILLISECONDS);
 
         } catch (Exception e) {
@@ -83,7 +153,6 @@ public class PeerConnection implements Runnable {
 
     public void onUdpPingReceived(UdpPingPayload ping) {
         if (!ping.isResponse()) {
-
             UdpPingPayload pong = new UdpPingPayload(ping.getTimestamp(), ping.getSequenceNumber(), true);
             try { sendTcpMessage(pong.message()); } catch (Exception ignored) {}
         } else {
@@ -107,14 +176,13 @@ public class PeerConnection implements Runnable {
         try {
             while (connected && !tcpSocket.isClosed()) {
                 P2PMessage message = P2PMessage.readFrom(tcpInput, NetworkProtocol.TCP);
-                manager.handleMessage(this, message);
+
+                if (shouldProcessMessage(message)) manager.handleMessage(this, message);
             }
         } catch (Exception e) {
-            if (connected) {
-                PlayerRelay.LOGGER.error("Error in peer connection: {}", e.getMessage());
-            }
+            if (connected) PlayerRelay.LOGGER.error("Error in peer connection: {}", e.getMessage());
         } finally {
-            disconnect();
+            if (connected) disconnect();
         }
     }
 
@@ -192,6 +260,21 @@ public class PeerConnection implements Runnable {
 
     public void disconnect() {
         connected = false;
+
+        if (versionHandshakeTimeout != null && !versionHandshakeTimeout.isDone()) {
+            versionHandshakeTimeout.cancel(false);
+        }
+
+        healthCheckExecutor.shutdown();
+        try {
+            if (!healthCheckExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                healthCheckExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            healthCheckExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
         try {
             if (tcpInput != null) tcpInput.close();
             if (tcpOutput != null) tcpOutput.close();

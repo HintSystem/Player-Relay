@@ -1,11 +1,11 @@
 package dev.hintsystem.playerrelay.networking;
 
 public enum P2PMessageType {
-    UDP_HANDSHAKE(0, false),
-    UDP_PING(1, false),
-    CHAT(2),
-    PLAYER_INFO(3),
-    PLAYER_POSITION(4),
+    RELAY_VERSION(0, false),
+    UDP_HANDSHAKE(1, false),
+    UDP_PING(2, false),
+    CHAT(3),
+    PLAYER_INFO(4),
     PLAYER_DISCONNECT(5),
     PACKET(6);
 

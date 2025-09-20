@@ -46,9 +46,10 @@ public class Config {
     public boolean showPlayersInOtherDimensions = false;
     public boolean showPlayersInOtherServers = false;
 
+    public int peerConnectionTimeout = 6000;
     public int tcpSendIntervalMs = 400;
     public int udpSendIntervalMs = 100;
-    public int udpPingIntervalMs = 6000;
+    public int udpPingIntervalMs = 5000;
     public int udpPingTimeoutMs = 2000;
     public int maxFailedUdpPings = 3;
 
@@ -101,7 +102,7 @@ public class Config {
                         .binding(DEFAULTS.defaultHostingPort, () -> defaultHostingPort, val -> defaultHostingPort = val)
                         .controller(opt -> IntegerFieldControllerBuilder.create(opt)
                             .formatValue(val -> Text.literal(String.format("%d", val)))
-                            .range(0, 65535))
+                            .range(1, 65535))
                         .build())
                     .build())
 
@@ -167,6 +168,15 @@ public class Config {
 
             .category(ConfigCategory.createBuilder()
                 .name(Text.literal("Advanced"))
+                .option(Option.<Integer>createBuilder()
+                    .name(Text.literal("Connection Timeout"))
+                    .description(OptionDescription.of(Text.literal(
+                        "Maximum time (in ms) to wait for a peer version response before disconnecting."
+                    )))
+                    .binding(DEFAULTS.peerConnectionTimeout, () -> peerConnectionTimeout, val -> peerConnectionTimeout = val)
+                    .controller(opt -> IntegerFieldControllerBuilder.create(opt)
+                        .range(50, 100_000))
+                    .build())
                 .option(Option.<Integer>createBuilder()
                     .name(Text.literal("TCP Send Interval"))
                     .description(OptionDescription.of(Text.literal(

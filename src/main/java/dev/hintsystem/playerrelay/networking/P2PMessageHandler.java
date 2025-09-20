@@ -28,6 +28,17 @@ public class P2PMessageHandler {
     public void handleMessage(P2PMessage message, PeerConnection sender) {
         try {
             switch (message.getType()) {
+                case RELAY_VERSION:
+                    RelayVersionPayload relay = new RelayVersionPayload(message.getPayloadByteBuf());
+                    if (relay.networkVersion != PlayerRelay.NETWORK_VERSION) {
+                        ClientCore.onVersionMismatch(sender, relay.networkVersion, relay.modVersion);
+                        sender.failVersionHandshake(new IllegalStateException(
+                            "Network version mismatch: relay=" + relay.networkVersion + ", client=" + PlayerRelay.NETWORK_VERSION
+                        ));
+                    } else { sender.completeVersionHandshake(relay); }
+
+                    break;
+
                 case UDP_HANDSHAKE:
                     UdpHandshakePayload handshake = new UdpHandshakePayload(message.getPayloadByteBuf());
                     PlayerRelay.LOGGER.info("UDP handshake received, id: {}, port: {}", handshake.getUdpId(), handshake.getUdpPort());
@@ -93,18 +104,14 @@ public class P2PMessageHandler {
 
         PlayerPositionData positionData = infoPayload.getComponent(PlayerPositionData.class);
         if (positionData != null) {
-            handlePlayerPosition(infoPayload.playerId, positionData);
+            SupportXaerosMinimap.getTrackedPlayerManager().update(
+                infoPayload.playerId,
+                positionData.coords.x,
+                positionData.coords.y,
+                positionData.coords.z,
+                positionData.dimension
+            );
         }
-    }
-
-    private void handlePlayerPosition(UUID playerId, PlayerPositionData positionData) {
-        SupportXaerosMinimap.getTrackedPlayerManager().update(
-            playerId,
-            positionData.coords.x,
-            positionData.coords.y,
-            positionData.coords.z,
-            positionData.dimension
-        );
     }
 
     private void handlePacket(P2PMessage message) {
