@@ -65,19 +65,23 @@ public class PlayerRelay implements ClientModInitializer {
                                 ));
                             } else {
                                 int port = networkManager.getPort();
-                                String connectCmd = String.format("/prelay connect %s", networkManager.getConnectionAddress());
+                                String connectionAddress = networkManager.getConnectionAddress();
 
-                                context.getSource().sendFeedback(
-                                    Text.literal("Player Relay server started on port " + port + "\n")
-                                        .append(Text.literal("[Copy connect command]")
-                                            .styled(style -> style
-                                                .withClickEvent(new ClickEvent.CopyToClipboard(connectCmd))
-                                                .withHoverEvent(new HoverEvent.ShowText(Text.literal("Click to copy (" + connectCmd + ")")))
-                                                .withColor(0x55FF55)
-                                                .withUnderline(true)
-                                            )
-                                        )
-                                );
+                                MutableText feedback = Text.literal("Player Relay server started on port " + port);
+
+                                if (connectionAddress != null) {
+                                    String connectCmd = String.format("/prelay connect %s", connectionAddress);
+
+                                    feedback.append(Text.literal("\n[Copy connect command]")
+                                        .styled(style -> style
+                                            .withClickEvent(new ClickEvent.CopyToClipboard(connectCmd))
+                                            .withHoverEvent(new HoverEvent.ShowText(Text.literal("Click to copy (" + connectCmd + ")")))
+                                            .withColor(0x55FF55)
+                                            .withUnderline(true)
+                                        ));
+                                }
+
+                                context.getSource().sendFeedback(feedback);
                             }
                         }));
                     return 1;

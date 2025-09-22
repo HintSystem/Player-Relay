@@ -93,7 +93,5 @@ public class UPnPManager {
         }
     }
 
-    public String getLocalIp() {
-        return localIP;
-    }
+    public String getLocalIp() { return localIP; }
 }

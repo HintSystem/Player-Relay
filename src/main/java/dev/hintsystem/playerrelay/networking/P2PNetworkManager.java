@@ -8,18 +8,20 @@ import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
 import net.minecraft.network.PacketByteBuf;
 
 import io.netty.buffer.Unpooled;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.*;
 import java.net.*;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class P2PNetworkManager {
     public static final int MAX_UDP_PACKET_SIZE = 65535;
     public static final int UDP_RECEIVE_TIMEOUT = 1000;
+    public static final int MAX_MESSAGE_ID_HISTORY = 1024;
+
     public static final int DEFAULT_PORT = 25566;
 
     private UPnPManager upnpManager;
@@ -35,6 +37,13 @@ public class P2PNetworkManager {
     private final Map<Short, PeerConnection> connectedPeersByUdpId = new ConcurrentHashMap<>();
     private short nextUdpId = 1;
     public final Map<UUID, PlayerInfoPayload> connectedPlayers = new ConcurrentHashMap<>();
+
+
+    private final Set<UUID> recentMessageIds = Collections.newSetFromMap(
+        new LinkedHashMap<>(MAX_MESSAGE_ID_HISTORY + 1, 1.0f, false) {
+            @Override protected boolean removeEldestEntry(Map.Entry<UUID, Boolean> eldest) { return size() > MAX_MESSAGE_ID_HISTORY; }
+        }
+    );
 
     public P2PNetworkManager() {
         executor = Executors.newCachedThreadPool();
@@ -116,7 +125,6 @@ public class P2PNetworkManager {
 
     /** Connect to a peer using address that can be IP, domain, or IP:port format */
     public PeerConnection connectToPeer(String address) throws Exception {
-        if (isHost()) { throw new Exception("Hosts are not allowed to connect to relays"); } // TODO: Remove this once packet loop prevention is implemented
         running.set(true);
 
         String host;
@@ -198,11 +206,16 @@ public class P2PNetworkManager {
         }
     }
 
+    private boolean shouldForwardMessage(P2PMessage message) {
+        synchronized (recentMessageIds) {
+            return isHost() && message.getType().shouldForward()
+                && recentMessageIds.add(message.getId()); // Do not forward if message id has been seen before, to stop packets from continuously looping through the network
+        }
+    }
+
     public void handleMessage(PeerConnection sender, P2PMessage message) {
         messageHandler.handleMessage(message, sender);
-        if (isHost() && message.getType().shouldForward()) {
-            broadcastToAllPeers(message, sender);
-        }
+        if (shouldForwardMessage(message)) broadcastToAllPeers(message, sender);
     }
 
     private void handleUdpMessages() {
@@ -326,12 +339,19 @@ public class P2PNetworkManager {
         return status.toString();
     }
 
+    @Nullable
     public String getConnectionAddress() {
         String portString = (getPort() > 0) ? ":" + getPort() : "";
 
         return switch (PlayerRelay.config.connectionAddress) {
-            case "external" -> getExternalIp() + portString;
-            case "local" -> getLocalIp() + portString;
+            case "external" -> {
+                String externalIp = getExternalIp();
+                yield (externalIp != null) ? externalIp + portString : null;
+            }
+            case "local" -> {
+                String localIp = getLocalIp();
+                yield (localIp != null) ? localIp + portString : null;
+            }
             default -> PlayerRelay.config.connectionAddress;
         };
     }
@@ -339,10 +359,14 @@ public class P2PNetworkManager {
     public P2PMessageHandler getMessageHandler() { return messageHandler; }
     public DatagramSocket getUdpSocket() { return udpSocket; }
 
+    @Nullable
+    public String getLocalIp() { return (upnpManager != null) ? upnpManager.getLocalIp() : null; }
+
+    @Nullable
+    public String getExternalIp() { return (upnpManager != null) ? upnpManager.getExternalIp() : null; }
+
     public int getPeerCount() { return connectedPeers.size(); }
     public int getPort() { return serverPort; }
-    public String getLocalIp() { return upnpManager.getLocalIp(); }
-    public String getExternalIp() { return upnpManager.getExternalIp(); }
     public boolean isHost() { return isHost; }
 
     public void onPeerAccepted(PeerConnection peer) {
@@ -380,12 +404,12 @@ public class P2PNetworkManager {
         }
 
         for (UUID playerId : peer.announcedPlayers) {
+            if (!connectedPlayers.containsKey(playerId)) continue;
+
             PacketByteBuf uuidBuf = new PacketByteBuf(Unpooled.buffer());
             uuidBuf.writeUuid(playerId);
 
-            handleMessage(peer, new P2PMessage(
-                P2PMessageType.PLAYER_DISCONNECT, uuidBuf
-            ));
+            handleMessage(peer, new P2PMessage(P2PMessageType.PLAYER_DISCONNECT, uuidBuf));
         }
         PlayerRelay.LOGGER.info("Peer disconnected. Active connections: {}", connectedPeers.size());
     }

@@ -2,28 +2,37 @@ package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.mods.SupportPingWheel;
 import dev.hintsystem.playerrelay.mods.SupportXaerosMinimap;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
-import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
-import nx.pingwheel.common.networking.PingLocationS2CPacket;
-
+import net.minecraft.util.Identifier;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
 
 import org.jetbrains.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class P2PMessageHandler {
     private final P2PNetworkManager networkManager;
 
+    private final List<PlayerInfoHandler> playerInfoHandlers = new ArrayList<>();
+    private final List<PacketHandler> packetHandlers = new ArrayList<>();
+
     public P2PMessageHandler(P2PNetworkManager networkManager) {
         this.networkManager = networkManager;
+
+        addPlayerInfoHandler(new SupportXaerosMinimap());
+        addPacketHandler(new SupportPingWheel());
     }
+
+    public void addPlayerInfoHandler(PlayerInfoHandler handler) { playerInfoHandlers.add(handler); }
+    public void addPacketHandler(PacketHandler handler) { packetHandlers.add(handler); }
 
     public void handleMessage(P2PMessage message, PeerConnection sender) {
         try {
@@ -63,11 +72,13 @@ public class P2PMessageHandler {
                 case PLAYER_DISCONNECT:
                     UUID playerId = message.getPayloadByteBuf().readUuid();
 
-                    PlayerInfoPayload playerInfo = networkManager.connectedPlayers.remove(playerId);
+                    PlayerInfoPayload lastInfo = networkManager.connectedPlayers.remove(playerId);
                     sender.announcedPlayers.remove(playerId);
 
-                    SupportXaerosMinimap.getTrackedPlayerManager().remove(playerId);
-                    if (playerInfo != null) ClientCore.onPlayerDisconnected(playerInfo);
+                    for (PlayerInfoHandler handler : playerInfoHandlers) {
+                        handler.onPlayerDisconnect(playerId, lastInfo);
+                    }
+                    if (lastInfo != null) ClientCore.onPlayerDisconnected(lastInfo);
                     break;
 
                 case PACKET:
@@ -102,46 +113,30 @@ public class P2PMessageHandler {
             ClientCore.onPlayerConnected(infoPayload);
         }
 
-        PlayerPositionData positionData = infoPayload.getComponent(PlayerPositionData.class);
-        if (positionData != null) {
-            SupportXaerosMinimap.getTrackedPlayerManager().update(
-                infoPayload.playerId,
-                positionData.coords.x,
-                positionData.coords.y,
-                positionData.coords.z,
-                positionData.dimension
-            );
+        for (PlayerInfoHandler handler : playerInfoHandlers) {
+            handler.onPlayerInfo(infoPayload, sender);
         }
     }
 
     private void handlePacket(P2PMessage message) {
         MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayNetworkHandler handler = client.getNetworkHandler();
-        if (handler == null) {
+        ClientPlayNetworkHandler networkHandler = client.getNetworkHandler();
+        if (networkHandler == null) {
             PlayerRelay.LOGGER.warn("No network handler available, dropping packet");
             return;
         }
 
-        PlayerRelay.LOGGER.info("Received packet: {}", message.getPacketId());
+        Identifier packetId = message.getPacketId();
+        PlayerRelay.LOGGER.info("Received packet: {}", packetId);
 
-        try {
-            if ("ping-wheel-s2c:ping-location".equals(message.getPacketId())) {
-                CustomPayloadS2CPacket s2cPacket = new CustomPayloadS2CPacket(
-                    message.toPacket(PingLocationS2CPacket.class)
-                );
-
-                client.execute(() -> {
-                    try {
-                        handler.onCustomPayload(s2cPacket);
-                    } catch (Exception e) {
-                        PlayerRelay.LOGGER.error("Error processing custom payload: {}", e.getMessage(), e);
-                    }
-                });
-            } else {
-                PlayerRelay.LOGGER.warn("Unknown packet type: {}", message.getPacketId());
+        boolean packetUsed = false;
+        for (PacketHandler packetHandler : packetHandlers) {
+            if (packetHandler.canHandle(packetId)) {
+                packetUsed = true;
+                packetHandler.handlePacket(message, networkHandler, client);
             }
-        } catch (Exception e) {
-            PlayerRelay.LOGGER.error("Error handling packet '{}': {}", message.getPacketId(), e.getMessage(), e);
         }
+
+        if (!packetUsed) PlayerRelay.LOGGER.warn("Unknown packet type: {}", packetId);
     }
 }

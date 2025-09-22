@@ -2,20 +2,26 @@ package dev.hintsystem.playerrelay.networking;
 
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.util.Identifier;
 
 import io.netty.buffer.Unpooled;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 public class P2PMessage {
     private final NetworkProtocol preferredProtocol;
     private final P2PMessageType type;
+    private UUID messageId;
+    private Identifier packetId;
     private final byte[] payload;
-    private String id;
+
 
     public P2PMessage(P2PMessageType type, byte[] payload, NetworkProtocol preferredProtocol) {
         this.preferredProtocol = preferredProtocol;
         this.type = type;
+        this.messageId = UUID.randomUUID();
         this.payload = payload;
     }
 
@@ -24,16 +30,17 @@ public class P2PMessage {
     }
 
     public P2PMessage(CustomPayload packet) {
-        this.type = P2PMessageType.PACKET;
-        this.id = packet.getId().id().toString();
         this.preferredProtocol = NetworkProtocol.TCP;
+        this.type = P2PMessageType.PACKET;
+        this.messageId = UUID.randomUUID();
+        this.packetId = packet.getId().id();
 
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
 
         try {
             packet.getClass().getMethod("write", PacketByteBuf.class).invoke(packet, buf);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to serialize packet " + id, e);
+            throw new RuntimeException("Failed to serialize packet " + packetId, e);
         }
 
         this.payload = bytesFromPacketByteBuf(buf);
@@ -48,12 +55,16 @@ public class P2PMessage {
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
-        // 1 byte for type
         out.writeByte(type.getId());
+
+        if (type.shouldForward()) {
+            out.writeLong(messageId.getMostSignificantBits());
+            out.writeLong(messageId.getLeastSignificantBits());
+        }
 
         // VarInt (or short) for id length + UTF-8 id (only if PACKET)
         if (type == P2PMessageType.PACKET) {
-            byte[] idBytes = id.getBytes(StandardCharsets.UTF_8);
+            byte[] idBytes = packetId.toString().getBytes(StandardCharsets.UTF_8);
             out.writeShort(idBytes.length);
             out.write(idBytes);
         }
@@ -69,13 +80,18 @@ public class P2PMessage {
     public static P2PMessage readFrom(DataInputStream in, NetworkProtocol receivedVia) throws IOException {
         P2PMessageType type = P2PMessageType.fromId(in.readByte());
 
-        String id = null;
+        UUID messageId = null;
+        Identifier id = null;
         byte[] payload = null;
+
+        if (type.shouldForward()) {
+            messageId = new UUID(in.readLong(), in.readLong());
+        }
 
         if (type == P2PMessageType.PACKET) {
             int idLen = in.readShort();
             byte[] idBytes = in.readNBytes(idLen);
-            id = new String(idBytes, StandardCharsets.UTF_8);
+            id = Identifier.of(new String(idBytes, StandardCharsets.UTF_8));
         }
 
         int payloadLen = in.readInt();
@@ -84,7 +100,8 @@ public class P2PMessage {
         }
 
         P2PMessage msg = new P2PMessage(type, payload, receivedVia);
-        msg.id = id;
+        msg.packetId = id;
+        msg.messageId = messageId;
         return msg;
     }
 
@@ -108,7 +125,8 @@ public class P2PMessage {
 
     public NetworkProtocol getPreferredProtocol() { return preferredProtocol; }
     public P2PMessageType getType() { return type; }
-    public String getPacketId() { return id; }
+    public UUID getId() { return messageId; }
+    public Identifier getPacketId() { return packetId; }
     public byte[] getPayload() { return payload; }
     public PacketByteBuf getPayloadByteBuf() { return new PacketByteBuf(Unpooled.wrappedBuffer(getPayload())); }
 
@@ -122,7 +140,7 @@ public class P2PMessage {
             PacketByteBuf buf = new PacketByteBuf(Unpooled.wrappedBuffer(payload));
             return classType.getConstructor(PacketByteBuf.class).newInstance(buf);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to reconstruct packet " + id, e);
+            throw new RuntimeException("Failed to reconstruct packet " + packetId, e);
         }
     }
 }

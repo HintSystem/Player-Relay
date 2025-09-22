@@ -2,6 +2,7 @@ package dev.hintsystem.playerrelay.payload;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.networking.P2PMessageType;
+
 import net.minecraft.network.PacketByteBuf;
 
 public class RelayVersionPayload implements IPayload {

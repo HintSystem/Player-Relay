@@ -1,27 +1,36 @@
 package dev.hintsystem.playerrelay.mods;
 
-import xaero.common.HudMod;
+import dev.hintsystem.playerrelay.networking.PeerConnection;
+import dev.hintsystem.playerrelay.networking.PlayerInfoHandler;
+import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
+
 import xaero.hud.minimap.BuiltInHudModules;
-import xaero.hud.minimap.info.InfoDisplayManager;
 import xaero.hud.minimap.player.tracker.synced.ClientSyncedTrackedPlayerManager;
 
-public class SupportXaerosMinimap {
-    private static final ThreadLocal<Boolean> IN_WORLD_RENDERER = ThreadLocal.withInitial(() -> false);
+import java.util.UUID;
 
+public class SupportXaerosMinimap implements PlayerInfoHandler {
     public static ClientSyncedTrackedPlayerManager getTrackedPlayerManager() {
         return BuiltInHudModules.MINIMAP.getCurrentSession().getProcessor().getSyncedTrackedPlayerManager();
     }
 
-    public static InfoDisplayManager getInfoDisplayManager() {
-        return HudMod.INSTANCE.getMinimap().getInfoDisplays().getManager();
+    @Override
+    public void onPlayerInfo(PlayerInfoPayload payload, PeerConnection sender) {
+        PlayerPositionData pos = payload.getComponent(PlayerPositionData.class);
+        if (pos != null) {
+            getTrackedPlayerManager().update(
+                payload.playerId,
+                pos.coords.x,
+                pos.coords.y,
+                pos.coords.z,
+                pos.dimension
+            );
+        }
     }
 
-    public static void setInWorldRenderer(boolean inRenderer) {
-        IN_WORLD_RENDERER.set(inRenderer);
-    }
-
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public static boolean isInWorldRenderer() {
-        return IN_WORLD_RENDERER.get();
+    @Override
+    public void onPlayerDisconnect(UUID playerId, PlayerInfoPayload lastInfo) {
+        getTrackedPlayerManager().remove(playerId);
     }
 }

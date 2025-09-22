@@ -32,7 +32,7 @@ public class PeerConnection implements Runnable {
     private final ScheduledExecutorService healthCheckExecutor = Executors.newSingleThreadScheduledExecutor();
     private int consecutiveFailedUdpPings = 0;
 
-    public Set<UUID> announcedPlayers = new HashSet<>();
+    public Set<UUID> announcedPlayers = ConcurrentHashMap.newKeySet();
 
     public PeerConnection(Socket socket, P2PNetworkManager manager) throws IOException {
         this.tcpSocket = socket;
@@ -259,20 +259,20 @@ public class PeerConnection implements Runnable {
     }
 
     public void disconnect() {
-        connected = false;
-
         if (versionHandshakeTimeout != null && !versionHandshakeTimeout.isDone()) {
             versionHandshakeTimeout.cancel(false);
         }
 
-        healthCheckExecutor.shutdown();
-        try {
-            if (!healthCheckExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+        if (!healthCheckExecutor.isShutdown()) {
+            healthCheckExecutor.shutdown();
+            try {
+                if (!healthCheckExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    healthCheckExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
                 healthCheckExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException e) {
-            healthCheckExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
         }
 
         try {
@@ -282,7 +282,9 @@ public class PeerConnection implements Runnable {
         } catch (IOException e) {
             PlayerRelay.LOGGER.error("Error closing connection: {}", e.getMessage());
         }
+
         manager.onPeerDisconnected(this);
+        connected = false;
     }
 
     public boolean isUdpHealthy() { return udpHealthy && peerUdpId != null; }
