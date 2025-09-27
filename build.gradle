@@ -1,6 +1,7 @@
 plugins {
-	id 'fabric-loom' version "${loom_version}"
-	id 'maven-publish'
+	id "fabric-loom" version "${loom_version}"
+	id "maven-publish"
+    id "me.modmuss50.mod-publish-plugin" version "1.0.0"
 }
 
 version = project.mod_version
@@ -8,6 +9,16 @@ group = project.maven_group
 
 base {
 	archivesName = project.archives_base_name
+}
+
+// Load local properties if file exists
+def localPropertiesFile = rootProject.file('local.gradle.properties')
+if (localPropertiesFile.exists()) {
+    def localProperties = new Properties()
+    localProperties.load(new FileInputStream(localPropertiesFile))
+    localProperties.each { key, value ->
+        project.ext[key as String] = value
+    }
 }
 
 repositories {
@@ -87,4 +98,24 @@ publishing {
 
 	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
 	repositories {}
+}
+
+publishMods {
+    file = remapJar.archiveFile
+    changelog = file("CHANGELOG.md").text
+    type = BETA
+    modLoaders.add("fabric")
+
+    modrinth {
+        accessToken = project.findProperty("MODRINTH_API_KEY") ?: providers.environmentVariable("MODRINTH_API_KEY")
+        projectId = "4vsSeMij"
+        minecraftVersions.add("1.21.8")
+
+        requires("fabric-api")
+        requires("yacl")
+        optional("modmenu")
+        optional("ping-wheel")
+        optional("xaeros-minimap")
+        optional("xaeros-world-map")
+    }
 }
