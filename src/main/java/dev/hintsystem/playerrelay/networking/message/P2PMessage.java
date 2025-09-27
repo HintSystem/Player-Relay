@@ -129,7 +129,7 @@ public class P2PMessage {
     public UUID getId() { return messageId; }
     public Identifier getPacketId() { return packetId; }
     public byte[] getPayload() { return payload; }
-    public PacketByteBuf getPayloadByteBuf() { return new PacketByteBuf(Unpooled.wrappedBuffer(getPayload())); }
+    public PacketByteBuf getPayloadByteBuf() { return new PacketByteBuf(Unpooled.wrappedBuffer(payload)); }
 
     // Reconstruct packet instance from this message
     public CustomPayload toPacket(Class<? extends CustomPayload> classType) {
