@@ -30,7 +30,7 @@ public class PingWheelNetworkMixin {
                     networkManager.broadcastMessage(pingMessage);
                     networkManager.getMessageHandler().handleMessage(pingMessage, null); // Process same packet on client to see ping
                 } catch (Exception e) {
-                    PlayerRelay.LOGGER.error("Failed to relay ping wheel packet over P2P: {}", e.getMessage());
+                    PlayerRelay.LOGGER.error("Failed to relay Ping Wheel packet over P2P: {}", e.getMessage());
                 }
             }
         }

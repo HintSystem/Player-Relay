@@ -2,8 +2,11 @@ package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.logging.LogEventTypes;
+import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.logging.LogLocation;
 
 import net.minecraft.network.PacketByteBuf;
 
@@ -18,6 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class P2PNetworkManager {
+    public final PlayerRelayLogger logger = new PlayerRelayLogger(LogLocation.NETWORK_MANAGER);
+
     public static final int MAX_UDP_PACKET_SIZE = 65535;
     public static final int UDP_RECEIVE_TIMEOUT = 1000;
     public static final int MAX_MESSAGE_ID_HISTORY = 1024;
@@ -38,7 +43,6 @@ public class P2PNetworkManager {
     private short nextUdpId = 1;
     public final Map<UUID, PlayerInfoPayload> connectedPlayers = new ConcurrentHashMap<>();
 
-
     private final Set<UUID> recentMessageIds = Collections.newSetFromMap(
         new LinkedHashMap<>(MAX_MESSAGE_ID_HISTORY + 1, 1.0f, false) {
             @Override protected boolean removeEldestEntry(Map.Entry<UUID, Boolean> eldest) { return size() > MAX_MESSAGE_ID_HISTORY; }
@@ -55,9 +59,12 @@ public class P2PNetworkManager {
 
         if (upnpManager == null) {
             try {
-                upnpManager = new UPnPManager();
+                upnpManager = new UPnPManager(logger);
             } catch (Exception e) {
-                PlayerRelay.LOGGER.warn("UPnP not available, proceeding without port forwarding: {}", e.getMessage());
+                logger.warn()
+                    .type(LogEventTypes.UPNP_FAIL)
+                    .title("UPnP not available")
+                    .exception(e).build();
             }
         }
 
@@ -68,7 +75,9 @@ public class P2PNetworkManager {
             udpSocket = new DatagramSocket(serverPort);
             udpSocket.setSoTimeout(UDP_RECEIVE_TIMEOUT);
         } catch (SocketException e) {
-            PlayerRelay.LOGGER.error("Failed to create UDP socket on port {}, {}", serverPort, e);
+            logger.error()
+                .title("Failed to create UDP socket for server")
+                .exception(e).build();
         }
 
         // Open port via UPnP if available
@@ -76,9 +85,11 @@ public class P2PNetworkManager {
             boolean tcpOpened = upnpManager.openPort(serverPort, "TCP");
             boolean udpOpened = upnpManager.openPort(serverPort, "UDP");
             if (tcpOpened && udpOpened) {
-                PlayerRelay.LOGGER.info("Ports TCP/UDP '{}' forwarded successfully.", serverPort);
+                logger.info().message("Ports TCP/UDP '{}' forwarded successfully.", serverPort).build();
             } else {
-                PlayerRelay.LOGGER.warn("Port forwarding incomplete - TCP: {}, UDP: {}", tcpOpened, udpOpened);
+                logger.warn()
+                    .title("Port forwarding incomplete")
+                    .message("TCP - {}, UDP - {}", tcpOpened ? "open" : "closed", udpOpened ? "open" : "closed").build();
             }
         }
 
@@ -88,7 +99,7 @@ public class P2PNetworkManager {
         executor.submit(this::acceptTcpConnections);
         executor.submit(this::handleUdpMessages);
 
-        PlayerRelay.LOGGER.info("Player Relay server started on port {}", serverPort);
+        logger.info().message("Player Relay server started on port {}", serverPort).build();
     }
 
     public void stopServer() {
@@ -106,7 +117,7 @@ public class P2PNetworkManager {
             try {
                 serverSocket.close();
             } catch (IOException e) {
-                PlayerRelay.LOGGER.error("Error closing TCP server socket: {}", e.getMessage());
+                logger.error().message("Error closing TCP server socket: {}", e.getMessage()).build();
             }
         }
 
@@ -120,7 +131,7 @@ public class P2PNetworkManager {
             upnpManager.closePort(serverPort, "UDP");
         }
 
-        PlayerRelay.LOGGER.info("Player Relay server stopped");
+        logger.info().message("Player Relay server stopped").build();
     }
 
     /** Connect to a peer using address that can be IP, domain, or IP:port format */
@@ -148,7 +159,7 @@ public class P2PNetworkManager {
         InetAddress resolvedAddress;
         try {
             resolvedAddress = InetAddress.getByName(host);
-            PlayerRelay.LOGGER.info("Resolved {} to {}", host, resolvedAddress.getHostAddress());
+            logger.info().message("Resolved {} to {}", host, resolvedAddress.getHostAddress()).build();
         } catch (UnknownHostException e) {
             throw new Exception("Could not resolve host: " + host, e);
         }
@@ -159,7 +170,9 @@ public class P2PNetworkManager {
                 udpSocket.setSoTimeout(UDP_RECEIVE_TIMEOUT);
                 executor.submit(this::handleUdpMessages);
             } catch (SocketException e) {
-                PlayerRelay.LOGGER.warn("Failed to create UDP socket for client: {}", e.getMessage());
+                logger.warn()
+                    .title("Failed to create UDP socket for client")
+                    .exception(e).build();
             }
         }
 
@@ -172,8 +185,8 @@ public class P2PNetworkManager {
 
             onConnectedToPeer(peer);
             executor.submit(peer);
-            PlayerRelay.LOGGER.info("Connected to peer: {}:{} ({})", host, port, resolvedAddress.getHostAddress());
 
+            logger.info().message("Connected to peer: {}:{} ({})", host, port, resolvedAddress.getHostAddress()).build();
             return peer;
         } catch (SocketTimeoutException e) {
             cancelPeerConnection(peer, socket);
@@ -222,13 +235,13 @@ public class P2PNetworkManager {
         byte[] buffer = new byte[MAX_UDP_PACKET_SIZE];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-        PlayerRelay.LOGGER.info("UDP socket listening on port {}", udpSocket.getLocalPort());
+        logger.info().message("UDP socket listening on port {}", udpSocket.getLocalPort()).build();
         while (running.get() && udpSocket != null && !udpSocket.isClosed()) {
             try {
                 udpSocket.receive(packet);
 
                 if (packet.getLength() < 2) {
-                    PlayerRelay.LOGGER.warn("Received UDP packet too small to contain ID");
+                    logger.warn().message("Received UDP packet too small to contain ID").build();
                     continue;
                 }
 
@@ -237,7 +250,7 @@ public class P2PNetworkManager {
 
                 PeerConnection senderPeer = connectedPeersByUdpId.get(udpId);
                 if (senderPeer == null) {
-                    PlayerRelay.LOGGER.warn("Received UDP packet from unknown peer ID: {}", udpId);
+                    logger.warn().message("Received UDP packet from unknown peer ID: {}", udpId).build();
                     continue;
                 }
 
@@ -245,13 +258,14 @@ public class P2PNetworkManager {
                 System.arraycopy(data, 2, messageData, 0, messageData.length);
 
                 P2PMessage message = P2PMessage.fromBytes(messageData, NetworkProtocol.UDP);
-                PlayerRelay.LOGGER.debug("Received UDP message from {}:{}, type: {}", packet.getAddress(), packet.getPort(), message.getType().name());
                 handleMessage(senderPeer, message);
+
+                logger.debug().message("Received UDP message from {}:{}, type: {}", packet.getAddress(), packet.getPort(), message.getType().name()).build();
             } catch (SocketTimeoutException e) {
                 // Normal timeout, continue loop
             } catch (IOException e) {
                 if (running.get()) {
-                    PlayerRelay.LOGGER.error("Error receiving UDP packet: {}", e.getMessage());
+                    logger.error().message("Error receiving UDP packet: {}", e.getMessage()).build();
                 }
             }
         }
@@ -271,7 +285,7 @@ public class P2PNetworkManager {
         peer.assignUdpId(udpId);
         connectedPeersByUdpId.put(udpId, peer);
 
-        PlayerRelay.LOGGER.info("Assigned UDP ID {} to peer {}", udpId, peer.getRemoteAddress());
+        logger.info().message("Assigned UDP ID {} to peer {}", udpId, peer.getRemoteAddress()).build();
         return udpId;
     }
 
@@ -286,7 +300,7 @@ public class P2PNetworkManager {
                 onPeerAccepted(peer);
             } catch (IOException e) {
                 if (running.get()) {
-                    PlayerRelay.LOGGER.error("Error accepting connection: {}", e.getMessage());
+                    logger.error().message("Error accepting connection: {}", e.getMessage()).build();
                 }
             }
         }
@@ -411,6 +425,6 @@ public class P2PNetworkManager {
 
             handleMessage(peer, new P2PMessage(P2PMessageType.PLAYER_DISCONNECT, uuidBuf));
         }
-        PlayerRelay.LOGGER.info("Peer disconnected. Active connections: {}", connectedPeers.size());
+        logger.info().message("Peer disconnected. Active connections: {}", connectedPeers.size()).build();
     }
 }

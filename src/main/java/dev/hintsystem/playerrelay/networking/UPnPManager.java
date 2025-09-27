@@ -1,6 +1,8 @@
 package dev.hintsystem.playerrelay.networking;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.logging.LogEventTypes;
+import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
+import dev.hintsystem.playerrelay.logging.LogLocation;
 
 import org.bitlet.weupnp.GatewayDevice;
 import org.bitlet.weupnp.GatewayDiscover;
@@ -10,16 +12,21 @@ import java.net.InetAddress;
 import java.util.Map;
 
 public class UPnPManager {
+    public final PlayerRelayLogger logger;
+
     private GatewayDevice gateway;
     private String localIP;
 
-    public UPnPManager() throws Exception {
+    public UPnPManager() throws Exception { this(new PlayerRelayLogger(LogLocation.UPNP_MANAGER)); }
+
+    public UPnPManager(PlayerRelayLogger logger) throws Exception {
+        this.logger = logger.withLocation(LogLocation.UPNP_MANAGER);
         discoverGateway();
     }
 
     private void discoverGateway() throws Exception {
         GatewayDiscover discover = new GatewayDiscover();
-        PlayerRelay.LOGGER.info("Looking for UPnP gateway devices...");
+        logger.info().message("Looking for UPnP gateway devices...").build();
 
         Map<InetAddress, GatewayDevice> gateways = discover.discover();
 
@@ -33,8 +40,8 @@ public class UPnPManager {
         }
 
         localIP = gateway.getLocalAddress().getHostAddress();
-        PlayerRelay.LOGGER.info("Found UPnP gateway: {} at {}", gateway.getFriendlyName(), gateway.getPresentationURL());
-        PlayerRelay.LOGGER.info("Local IP: {}", localIP);
+
+        logger.info().message("Found UPnP gateway: {} at {}", gateway.getFriendlyName(), gateway.getPresentationURL()).build();
     }
 
     public boolean openPort(int port, String protocol) {
@@ -42,7 +49,7 @@ public class UPnPManager {
             // Check if port is already mapped
             PortMappingEntry portMapping = new PortMappingEntry();
             if (gateway.getSpecificPortMappingEntry(port, protocol, portMapping)) {
-                PlayerRelay.LOGGER.info("Port {} is already mapped to {}", port, portMapping.getInternalClient());
+                logger.info().message("Port {} is already mapped to {}", port, portMapping.getInternalClient()).build();
                 return portMapping.getInternalClient().equals(localIP);
             }
 
@@ -56,15 +63,20 @@ public class UPnPManager {
             );
 
             if (success) {
-                PlayerRelay.LOGGER.info("Successfully mapped port {} ({}) to {}", port, protocol, localIP);
+                logger.info().message("Successfully mapped port {} ({}) to {}", port, protocol, localIP).build();
                 return true;
             } else {
-                PlayerRelay.LOGGER.error("Failed to map port {}", port);
+                logger.error()
+                    .type(LogEventTypes.PORT_MAP_FAIL)
+                    .title("Failed to map port {} ({})", port, protocol).build();
                 return false;
             }
 
         } catch (Exception e) {
-            PlayerRelay.LOGGER.error("Error mapping port {}: {}", port, e.getMessage());
+            logger.error()
+                .type(LogEventTypes.PORT_MAP_FAIL)
+                .title("Error mapping port {} ({})", port, protocol)
+                .exception(e).build();
             return false;
         }
     }
@@ -73,13 +85,13 @@ public class UPnPManager {
         try {
             boolean success = gateway.deletePortMapping(port, protocol);
             if (success) {
-                PlayerRelay.LOGGER.info("Successfully unmapped port {} ({})", port, protocol);
+                logger.info().message("Successfully unmapped port {} ({})", port, protocol).build();
             } else {
-                PlayerRelay.LOGGER.error("Failed to unmap port {}", port);
+                logger.error().message("Failed to unmap port {}", port).build();
             }
             return success;
         } catch (Exception e) {
-            PlayerRelay.LOGGER.error("Error unmapping port {}: {}", port, e.getMessage());
+            logger.error().message("Error unmapping port {}: {}", port, e.getMessage()).build();
             return false;
         }
     }
@@ -88,7 +100,7 @@ public class UPnPManager {
         try {
             return gateway.getExternalIPAddress();
         } catch (Exception e) {
-            PlayerRelay.LOGGER.error("Failed to get external IP: {}", e.getMessage());
+            logger.error().message("Failed to get external IP: {}", e.getMessage()).build();
             return null;
         }
     }

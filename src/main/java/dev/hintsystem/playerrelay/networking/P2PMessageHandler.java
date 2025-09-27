@@ -1,7 +1,8 @@
 package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.ClientCore;
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
+import dev.hintsystem.playerrelay.logging.LogLocation;
 import dev.hintsystem.playerrelay.mods.SupportPingWheel;
 import dev.hintsystem.playerrelay.mods.SupportXaerosMinimap;
 import dev.hintsystem.playerrelay.payload.*;
@@ -19,12 +20,15 @@ import java.util.List;
 import java.util.UUID;
 
 public class P2PMessageHandler {
+    public final PlayerRelayLogger logger;
+
     private final P2PNetworkManager networkManager;
 
     private final List<PlayerInfoHandler> playerInfoHandlers = new ArrayList<>();
     private final List<PacketHandler> packetHandlers = new ArrayList<>();
 
     public P2PMessageHandler(P2PNetworkManager networkManager) {
+        this.logger = networkManager.logger.withLocation(LogLocation.MESSAGE_HANDLER);
         this.networkManager = networkManager;
 
         addPlayerInfoHandler(new SupportXaerosMinimap());
@@ -38,20 +42,15 @@ public class P2PMessageHandler {
         try {
             switch (message.getType()) {
                 case RELAY_VERSION:
-                    RelayVersionPayload relay = new RelayVersionPayload(message.getPayloadByteBuf());
-                    if (relay.networkVersion != PlayerRelay.NETWORK_VERSION) {
-                        ClientCore.onVersionMismatch(sender, relay.networkVersion, relay.modVersion);
-                        sender.failVersionHandshake(new IllegalStateException(
-                            "Network version mismatch: relay=" + relay.networkVersion + ", client=" + PlayerRelay.NETWORK_VERSION
-                        ));
-                    } else { sender.completeVersionHandshake(relay); }
-
+                    RelayVersionPayload versionPayload = new RelayVersionPayload(message.getPayloadByteBuf());
+                    sender.onVersionHandshake(versionPayload);
                     break;
 
                 case UDP_HANDSHAKE:
                     UdpHandshakePayload handshake = new UdpHandshakePayload(message.getPayloadByteBuf());
-                    PlayerRelay.LOGGER.info("UDP handshake received, id: {}, port: {}", handshake.getUdpId(), handshake.getUdpPort());
                     sender.setPeerUdpId(handshake.getUdpId(), handshake.getUdpPort());
+
+                    logger.info().message("UDP handshake received, id: {}, port: {}", handshake.getUdpId(), handshake.getUdpPort()).build();
                     break;
 
                 case UDP_PING:
@@ -86,10 +85,10 @@ public class P2PMessageHandler {
                     break;
 
                 default:
-                    PlayerRelay.LOGGER.info("Received unknown message type: {}", message.getType());
+                    logger.warn().message("Received unknown message type: {}", message.getType()).build();
             }
         } catch (Exception e) {
-            PlayerRelay.LOGGER.error("Error handling message of type '{}': {}", message.getType(), e.getMessage(), e);
+            logger.error().message("Error handling message of type '{}': {}", message.getType(), e.getMessage(), e).build();
         }
     }
 
@@ -122,12 +121,12 @@ public class P2PMessageHandler {
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayNetworkHandler networkHandler = client.getNetworkHandler();
         if (networkHandler == null) {
-            PlayerRelay.LOGGER.warn("No network handler available, dropping packet");
+            logger.warn().message("No network handler available, dropping packet").build();
             return;
         }
 
         Identifier packetId = message.getPacketId();
-        PlayerRelay.LOGGER.info("Received packet: {}", packetId);
+        logger.info().message("Received packet: {}", packetId).build();
 
         boolean packetUsed = false;
         for (PacketHandler packetHandler : packetHandlers) {
@@ -137,6 +136,6 @@ public class P2PMessageHandler {
             }
         }
 
-        if (!packetUsed) PlayerRelay.LOGGER.warn("Unknown packet type: {}", packetId);
+        if (!packetUsed) logger.warn().message("Unknown packet type: {}", packetId).build();
     }
 }

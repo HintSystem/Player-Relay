@@ -1,6 +1,8 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.gui.PlayerList;
+import dev.hintsystem.playerrelay.logging.ClientLogHandler;
+import dev.hintsystem.playerrelay.logging.ConsoleLogHandler;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
@@ -22,8 +24,6 @@ import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeoutException;
-
 public class PlayerRelay implements ClientModInitializer {
     public static final String MOD_ID = "player-relay";
     public static final int NETWORK_VERSION = 2;
@@ -43,6 +43,10 @@ public class PlayerRelay implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         networkManager = new P2PNetworkManager();
+        networkManager.logger
+            .addLogHandler(new ConsoleLogHandler(LOGGER))
+            .addLogHandler(new ClientLogHandler());
+
         if (config.autoHost) { networkManager.startServerAsync(); }
 
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "before_chat"),
@@ -60,9 +64,7 @@ public class PlayerRelay implements ClientModInitializer {
                     networkManager.startServerAsync()
                         .whenComplete((result, throwable) -> MinecraftClient.getInstance().execute(() -> {
                             if (throwable != null) {
-                                context.getSource().sendError(Text.literal(
-                                    "Failed to start Player Relay server: " + throwable.getMessage()
-                                ));
+                                context.getSource().sendError(Text.literal(throwable.getCause().getMessage()));
                             } else {
                                 int port = networkManager.getPort();
                                 String connectionAddress = networkManager.getConnectionAddress();
@@ -104,13 +106,7 @@ public class PlayerRelay implements ClientModInitializer {
                                     context.getSource().sendError(Text.literal(throwable.getCause().getMessage()));
                                 } else {
                                     peer.requireVersionHandshake().whenComplete((versionPayload, err) -> {
-                                        if (err instanceof TimeoutException) {
-                                            context.getSource().sendError(Text.empty().append(
-                                                Text.literal("❌ Connection timeout")
-                                                    .setStyle(Style.EMPTY.withColor(Formatting.RED).withBold(true)))
-                                                    .append(Text.literal(" after " + PlayerRelay.config.peerConnectionTimeout + " ms (no version received)")
-                                                        .setStyle(Style.EMPTY.withColor(Formatting.GRAY))));
-                                        } else if (err == null) ClientCore.onConnect(address);
+                                        if (err == null) ClientCore.onConnect(address);
                                     });
                                 }
                             }));

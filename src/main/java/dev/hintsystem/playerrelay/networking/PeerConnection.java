@@ -1,6 +1,9 @@
 package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.logging.LogEventTypes;
+import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
+import dev.hintsystem.playerrelay.logging.LogLocation;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.payload.UdpHandshakePayload;
 import dev.hintsystem.playerrelay.payload.UdpPingPayload;
@@ -11,6 +14,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class PeerConnection implements Runnable {
+    private final PlayerRelayLogger logger;
+
     private final Socket tcpSocket;
     private final DataInputStream tcpInput;
     private final DataOutputStream tcpOutput;
@@ -35,6 +40,8 @@ public class PeerConnection implements Runnable {
     public Set<UUID> announcedPlayers = ConcurrentHashMap.newKeySet();
 
     public PeerConnection(Socket socket, P2PNetworkManager manager) throws IOException {
+        this.logger = manager.logger.withLocation(LogLocation.PEER_CONNECTION);
+
         this.tcpSocket = socket;
         this.manager = manager;
         this.tcpOutput = new DataOutputStream(socket.getOutputStream());
@@ -56,7 +63,6 @@ public class PeerConnection implements Runnable {
             if (versionHandshakeTimeout != null) versionHandshakeTimeout.cancel(false);
 
             if (throwable != null) {
-                PlayerRelay.LOGGER.error("Version handshake failed: {}", throwable.getMessage());
                 disconnect();
             } else { processPendingMessages(); }
         });
@@ -64,23 +70,31 @@ public class PeerConnection implements Runnable {
         return versionHandshake;
     }
 
-    public void completeVersionHandshake(RelayVersionPayload versionPayload) {
-        if (!versionHandshake.isDone()) {
-            versionHandshake.complete(versionPayload);
-        }
-    }
-    public void failVersionHandshake(Throwable cause) {
-        if (!versionHandshake.isDone()) {
-            versionHandshake.completeExceptionally(cause);
-        }
+    public void onVersionHandshake(RelayVersionPayload versionPayload) {
+        if (versionHandshake.isDone()) return;
+
+        if (versionPayload.networkVersion != PlayerRelay.NETWORK_VERSION) {
+            String errTitle = "Network version mismatch";
+            logger.error()
+                .type(LogEventTypes.VERSION_FAIL)
+                .title(errTitle)
+                .message("relay={}, client={}", versionPayload.networkVersion, PlayerRelay.NETWORK_VERSION)
+                .context("version", versionPayload).build();
+
+            versionHandshake.completeExceptionally(new IllegalStateException(errTitle));
+        } else { versionHandshake.complete(versionPayload); }
     }
 
     private void onVersionHandshakeTimeout() {
-        if (!versionHandshake.isDone()) {
-            TimeoutException timeoutException = new TimeoutException(String.format(
-                "Version handshake timeout after %d ms", PlayerRelay.config.peerConnectionTimeout));
-            versionHandshake.completeExceptionally(timeoutException);
-        }
+        if (versionHandshake.isDone()) return;
+
+        String errTitle = "Version handshake timeout";
+        logger.error()
+            .type(LogEventTypes.VERSION_FAIL)
+            .title(errTitle)
+            .message("No version reply received for {} ms", PlayerRelay.config.peerConnectionTimeout).build();
+
+        versionHandshake.completeExceptionally(new TimeoutException(errTitle));
     }
 
     private void processPendingMessages() {
@@ -90,7 +104,7 @@ public class PeerConnection implements Runnable {
                 try {
                     manager.handleMessage(this, message);
                 } catch (Exception e) {
-                    PlayerRelay.LOGGER.error("Error processing pending message: {}", e.getMessage(), e);
+                    logger.error().message("Error processing pending message: {}", e.getMessage(), e).build();
                 }
             }
         }
@@ -105,7 +119,7 @@ public class PeerConnection implements Runnable {
         if (versionHandshakeRequired && !versionHandshake.isDone()) {
             synchronized (pendingIncomingMessages) {
                 pendingIncomingMessages.offer(message);
-                PlayerRelay.LOGGER.debug("Queued message type {} until version handshake completes", message.getType());
+                logger.debug().message("Queued message type {} until version handshake completes", message.getType()).build();
             }
             return false;
         }
@@ -128,7 +142,7 @@ public class PeerConnection implements Runnable {
                 PlayerRelay.config.udpPingTimeoutMs, TimeUnit.MILLISECONDS);
 
         } catch (Exception e) {
-            PlayerRelay.LOGGER.warn("Failed to send UDP ping: {}", e.getMessage());
+            logger.warn().message("Failed to send UDP ping: {}", e.getMessage()).build();
             onUdpPingFailed();
         }
     }
@@ -145,8 +159,8 @@ public class PeerConnection implements Runnable {
         if (consecutiveFailedUdpPings >= PlayerRelay.config.maxFailedUdpPings) {
             if (udpHealthy) {
                 udpHealthy = false;
-                PlayerRelay.LOGGER.warn("UDP connection to {} marked as unhealthy after {} failed pings",
-                    getRemoteAddress(), consecutiveFailedUdpPings);
+                logger.warn().message("UDP connection to {} marked as unhealthy after {} failed pings",
+                    getRemoteAddress(), consecutiveFailedUdpPings).build();
             }
         }
     }
@@ -164,8 +178,8 @@ public class PeerConnection implements Runnable {
 
                 if (!udpHealthy) {
                     udpHealthy = true;
-                    PlayerRelay.LOGGER.info("UDP connection to {} restored (RTT: {}ms)",
-                        getRemoteAddress(), roundTripTime);
+                    logger.info().message("UDP connection to {} restored (RTT: {}ms)",
+                        getRemoteAddress(), roundTripTime).build();
                 }
             }
         }
@@ -180,7 +194,7 @@ public class PeerConnection implements Runnable {
                 if (shouldProcessMessage(message)) manager.handleMessage(this, message);
             }
         } catch (Exception e) {
-            if (connected) PlayerRelay.LOGGER.error("Error in peer connection: {}", e.getMessage());
+            if (connected) logger.error().message("Error in peer connection: {}", e.getMessage()).build();
         } finally {
             if (connected) disconnect();
         }
@@ -188,6 +202,7 @@ public class PeerConnection implements Runnable {
 
     public void sendMessage(P2PMessage message) {
         if (!connected || tcpSocket.isClosed()) return;
+        if ((versionHandshakeRequired && !versionHandshake.isDone()) || versionHandshake.isCompletedExceptionally()) return;
 
         try {
             if (message.getPreferredProtocol() == NetworkProtocol.UDP && isUdpHealthy()) {
@@ -196,14 +211,14 @@ public class PeerConnection implements Runnable {
                 sendTcpMessage(message);
             }
         } catch (IOException e) {
-            PlayerRelay.LOGGER.error("Failed to send message via {}: {}",
-                message.getPreferredProtocol(), e.getMessage());
+            logger.error().message("Failed to send message via {}: {}",
+                message.getPreferredProtocol(), e.getMessage()).build();
 
             if (message.getPreferredProtocol() == NetworkProtocol.UDP) {
                 try {
                     sendTcpMessage(message);
                 } catch (IOException tcpE) {
-                    PlayerRelay.LOGGER.error("TCP fallback also failed: {}", tcpE.getMessage());
+                    logger.error().message("TCP fallback also failed: {}", tcpE.getMessage()).build();
                 }
             }
         }
@@ -218,18 +233,14 @@ public class PeerConnection implements Runnable {
 
     private void sendUdpMessage(P2PMessage message) throws IOException {
         if (peerUdpId == null) {
-            String error = "UDP handshake not complete";
-            PlayerRelay.LOGGER.warn(error);
-            throw new IOException(error);
+            throw new IOException("UDP handshake not complete");
         }
 
         byte[] messageData = message.toBytes();
 
         // Check if message is too large for UDP (typical MTU is 1500 bytes)
         if (messageData.length > 1450) {
-            String error = String.format("UDP message too large (%dB), exceeds MTU limit", messageData.length);
-            PlayerRelay.LOGGER.warn(error);
-            throw new IOException(error);
+            throw new IOException(String.format("UDP message too large (%dB), exceeds MTU limit", messageData.length));
         }
 
         byte[] udpData = new byte[messageData.length + 2];
@@ -280,7 +291,7 @@ public class PeerConnection implements Runnable {
             if (tcpOutput != null) tcpOutput.close();
             if (tcpSocket != null && !tcpSocket.isClosed()) tcpSocket.close();
         } catch (IOException e) {
-            PlayerRelay.LOGGER.error("Error closing connection: {}", e.getMessage());
+            logger.error().message("Error closing connection: {}", e.getMessage()).build();
         }
 
         manager.onPeerDisconnected(this);

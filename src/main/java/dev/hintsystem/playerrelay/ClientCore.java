@@ -1,7 +1,6 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.networking.NetworkProtocol;
-import dev.hintsystem.playerrelay.networking.PeerConnection;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
@@ -114,26 +113,6 @@ public class ClientCore {
                 .setStyle(Style.EMPTY.withColor(Formatting.GREEN).withBold(true))
                 .append(Text.literal(address)
                     .setStyle(Style.EMPTY.withColor(Formatting.YELLOW).withBold(false))));
-    }
-
-    public static void onVersionMismatch(PeerConnection host, int relayNetworkVersion, String relayModVersion) {
-        sendClientMessage(Text.empty().append(
-            Text.literal("❌ Version mismatch detected")
-                .setStyle(Style.EMPTY.withColor(Formatting.RED).withBold(true)))
-                .append(Text.literal("\n\n"))
-                .append(Text.literal("Host requires: ")
-                    .setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
-                .append(Text.literal("mod version " + relayModVersion + ", network v" + relayNetworkVersion)
-                    .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
-                .append(Text.literal("\n"))
-                .append(Text.literal("Your client: ")
-                    .setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
-                .append(Text.literal("mod version " + PlayerRelay.VERSION + ", network v" + PlayerRelay.NETWORK_VERSION)
-                    .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
-                .append(Text.literal("\n\n"))
-                .append(Text.literal("⚠ Please install the matching mod version.")
-                    .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
-        );
     }
 
     public static void onStopping(MinecraftClient client) {
