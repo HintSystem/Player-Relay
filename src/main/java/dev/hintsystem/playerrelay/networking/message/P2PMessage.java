@@ -1,5 +1,6 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.networking.message;
 
+import dev.hintsystem.playerrelay.networking.NetworkProtocol;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;

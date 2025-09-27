@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.payload;
 
 import dev.hintsystem.playerrelay.networking.NetworkProtocol;
-import dev.hintsystem.playerrelay.networking.P2PMessageType;
+import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 
 import net.minecraft.network.PacketByteBuf;
 

@@ -1,5 +1,6 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.networking.message;
 
+import dev.hintsystem.playerrelay.networking.PeerConnection;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
 
 import org.jetbrains.annotations.Nullable;

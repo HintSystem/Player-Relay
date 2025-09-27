@@ -4,6 +4,8 @@ import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.logging.LogEventTypes;
 import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
 import dev.hintsystem.playerrelay.logging.LogLocation;
+import dev.hintsystem.playerrelay.networking.message.P2PMessage;
+import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.payload.UdpHandshakePayload;
 import dev.hintsystem.playerrelay.payload.UdpPingPayload;
@@ -299,6 +301,6 @@ public class PeerConnection implements Runnable {
     }
 
     public boolean isUdpHealthy() { return udpHealthy && peerUdpId != null; }
-    public String getRemoteAddress() { return tcpSocket.getRemoteSocketAddress().toString(); }
+    public SocketAddress getRemoteAddress() { return tcpSocket.getRemoteSocketAddress(); }
     private boolean hasUdpPort() { return peerUdpPort > 0; }
 }

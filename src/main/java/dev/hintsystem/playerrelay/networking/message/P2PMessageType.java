@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.networking.message;
 
 public enum P2PMessageType {
     RELAY_VERSION(0, false),

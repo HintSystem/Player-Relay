@@ -1,8 +1,8 @@
 package dev.hintsystem.playerrelay.mods;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.networking.P2PMessage;
-import dev.hintsystem.playerrelay.networking.PacketHandler;
+import dev.hintsystem.playerrelay.networking.message.P2PMessage;
+import dev.hintsystem.playerrelay.networking.message.PacketHandler;
 
 import nx.pingwheel.common.networking.PingLocationS2CPacket;
 

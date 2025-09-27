@@ -1,10 +1,11 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.networking.message;
 
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 import dev.hintsystem.playerrelay.mods.SupportPingWheel;
 import dev.hintsystem.playerrelay.mods.SupportXaerosMinimap;
+import dev.hintsystem.playerrelay.networking.*;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;

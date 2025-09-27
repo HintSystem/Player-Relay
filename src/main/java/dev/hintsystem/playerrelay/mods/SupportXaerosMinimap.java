@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.mods;
 
 import dev.hintsystem.playerrelay.networking.PeerConnection;
-import dev.hintsystem.playerrelay.networking.PlayerInfoHandler;
+import dev.hintsystem.playerrelay.networking.message.PlayerInfoHandler;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 

@@ -4,6 +4,7 @@ import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.logging.LogEventTypes;
 import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
+import dev.hintsystem.playerrelay.networking.message.*;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.logging.LogLocation;
@@ -157,11 +158,30 @@ public class P2PNetworkManager {
         }
 
         InetAddress resolvedAddress;
+        InetSocketAddress socketAddress;
         try {
             resolvedAddress = InetAddress.getByName(host);
+            socketAddress = new InetSocketAddress(resolvedAddress, port);
             logger.info().message("Resolved {} to {}", host, resolvedAddress.getHostAddress()).build();
         } catch (UnknownHostException e) {
             throw new Exception("Could not resolve host: " + host, e);
+        }
+
+        if (serverSocket != null) {
+            int localPort = serverSocket.getLocalPort();
+
+            if (localPort == port) {
+                for (InetAddress localAddr : InetAddress.getAllByName(InetAddress.getLocalHost().getHostName())) {
+                    if (localAddr.equals(resolvedAddress) || resolvedAddress.isLoopbackAddress()) {
+                        throw new IllegalStateException("Cannot connect to self (" + socketAddress + ")");
+                    }
+                }
+            }
+        }
+        for (PeerConnection p : connectedPeers) {
+            if (p.getRemoteAddress().equals(socketAddress)) {
+                throw new IllegalStateException("Already connected to peer (" + p.getRemoteAddress() + ")");
+            }
         }
 
         if (udpSocket == null) {
@@ -179,7 +199,7 @@ public class P2PNetworkManager {
         Socket socket = new Socket();
         PeerConnection peer = null;
         try {
-            socket.connect(new InetSocketAddress(resolvedAddress, port), PlayerRelay.config.peerConnectionTimeout);
+            socket.connect(socketAddress, PlayerRelay.config.peerConnectionTimeout);
             peer = new PeerConnection(socket, this);
             connectedPeers.add(peer);
 

@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.mixin;
 
-import dev.hintsystem.playerrelay.networking.P2PMessage;
+import dev.hintsystem.playerrelay.networking.message.P2PMessage;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.PlayerRelay;
 

@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import dev.hintsystem.playerrelay.networking.P2PMessageType;
+import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 import dev.hintsystem.playerrelay.payload.IPayload;
 
 import com.mojang.authlib.GameProfile;

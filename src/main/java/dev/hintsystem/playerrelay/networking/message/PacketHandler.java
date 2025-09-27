@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.networking.message;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
