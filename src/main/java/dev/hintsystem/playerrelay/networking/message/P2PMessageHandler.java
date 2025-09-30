@@ -8,7 +8,7 @@ import dev.hintsystem.playerrelay.mods.SupportXaerosMinimap;
 import dev.hintsystem.playerrelay.networking.*;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
-import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import net.minecraft.util.Identifier;
 import net.minecraft.client.network.ClientPlayerEntity;

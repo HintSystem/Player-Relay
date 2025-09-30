@@ -1,14 +1,12 @@
-package dev.hintsystem.playerrelay.payload.player;
+package dev.hintsystem.playerrelay.payload;
 
+import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
-import dev.hintsystem.playerrelay.payload.IPayload;
 
 import com.mojang.authlib.GameProfile;
+import dev.hintsystem.playerrelay.payload.player.*;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -22,8 +20,10 @@ public class PlayerInfoPayload implements IPayload {
 
     static {
         registerComponent(PlayerBasicData.class, PlayerBasicData::new);
-        registerComponent(PlayerStatsData.class, PlayerStatsData::new);
+        registerComponent(PlayerWorldData.class, PlayerWorldData::new);
         registerComponent(PlayerPositionData.class, PlayerPositionData::new);
+        registerComponent(PlayerStatsData.class, PlayerStatsData::new);
+        registerComponent(PlayerStatusEffectsData.class, PlayerStatusEffectsData::new);
     }
 
     private record ComponentInfo<T extends PlayerDataComponent>(
@@ -81,19 +81,16 @@ public class PlayerInfoPayload implements IPayload {
         return this;
     }
 
+    public <T extends PlayerDataComponent> boolean hasComponentChanged(T newComponent) {
+        PlayerDataComponent currentData = getComponent(newComponent.getClass());
+        return (currentData == null) || newComponent.hasChanged(currentData);
+    }
+
     public PlayerListEntry toPlayerListEntry() { return new PlayerListEntry(toGameProfile(), false); }
     public GameProfile toGameProfile() { return new GameProfile(this.playerId, getName()); }
 
     public PlayerInfoPayload setName(String name) {
         return setComponent(new PlayerBasicData(name));
-    }
-
-    public PlayerInfoPayload setPosition(Vec3d pos, RegistryKey<World> dimension) {
-        return setComponent(new PlayerPositionData(pos, dimension));
-    }
-
-    public PlayerInfoPayload setStats(float health, float xp, int hunger, int armor) {
-        return setComponent(new PlayerStatsData(health, xp, hunger, armor));
     }
 
     public PlayerInfoPayload setNewConnectionFlag(boolean isNewConnection) {

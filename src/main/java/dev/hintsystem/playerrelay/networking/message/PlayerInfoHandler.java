@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.networking.message;
 
 import dev.hintsystem.playerrelay.networking.PeerConnection;
-import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;

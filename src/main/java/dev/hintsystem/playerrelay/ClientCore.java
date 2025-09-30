@@ -1,9 +1,8 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.networking.NetworkProtocol;
-import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
-import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
-import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
+import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.*;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -23,8 +22,8 @@ public class ClientCore {
         clientInfo = new PlayerInfoPayload(player.getUuid());
         clientInfo.setName(player.getName().getString());
 
-        updateInfoPayloadPosData(player, clientInfo);
-        updateInfoPayloadGeneralData(player, clientInfo);
+        updateInfoPayloadPosData(clientInfo, player);
+        updateInfoPayloadGeneralData(clientInfo, player);
     }
 
     @Nullable
@@ -46,7 +45,7 @@ public class ClientCore {
         if (now - lastSentUdpTime > PlayerRelay.config.udpSendIntervalMs) {
             PlayerInfoPayload posPayload = new PlayerInfoPayload(client.player.getUuid());
 
-            if (updateInfoPayloadPosData(client.player, posPayload)) {
+            if (updateInfoPayloadPosData(posPayload, client.player)) {
                 lastSentUdpTime = now;
                 clientInfo.merge(posPayload);
                 PlayerRelay.getNetworkManager().broadcastMessage(posPayload.message(NetworkProtocol.UDP));
@@ -56,7 +55,7 @@ public class ClientCore {
         if (now - lastSentTcpTime > PlayerRelay.config.tcpSendIntervalMs) {
             PlayerInfoPayload infoPayload = new PlayerInfoPayload(client.player.getUuid());
 
-            if (updateInfoPayloadGeneralData(client.player, infoPayload)) {
+            if (updateInfoPayloadGeneralData(infoPayload, client.player)) {
                 lastSentTcpTime = now;
                 clientInfo.merge(infoPayload);
                 PlayerRelay.getNetworkManager().broadcastMessage(infoPayload.setNewConnectionFlag(false).message());
@@ -64,32 +63,21 @@ public class ClientCore {
         }
     }
 
-    private static boolean updateInfoPayloadPosData(ClientPlayerEntity player, PlayerInfoPayload info) {
-        double minPlayerMove = PlayerRelay.config.minPlayerMove;
+    private static boolean updateComponent(PlayerInfoPayload info, PlayerDataComponent component) {
+        boolean shouldUpdate = clientInfo.hasComponentChanged(component);
 
-        PlayerPositionData currentPosData = clientInfo.getComponent(PlayerPositionData.class);
-        boolean shouldUpdatePos = (currentPosData == null) ||
-            player.getPos().squaredDistanceTo(currentPosData.coords) >= minPlayerMove * minPlayerMove;
-
-        if (shouldUpdatePos) info.setPosition(player.getPos(), player.getWorld().getRegistryKey());
-
-        return shouldUpdatePos;
+        if (shouldUpdate) info.setComponent(component);
+        return shouldUpdate;
     }
 
-    private static boolean updateInfoPayloadGeneralData(ClientPlayerEntity player, PlayerInfoPayload info) {
-        PlayerStatsData statsData = new PlayerStatsData(
-            player.getHealth(),
-            player.experienceLevel + player.experienceProgress,
-            player.getHungerManager().getFoodLevel(),
-            player.getArmor()
-        );
+    private static boolean updateInfoPayloadPosData(PlayerInfoPayload info, ClientPlayerEntity player) {
+        return updateComponent(info, new PlayerPositionData(player.getPos()));
+    }
 
-        PlayerStatsData currentStats = clientInfo.getComponent(PlayerStatsData.class);
-        boolean statsChanged = (currentStats == null) || statsData.hasChanged(currentStats);
-
-        if (statsChanged) info.setComponent(statsData);
-
-        return statsChanged;
+    private static boolean updateInfoPayloadGeneralData(PlayerInfoPayload info, ClientPlayerEntity player) {
+        return updateComponent(info, new PlayerStatsData(player))
+            || updateComponent(info, new PlayerStatusEffectsData(player))
+            || updateComponent(info, new PlayerWorldData(player));
     }
 
     public static void onPlayerConnected(PlayerInfoPayload playerInfo) {

@@ -6,7 +6,7 @@ import dev.hintsystem.playerrelay.logging.LogEventTypes;
 import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
 import dev.hintsystem.playerrelay.networking.message.*;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
-import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 
 import net.minecraft.network.PacketByteBuf;

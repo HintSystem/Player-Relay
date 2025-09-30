@@ -4,7 +4,7 @@ import dev.hintsystem.playerrelay.gui.PlayerList;
 import dev.hintsystem.playerrelay.logging.ClientLogHandler;
 import dev.hintsystem.playerrelay.logging.ConsoleLogHandler;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
-import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class PlayerRelay implements ClientModInitializer {
     public static final String MOD_ID = "player-relay";
-    public static final int NETWORK_VERSION = 2;
+    public static final int NETWORK_VERSION = 3;
     public static final String VERSION;
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 

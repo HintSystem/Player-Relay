@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.mixin;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.payload.player.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import net.minecraft.client.network.PlayerListEntry;
 

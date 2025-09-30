@@ -46,7 +46,7 @@ public class PlayerBasicData implements PlayerDataComponent {
     }
 
     @Override
-    public PlayerDataComponent copy() {
+    public PlayerBasicData copy() {
         return new PlayerBasicData(
             this.name,
             this.nameColor
