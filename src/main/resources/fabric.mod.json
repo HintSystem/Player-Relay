@@ -15,9 +15,8 @@
 		"client": ["dev.hintsystem.playerrelay.PlayerRelay"],
         "modmenu": ["dev.hintsystem.playerrelay.mods.SupportModMenu"]
 	},
-	"mixins": [
-		"player-relay.mixins.json"
-	],
+	"mixins": ["player-relay.mixins.json"],
+    "accessWidener": "player-relay.accesswidener",
 	"depends": {
         "java": ">=21",
         "minecraft": "~1.21.8",

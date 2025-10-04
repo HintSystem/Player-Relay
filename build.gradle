@@ -61,6 +61,10 @@ dependencies {
     modImplementation "maven.modrinth:xaeros-world-map:1.39.13_Fabric_1.21.8"
 }
 
+loom {
+    accessWidenerPath = file("src/main/resources/player-relay.accesswidener")
+}
+
 processResources {
 	inputs.property "version", project.version
 

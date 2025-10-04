@@ -42,7 +42,8 @@ public class PlayerBasicData implements PlayerDataComponent {
     public boolean hasChanged(PlayerDataComponent other) {
         if (!(other instanceof PlayerBasicData otherInfo)) return true;
 
-        return !Objects.equals(this.name, otherInfo.name);
+        return !Objects.equals(this.name, otherInfo.name)
+            || !Objects.equals(this.nameColor, otherInfo.nameColor);
     }
 
     @Override

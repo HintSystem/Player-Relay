@@ -13,33 +13,31 @@ import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
 public class ClientCore {
+    public static final float tickRate = 20;
+    public static final int msPerTick = Math.round(1000 / tickRate);
+
     private static long lastSentUdpTime = 0;
     private static long lastSentTcpTime = 0;
 
     private static PlayerInfoPayload clientInfo;
 
-    public static void updateClientInfo(ClientPlayerEntity player) {
+    @Nullable
+    public static PlayerInfoPayload updateClientInfo() {
+        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        if (player == null) return clientInfo;
+
         clientInfo = new PlayerInfoPayload(player.getUuid());
         clientInfo.setName(player.getName().getString());
 
         updateInfoPayloadPosData(clientInfo, player);
         updateInfoPayloadGeneralData(clientInfo, player);
-    }
 
-    @Nullable
-    public static PlayerInfoPayload getClientInfo() { return clientInfo; }
-
-    public static void sendClientMessage(Text message) {
-        ClientPlayerEntity clientPlayer = MinecraftClient.getInstance().player;
-        if (clientPlayer == null) { return; }
-
-        clientPlayer.sendMessage(message, false);
+        return clientInfo;
     }
 
     public static void onTickEnd(MinecraftClient client) {
-        if (client.player == null) { return; }
-        if (clientInfo == null) { updateClientInfo(client.player); }
-        if (!PlayerRelay.isNetworkActive()) { return; }
+        if (client.player == null || !PlayerRelay.isNetworkActive()) { return; }
+        if (clientInfo == null) { updateClientInfo(); return; }
 
         long now = System.currentTimeMillis();
         if (now - lastSentUdpTime > PlayerRelay.config.udpSendIntervalMs) {
@@ -78,6 +76,15 @@ public class ClientCore {
         return updateComponent(info, new PlayerStatsData(player))
             || updateComponent(info, new PlayerStatusEffectsData(player))
             || updateComponent(info, new PlayerWorldData(player));
+    }
+
+    public static int ticksToMs(int ticks) { return Math.round((ticks / tickRate) * 1000); }
+
+    public static void sendClientMessage(Text message) {
+        ClientPlayerEntity clientPlayer = MinecraftClient.getInstance().player;
+        if (clientPlayer == null) { return; }
+
+        clientPlayer.sendMessage(message, false);
     }
 
     public static void onPlayerConnected(PlayerInfoPayload playerInfo) {

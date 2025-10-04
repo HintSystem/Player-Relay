@@ -408,7 +408,7 @@ public class P2PNetworkManager {
         assignUdpId(peer);
 
         // Send info about host player
-        PlayerInfoPayload clientInfo = ClientCore.getClientInfo();
+        PlayerInfoPayload clientInfo = ClientCore.updateClientInfo();
         if (clientInfo != null) { peer.sendMessage(clientInfo.setNewConnectionFlag(false).message()); }
 
         // Send info about all connected players
@@ -424,7 +424,7 @@ public class P2PNetworkManager {
             assignUdpId(peer);
 
             // Send info about client player to host
-            PlayerInfoPayload clientInfo = ClientCore.getClientInfo();
+            PlayerInfoPayload clientInfo = ClientCore.updateClientInfo();
             if (clientInfo != null) { peer.sendMessage(clientInfo.setNewConnectionFlag(true).message()); }
         });
     }

@@ -1,0 +1,261 @@
+package dev.hintsystem.playerrelay.gui;
+
+import dev.hintsystem.playerrelay.ClientCore;
+import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
+import dev.hintsystem.playerrelay.payload.player.PlayerStatusEffectsData;
+import dev.hintsystem.playerrelay.payload.player.PlayerWorldData;
+
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.PlayerSkinDrawer;
+import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.util.SkinTextures;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.util.Colors;
+import net.minecraft.util.Identifier;
+import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.ColorHelper;
+import net.minecraft.util.math.MathHelper;
+
+public class PlayerListEntry {
+    private static final Identifier ARMOR_FULL_TEXTURE = Identifier.ofVanilla("hud/armor_full");
+    private static final Identifier ARMOR_HALF_TEXTURE = Identifier.ofVanilla("hud/armor_half");
+    private static final Identifier ARMOR_EMPTY_TEXTURE = Identifier.ofVanilla("hud/armor_empty");
+    private static final Identifier XP_BACKGROUND = Identifier.ofVanilla("hud/experience_bar_background");
+    private static final Identifier XP_PROGRESS = Identifier.ofVanilla("hud/experience_bar_progress");
+
+    public static final int headSize = 24;
+    public static final int maxEffectInfoWidth = 40;
+    public static final int infoWidth = 84;
+    public static final int padding = 4;
+
+    private PlayerInfoPayload playerInfo;
+
+    private float lastHealth = 0f;
+    private long heartBlinkEndTimeMs = 0L;
+
+    public PlayerListEntry(PlayerInfoPayload playerInfo) { this.playerInfo = playerInfo; }
+
+    public void setPlayerInfo(PlayerInfoPayload playerInfo) { this.playerInfo = playerInfo; }
+
+    public PlayerInfoPayload getPlayerInfo() { return playerInfo; }
+
+    public static int getWidth() { return headSize + padding + infoWidth; }
+    public static int getHeight() { return 32; }
+
+    public void render(DrawContext context, int x, int y, RenderTickCounter tickCounter) {
+        MinecraftClient client = MinecraftClient.getInstance();
+
+        PlayerStatsData playerStats = playerInfo.getComponentOrEmpty(PlayerStatsData.class);
+        PlayerStatusEffectsData playerStatusEffects = playerInfo.getComponent(PlayerStatusEffectsData.class);
+
+        // Render player head
+        SkinTextures skin = client.getSkinProvider().getSkinTextures(playerInfo.toGameProfile());
+        PlayerSkinDrawer.draw(context, skin, x, y, headSize);
+        x += headSize + padding;
+
+        // Render player name
+        int maxNameX = x + infoWidth;
+        if (playerStatusEffects != null) {
+            maxNameX = renderStatusEffects(context, playerStatusEffects, x + infoWidth, y);
+        }
+        context.enableScissor(x, y, maxNameX, y + 9);
+        context.drawTextWithShadow(client.textRenderer, playerInfo.getName(), x, y, Colors.WHITE);
+        context.disableScissor();
+
+        y += 10;
+
+        // Render health
+        boolean shouldBlink = updateBlinkState(playerStats);
+        boolean isHalfHeart = playerStats.health < 10;
+        Identifier heartTexture = (playerStats.health > 0) ? getHeartTexture(isHalfHeart, shouldBlink) : null;
+
+        drawStat(context, getHeartTypeTexture(InGameHud.HeartType.CONTAINER, isHalfHeart, shouldBlink), heartTexture,
+            (int)Math.ceil(playerStats.health + playerStats.absorptionAmount),
+            x, y, 0xFFFF6666, StatAnchor.LEFT);
+
+        // Render armor
+        Identifier armorTexture = (playerStats.armor >= 10) ? ARMOR_FULL_TEXTURE
+            : (playerStats.armor > 0) ? ARMOR_HALF_TEXTURE
+            : ARMOR_EMPTY_TEXTURE;
+
+        drawStat(context, armorTexture, null,
+            playerStats.armor,
+            x, y, 0xFFafd8ed, StatAnchor.CENTER);
+
+        // Render food
+        int foodBlipValue = (playerStats.hunger >= 10) ? 2
+            : (playerStats.hunger > 0) ? 1
+            : 0;
+
+        drawStat(context, getFoodTexture(0), getFoodTexture(foodBlipValue),
+            playerStats.hunger,
+            x, y, 0xFFba8d4e, StatAnchor.RIGHT);
+
+        y += 12;
+
+        // Render XP bar
+        renderXpBar(context, playerStats.xp, infoWidth, x, y);
+    }
+
+    private int renderStatusEffects(DrawContext context, PlayerStatusEffectsData statusEffects, int x, int y) {
+        int startX = x;
+        int endX = startX;
+        int effectIconSize = 9;
+
+        for (PlayerStatusEffectsData.StatusEffectEntry effect : statusEffects.getActiveStatusEffects()) {
+            x -= effectIconSize;
+            if (startX - x > maxEffectInfoWidth) break;
+
+            float opacity = 1f;
+            float remainingSeconds = statusEffects.getEffectRemainingMs(effect) / 1000f;
+            if (remainingSeconds < 10f) {
+                float n = 10f - remainingSeconds;
+
+                opacity = MathHelper.clamp(remainingSeconds / 10f * 0.5f, 0.0f, 0.5f)
+                    + (float)Math.cos(remainingSeconds * (Math.PI * 4))
+                    * MathHelper.clamp(n / 10f * 0.25f, 0.0f, 0.25f);
+                opacity = MathHelper.clamp(opacity, 0.0f, 1.0f);
+            }
+
+            Identifier effectTexture = InGameHud.getEffectTexture(effect.statusEffect());
+            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, effectTexture, x, y, effectIconSize, effectIconSize, ColorHelper.getWhite(opacity));
+            endX = x;
+        }
+        return endX;
+    }
+
+    enum StatAnchor { LEFT, CENTER, RIGHT }
+
+    private void drawStat(DrawContext context,
+                          Identifier iconBase,
+                          Identifier iconOverlay,
+                          int value,
+                          int x, int y,
+                          int color,
+                          StatAnchor anchor) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        String text = (value > 99) ? "99+" : String.format("%2d", value);
+
+        int textWidth = client.textRenderer.getWidth(text);
+        int elementWidth = 9 + 2 + textWidth;
+
+        int drawX;
+        switch (anchor) {
+            case CENTER -> drawX = x + infoWidth / 2 - elementWidth / 2;
+            case RIGHT -> drawX = x + infoWidth - elementWidth;
+            default -> drawX = x;
+        }
+
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, iconBase, drawX, y, 9, 9);
+        if (iconOverlay != null) { context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, iconOverlay, drawX, y, 9, 9); }
+
+        context.drawTextWithShadow(client.textRenderer, text, drawX + 9 + 2, y + 1, color);
+    }
+
+
+    private boolean updateBlinkState(PlayerStatsData stats) {
+        float currentHealth = stats.health;
+        long now = Util.getMeasuringTimeMs();
+
+        if (currentHealth < lastHealth) {
+            heartBlinkEndTimeMs = now + 20L * ClientCore.msPerTick;
+        } else if (currentHealth > lastHealth) {
+            heartBlinkEndTimeMs = now + 10L * ClientCore.msPerTick;
+        }
+
+        lastHealth = currentHealth;
+
+        if (now < heartBlinkEndTimeMs) {
+            long remaining = heartBlinkEndTimeMs - now;
+            return (remaining / (3L * ClientCore.msPerTick)) % 2 == 1;
+        }
+        return false;
+    }
+
+    private Identifier getHeartTypeTexture(InGameHud.HeartType heartType, boolean half, boolean blinking) {
+        PlayerWorldData world = playerInfo.getComponent(PlayerWorldData.class);
+        return heartType.getTexture(
+            world != null && world.hardcore,
+            half,
+            blinking
+        );
+    }
+
+    private Identifier getHeartTexture(boolean half, boolean blinking) {
+        PlayerStatusEffectsData effects = playerInfo.getComponent(PlayerStatusEffectsData.class);
+
+        InGameHud.HeartType heartType = InGameHud.HeartType.NORMAL;
+        if (effects != null) {
+            if (effects.hasStatusEffect(StatusEffects.POISON)) {
+                heartType = InGameHud.HeartType.POISONED;
+            } else if (effects.hasStatusEffect(StatusEffects.WITHER)) {
+                heartType = InGameHud.HeartType.WITHERED;
+            } else if (effects.isFrozen) {
+                heartType = InGameHud.HeartType.FROZEN;
+            } else if (effects.hasStatusEffect(StatusEffects.ABSORPTION)) {
+                heartType = InGameHud.HeartType.ABSORBING;
+            }
+        }
+
+        return getHeartTypeTexture(heartType, half, blinking);
+    }
+
+    private Identifier getFoodTexture(int value) {
+        PlayerStatusEffectsData effects = playerInfo.getComponent(PlayerStatusEffectsData.class);
+
+        if (effects != null && effects.hasStatusEffect(StatusEffects.HUNGER)) {
+            if (value == 0) return Identifier.ofVanilla("hud/food_empty_hunger");
+            if (value == 1) return Identifier.ofVanilla("hud/food_half_hunger");
+            return Identifier.ofVanilla("hud/food_full_hunger");
+        }
+
+        if (value == 0) return Identifier.ofVanilla("hud/food_empty");
+        if (value == 1) return Identifier.ofVanilla("hud/food_half");
+        return Identifier.ofVanilla("hud/food_full");
+    }
+
+    private void renderXpBar(DrawContext context, float xp, int barWidth, int x, int y) {
+        int capWidth = 1;
+        int fillableWidth = barWidth - (capWidth * 2);
+        int progress = (int)((xp % 1) * (float)barWidth);
+
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, 182, 5, 0, 0, x, y, capWidth, 5);
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, 182, 5, capWidth, 0, x + capWidth, y, fillableWidth, 5);
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, 182, 5, 182 - capWidth, 0, x + capWidth + fillableWidth, y, capWidth, 5);
+
+        if (progress > 0) {
+            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, 182, 5, 0, 0, x, y, Math.min(progress, capWidth), 5);
+
+            if (progress > capWidth) {
+                int middleProgress = Math.min(progress - capWidth, fillableWidth);
+                context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, 182, 5, capWidth, 0, x + capWidth, y, middleProgress, 5);
+            }
+
+            if (progress >= fillableWidth) {
+                int rightCapProgress = Math.min(progress - fillableWidth, capWidth);
+                context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, 182, 5, 182 - capWidth, 0, x + capWidth + fillableWidth, y, rightCapProgress, 5);
+            }
+        }
+
+        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
+
+        String level = String.valueOf((int)xp);
+        int textXPos = x + barWidth / 2 - textRenderer.getWidth(level) / 2;
+
+        drawTextOutline(context, textRenderer, level, textXPos, y - 1, Colors.BLACK);
+        context.drawTextWithShadow(textRenderer, level, textXPos, y - 1, 0xFF5FBE18);
+    }
+
+    private void drawTextOutline(DrawContext context, TextRenderer renderer,
+                                 String text, int x, int y, int outlineColor) {
+        context.drawText(renderer, text, x - 1, y, outlineColor, false);
+        context.drawText(renderer, text, x + 1, y, outlineColor, false);
+        context.drawText(renderer, text, x, y - 1, outlineColor, false);
+        context.drawText(renderer, text, x, y + 1, outlineColor, false);
+    }
+}

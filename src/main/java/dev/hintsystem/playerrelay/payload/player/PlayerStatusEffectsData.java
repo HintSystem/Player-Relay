@@ -1,11 +1,15 @@
 package dev.hintsystem.playerrelay.payload.player;
 
+import dev.hintsystem.playerrelay.ClientCore;
+
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.*;
+
+import com.google.common.collect.Ordering;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +21,6 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     private static final int MAX_REMAINING_MS_DIF = 500;
 
     private long timestamp;
-    public float tickRate = 20;
     public boolean isFrozen;
     private final List<StatusEffectEntry> effects = new ArrayList<>();
 
@@ -29,32 +32,44 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
 
     public PlayerStatusEffectsData(PlayerEntity player) {
         this.timestamp = System.currentTimeMillis();
-        this.tickRate = player.getWorld().getTickManager().getTickRate();
         this.isFrozen = player.isFrozen();
 
-        for (StatusEffectInstance inst : player.getStatusEffects()) {
+        for (StatusEffectInstance effectInstance : Ordering.natural().reverse().sortedCopy(player.getStatusEffects())) {
+            if (effectInstance == null) continue;
             if (effects.size() >= 255) break;
 
             effects.add(new StatusEffectEntry(
-                inst.getEffectType(),
-                inst.getAmplifier(),
-                inst.getDuration()
+                effectInstance.getEffectType(),
+                effectInstance.getAmplifier(),
+                effectInstance.getDuration()
             ));
         }
     }
 
     public long getEffectRemainingMs(StatusEffectEntry effect) {
+        return getEffectRemainingMs(effect, System.currentTimeMillis());
+    }
+
+    public long getEffectRemainingMs(StatusEffectEntry effect, long currentTime) {
         if (effect.isInfinite()) return Long.MAX_VALUE;
 
-        long effectDurationMs = Math.round((effect.duration / tickRate) * 1000);
+        long effectDurationMs = ClientCore.ticksToMs(effect.duration);
         long effectEndTime = timestamp + effectDurationMs;
-        return Math.max(0, effectEndTime - System.currentTimeMillis());
+        return Math.max(0, effectEndTime - currentTime);
     }
 
     public boolean hasStatusEffect(RegistryEntry<StatusEffect> effect) {
+        long currentTime = System.currentTimeMillis();
         return effects.stream()
             .filter(entry -> entry.statusEffect().equals(effect))
-            .anyMatch(entry -> entry.isInfinite() || getEffectRemainingMs(entry) > 0);
+            .anyMatch(entry -> entry.isInfinite() || getEffectRemainingMs(entry, currentTime) > 0);
+    }
+
+    public List<StatusEffectEntry> getActiveStatusEffects() {
+        long currentTime = System.currentTimeMillis();
+        return effects.stream()
+            .filter(entry -> entry.isInfinite() || getEffectRemainingMs(entry, currentTime) > 0)
+            .toList();
     }
 
     public List<StatusEffectEntry> getAllEffects() { return new ArrayList<>(effects); }
@@ -62,7 +77,6 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     @Override
     public void write(PacketByteBuf buf) {
         buf.writeLong(timestamp);
-        buf.writeFloat(tickRate);
         buf.writeBoolean(isFrozen);
 
         buf.writeByte(effects.size()); // max 255
@@ -76,7 +90,6 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     @Override
     public void read(PacketByteBuf buf) {
         this.timestamp = buf.readLong();
-        this.tickRate = buf.readFloat();
         this.isFrozen = buf.readBoolean();
 
         effects.clear();
@@ -97,8 +110,7 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     public boolean hasChanged(PlayerDataComponent other) {
         if (!(other instanceof PlayerStatusEffectsData otherStatus)) return true;
 
-        if (this.tickRate != otherStatus.tickRate
-        || this.isFrozen != otherStatus.isFrozen) return true;
+        if (this.isFrozen != otherStatus.isFrozen) return true;
 
         if (this.effects.size() != otherStatus.effects.size()) return true;
         for (int i = 0; i < this.effects.size(); i++) {
@@ -119,7 +131,6 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     public PlayerStatusEffectsData copy() {
         PlayerStatusEffectsData copy = new PlayerStatusEffectsData();
         copy.timestamp = this.timestamp;
-        copy.tickRate = this.tickRate;
         copy.isFrozen = this.isFrozen;
         copy.effects.addAll(this.effects);
         return copy;
