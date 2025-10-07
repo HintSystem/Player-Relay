@@ -30,7 +30,7 @@ public class PlayerListEntry {
 
     public static final int headSize = 24;
     public static final int maxEffectInfoWidth = 40;
-    public static final int infoWidth = 84;
+    public static final int infoWidth = 86;
     public static final int padding = 4;
 
     private PlayerInfoPayload playerInfo;
@@ -220,25 +220,36 @@ public class PlayerListEntry {
     }
 
     private void renderXpBar(DrawContext context, float xp, int barWidth, int x, int y) {
-        int capWidth = 1;
+        int capWidth = 5;
         int fillableWidth = barWidth - (capWidth * 2);
         int progress = (int)((xp % 1) * (float)barWidth);
 
-        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, 182, 5, 0, 0, x, y, capWidth, 5);
-        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, 182, 5, capWidth, 0, x + capWidth, y, fillableWidth, 5);
-        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, 182, 5, 182 - capWidth, 0, x + capWidth + fillableWidth, y, capWidth, 5);
+        int textureWidth = 182;
+        int textureMiddleWidth = textureWidth - (capWidth * 2);
+        int textureMiddleCenter = capWidth + textureMiddleWidth / 2;
+
+        // Left cap
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, textureWidth, 5, 0, 0, x, y, capWidth, 5);
+
+        // Middle slice - centered from texture
+        int middleSrcX = textureMiddleCenter - fillableWidth / 2;
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, textureWidth, 5, middleSrcX, 0, x + capWidth, y, fillableWidth, 5);
+
+        // Right cap
+        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_BACKGROUND, textureWidth, 5, textureWidth - capWidth, 0, x + capWidth + fillableWidth, y, capWidth, 5);
 
         if (progress > 0) {
-            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, 182, 5, 0, 0, x, y, Math.min(progress, capWidth), 5);
+            context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, textureWidth, 5, 0, 0, x, y, Math.min(progress, capWidth), 5);
 
             if (progress > capWidth) {
                 int middleProgress = Math.min(progress - capWidth, fillableWidth);
-                context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, 182, 5, capWidth, 0, x + capWidth, y, middleProgress, 5);
+                int progressSrcX = textureMiddleCenter - fillableWidth / 2;
+                context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, textureWidth, 5, progressSrcX, 0, x + capWidth, y, middleProgress, 5);
             }
 
-            if (progress >= fillableWidth) {
-                int rightCapProgress = Math.min(progress - fillableWidth, capWidth);
-                context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, 182, 5, 182 - capWidth, 0, x + capWidth + fillableWidth, y, rightCapProgress, 5);
+            if (progress >= capWidth + fillableWidth) {
+                int rightCapProgress = Math.min(progress - capWidth - fillableWidth, capWidth);
+                context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, XP_PROGRESS, textureWidth, 5, textureWidth - capWidth, 0, x + capWidth + fillableWidth, y, rightCapProgress, 5);
             }
         }
 
