@@ -43,7 +43,9 @@ public class Config {
     public Color playerListbackgroundColor = new Color(0, 0, 0, 60);
 
     public boolean showTrackedPlayers = true;
-    public boolean showTrackedPlayersInOtherServers = false;
+    public boolean showTrackedPlayersFromOtherServers = false;
+
+    public boolean showPingsFromOtherServers = false;
 
     public int peerConnectionTimeout = 6000;
     public int tcpSendIntervalMs = 400;
@@ -169,15 +171,24 @@ public class Config {
                     .build())
 
                 .group(OptionGroup.createBuilder()
-                    .name(Text.literal("Xaero's minimap"))
+                    .name(Text.literal("Xaero's Minimap / WorldMap"))
                     .option(Option.<Boolean>createBuilder()
                         .name(Text.literal("Show Players"))
                         .binding(DEFAULTS.showTrackedPlayers, () -> showTrackedPlayers, val -> showTrackedPlayers = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Show Players In Other Servers"))
-                        .binding(DEFAULTS.showTrackedPlayersInOtherServers, () -> showTrackedPlayersInOtherServers, val -> showTrackedPlayersInOtherServers = val)
+                        .name(Text.literal("Show Players From Other Servers"))
+                        .binding(DEFAULTS.showTrackedPlayersFromOtherServers, () -> showTrackedPlayersFromOtherServers, val -> showTrackedPlayersFromOtherServers = val)
+                        .controller(TickBoxControllerBuilder::create)
+                        .build())
+                    .build())
+
+                .group(OptionGroup.createBuilder()
+                    .name(Text.literal("Ping Wheel"))
+                    .option(Option.<Boolean>createBuilder()
+                        .name(Text.literal("Show Pings From Other Servers"))
+                        .binding(DEFAULTS.showPingsFromOtherServers, () -> showPingsFromOtherServers, val -> showPingsFromOtherServers = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .build())

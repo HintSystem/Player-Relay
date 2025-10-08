@@ -10,6 +10,8 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
 import net.minecraft.util.Identifier;
 
+import java.util.UUID;
+
 public class SupportPingWheel implements PacketHandler {
     private static final Identifier PING_LOCATION_ID = Identifier.of("ping-wheel-s2c", "ping-location");
     private static final String PING_WHEEL_CLASS = "nx.pingwheel.common.network.PingLocationS2CPacket";
@@ -26,12 +28,10 @@ public class SupportPingWheel implements PacketHandler {
                 pingWheelAvailable = true;
                 PlayerRelay.LOGGER.info("PingWheel support enabled - compatible class found");
             } catch (ClassCastException e) {
-                pingWheelAvailable = false;
-                PlayerRelay.LOGGER.warn("PingWheel class found but does not extend CustomPayload - support disabled");
+                PlayerRelay.LOGGER.error("PingWheel class '{}' found but does not extend CustomPayload - support disabled", PING_WHEEL_CLASS);
             }
         } catch (ClassNotFoundException e) {
-            pingWheelAvailable = false;
-            PlayerRelay.LOGGER.warn("PingWheel not found - support disabled");
+            PlayerRelay.LOGGER.warn("PingWheel class '{}' not found - support disabled", PING_WHEEL_CLASS);
         }
     }
 
@@ -45,13 +45,20 @@ public class SupportPingWheel implements PacketHandler {
         if (!pingWheelAvailable) return;
 
         try {
-            CustomPayloadS2CPacket s2cPacket = new CustomPayloadS2CPacket(
-                message.toPacket(pingLocationPacketClass)
-            );
+            CustomPayload packet = message.toPacket(pingLocationPacketClass);
+
+            if (!PlayerRelay.config.showPingsFromOtherServers) {
+                UUID author = null;
+                if (packet instanceof nx.pingwheel.common.network.PingLocationS2CPacket pingPacket) {
+                    author = pingPacket.author();
+                }
+
+                if (!handler.getPlayerUuids().contains(author)) return;
+            }
 
             client.execute(() -> {
                 try {
-                    handler.onCustomPayload(s2cPacket);
+                    handler.onCustomPayload(new CustomPayloadS2CPacket(packet));
                 } catch (Exception e) {
                     PlayerRelay.LOGGER.error("Error processing Ping Wheel payload: {}", e.getMessage(), e);
                 }

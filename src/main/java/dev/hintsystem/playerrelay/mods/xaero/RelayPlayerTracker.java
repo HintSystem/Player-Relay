@@ -16,7 +16,7 @@ public class RelayPlayerTracker {
     public Iterator<PlayerInfoPayload> getTrackedPlayerIterator() {
         if (!PlayerRelay.config.showTrackedPlayers) return Collections.emptyIterator();
 
-        final Collection<UUID> serverPlayers = PlayerRelay.config.showTrackedPlayersInOtherServers
+        final Collection<UUID> serverPlayers = PlayerRelay.config.showTrackedPlayersFromOtherServers
             ? null : getServerPlayerUuids();
 
         return Iterators.filter(
