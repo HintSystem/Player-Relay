@@ -43,8 +43,7 @@ public class Config {
     public Color playerListbackgroundColor = new Color(0, 0, 0, 60);
 
     public boolean showTrackedPlayers = true;
-    public boolean showPlayersInOtherDimensions = false;
-    public boolean showPlayersInOtherServers = false;
+    public boolean showTrackedPlayersInOtherServers = false;
 
     public int peerConnectionTimeout = 6000;
     public int tcpSendIntervalMs = 400;
@@ -73,7 +72,7 @@ public class Config {
                             .append(Text.literal(" → Relay must be started manually"))
                         ))
                         .binding(DEFAULTS.autoHost, () -> autoHost, val -> autoHost = val)
-                        .controller(BooleanControllerBuilder::create)
+                        .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<String>createBuilder()
                         .name(Text.literal("Connection Address"))
@@ -127,9 +126,13 @@ public class Config {
                             .range(0.01, 1000.0))
                         .build())
                     .build())
+                .build())
+
+            .category(ConfigCategory.createBuilder()
+                .name(Text.literal("User Interface"))
 
                 .group(OptionGroup.createBuilder()
-                    .name(Text.literal("HUD Player List"))
+                    .name(Text.literal("Player List"))
                     .option(Option.<Boolean>createBuilder()
                         .name(Text.literal("Show"))
                         .binding(DEFAULTS.showPlayerList, () -> showPlayerList, val -> showPlayerList = val)
@@ -164,10 +167,25 @@ public class Config {
                             .allowAlpha(true))
                         .build())
                     .build())
+
+                .group(OptionGroup.createBuilder()
+                    .name(Text.literal("Xaero's minimap"))
+                    .option(Option.<Boolean>createBuilder()
+                        .name(Text.literal("Show Players"))
+                        .binding(DEFAULTS.showTrackedPlayers, () -> showTrackedPlayers, val -> showTrackedPlayers = val)
+                        .controller(TickBoxControllerBuilder::create)
+                        .build())
+                    .option(Option.<Boolean>createBuilder()
+                        .name(Text.literal("Show Players In Other Servers"))
+                        .binding(DEFAULTS.showTrackedPlayersInOtherServers, () -> showTrackedPlayersInOtherServers, val -> showTrackedPlayersInOtherServers = val)
+                        .controller(TickBoxControllerBuilder::create)
+                        .build())
+                    .build())
                 .build())
 
             .category(ConfigCategory.createBuilder()
                 .name(Text.literal("Advanced"))
+
                 .option(Option.<Integer>createBuilder()
                     .name(Text.literal("Connection Timeout"))
                     .description(OptionDescription.of(Text.literal(

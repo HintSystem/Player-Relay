@@ -3,6 +3,7 @@ package dev.hintsystem.playerrelay;
 import dev.hintsystem.playerrelay.gui.PlayerList;
 import dev.hintsystem.playerrelay.logging.ClientLogHandler;
 import dev.hintsystem.playerrelay.logging.ConsoleLogHandler;
+import dev.hintsystem.playerrelay.mods.xaero.MapIntegration;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
@@ -28,9 +29,12 @@ public class PlayerRelay implements ClientModInitializer {
     public static final String MOD_ID = "player-relay";
     public static final int NETWORK_VERSION = 3;
     public static final String VERSION;
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final Logger LOGGER = LoggerFactory.getLogger(PlayerRelay.class);
+
+    public static final boolean isDevelopment;
 
     static {
+        isDevelopment = FabricLoader.getInstance().isDevelopmentEnvironment();
         VERSION = FabricLoader.getInstance()
             .getModContainer(MOD_ID)
             .map(c -> c.getMetadata().getVersion().getFriendlyString())
@@ -39,6 +43,11 @@ public class PlayerRelay implements ClientModInitializer {
 
     public static Config config = Config.deserialize();
     private static P2PNetworkManager networkManager;
+
+    private void initModSupport() {
+        if (FabricLoader.getInstance().isModLoaded("xaerominimap")
+            || FabricLoader.getInstance().isModLoaded("xaeroworldmap")) { MapIntegration.init(); }
+    }
 
     @Override
     public void onInitializeClient() {
@@ -49,11 +58,12 @@ public class PlayerRelay implements ClientModInitializer {
 
         if (config.autoHost) { networkManager.startServerAsync(); }
 
-        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "before_chat"),
-            new PlayerList());
-
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> initModSupport());
         ClientTickEvents.END_CLIENT_TICK.register(ClientCore::onTickEnd);
         ClientLifecycleEvents.CLIENT_STOPPING.register(ClientCore::onStopping);
+
+        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "before_chat"),
+            new PlayerList());
 
         // Register commands
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("prelay")

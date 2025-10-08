@@ -4,7 +4,6 @@ import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 import dev.hintsystem.playerrelay.mods.SupportPingWheel;
-import dev.hintsystem.playerrelay.mods.SupportXaerosMinimap;
 import dev.hintsystem.playerrelay.networking.*;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
@@ -32,7 +31,6 @@ public class P2PMessageHandler {
         this.logger = networkManager.logger.withLocation(LogLocation.MESSAGE_HANDLER);
         this.networkManager = networkManager;
 
-        addPlayerInfoHandler(new SupportXaerosMinimap());
         addPacketHandler(new SupportPingWheel());
     }
 

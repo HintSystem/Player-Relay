@@ -2,11 +2,13 @@ package dev.hintsystem.playerrelay.payload;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
+import dev.hintsystem.playerrelay.payload.player.*;
 
 import com.mojang.authlib.GameProfile;
-import dev.hintsystem.playerrelay.payload.player.*;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.world.World;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.*;
@@ -14,6 +16,7 @@ import java.util.function.Supplier;
 
 public class PlayerInfoPayload implements IPayload {
     private static final byte FLAG_NEW_CONNECTION = 1 << 0;
+    private static final int MAX_FLAGS = 8;
     private static final int RESERVED_FLAGS = 1;
 
     private static final LinkedHashMap<Class<? extends PlayerDataComponent>, ComponentInfo<? extends PlayerDataComponent>>
@@ -35,7 +38,7 @@ public class PlayerInfoPayload implements IPayload {
 
     private static <T extends PlayerDataComponent> void registerComponent(Class<T> componentClass, Supplier<T> constructor) {
         int nextFlagPosition = COMPONENT_REGISTRY.size() + RESERVED_FLAGS;
-        if (nextFlagPosition >= 8) throw new IllegalStateException("Too many components registered (max 8 for byte flags)");
+        if (nextFlagPosition >= MAX_FLAGS) throw new IllegalStateException("Too many components registered (max " + MAX_FLAGS + " for byte flags)");
 
         byte flag = (byte) (1 << nextFlagPosition);
         ComponentInfo<T> info = new ComponentInfo<>(componentClass, constructor, flag);
@@ -47,7 +50,7 @@ public class PlayerInfoPayload implements IPayload {
     public final UUID playerId;
     private byte flags = 0;
 
-    private final Map<Byte, PlayerDataComponent> components = new HashMap<>();
+    private final PlayerDataComponent[] components = new PlayerDataComponent[MAX_FLAGS];
 
     public PlayerInfoPayload(UUID playerId) {
         this.playerId = playerId;
@@ -61,6 +64,9 @@ public class PlayerInfoPayload implements IPayload {
         read(buf);
     }
 
+    public PlayerListEntry toPlayerListEntry() { return new PlayerListEntry(toGameProfile(), false); }
+    public GameProfile toGameProfile() { return new GameProfile(this.playerId, getName()); }
+
     @Override
     public P2PMessageType getMessageType() { return P2PMessageType.PLAYER_INFO; }
 
@@ -72,10 +78,19 @@ public class PlayerInfoPayload implements IPayload {
         return (ComponentInfo<T>) info;
     }
 
+    public <T extends PlayerDataComponent> boolean hasComponent(Class<T> componentClass) {
+        byte flag = getComponentInfo(componentClass).flag;
+        return (flags & flag) != 0;
+    }
+
+    private int getComponentIndex(byte flag) { return Integer.numberOfTrailingZeros(flag & 0xFF); }
+
     @Nullable
     public <T extends PlayerDataComponent> T getComponent(Class<T> componentClass) {
-        PlayerDataComponent c = components.get(getComponentInfo(componentClass).flag);
-        return componentClass.cast(c);
+        byte flag = getComponentInfo(componentClass).flag;
+        int index = getComponentIndex(flag);
+
+        return componentClass.cast(components[index]);
     }
 
     public <T extends PlayerDataComponent> T getComponentOrEmpty(Class<T> componentClass) {
@@ -87,7 +102,9 @@ public class PlayerInfoPayload implements IPayload {
         ComponentInfo<?> info = COMPONENT_REGISTRY.get(component.getClass());
         if (info == null) throw new IllegalArgumentException("Unknown component class: " + component.getClass());
 
-        components.put(info.flag, component);
+        int index = getComponentIndex(info.flag);
+        components[index] = component;
+
         this.flags |= info.flag;
         return this;
     }
@@ -96,9 +113,6 @@ public class PlayerInfoPayload implements IPayload {
         PlayerDataComponent currentData = getComponent(newComponent.getClass());
         return (currentData == null) || newComponent.hasChanged(currentData);
     }
-
-    public PlayerListEntry toPlayerListEntry() { return new PlayerListEntry(toGameProfile(), false); }
-    public GameProfile toGameProfile() { return new GameProfile(this.playerId, getName()); }
 
     public PlayerInfoPayload setName(String name) {
         return setComponent(new PlayerBasicData(name));
@@ -116,16 +130,25 @@ public class PlayerInfoPayload implements IPayload {
 
     public String getName() {
         PlayerBasicData basicData = getComponent(PlayerBasicData.class);
-        return (basicData == null) ? this.playerId.toString() : basicData.name;
+        return (basicData != null) ? basicData.name : this.playerId.toString();
+    }
+
+    @Nullable
+    public RegistryKey<World> getDimension() {
+        PlayerWorldData worldData = getComponent(PlayerWorldData.class);
+        return (worldData != null) ? worldData.dimension : null;
     }
 
     public boolean hasAnyInfo() { return flags != 0; }
     public boolean hasNewConnectionFlag() { return (flags & FLAG_NEW_CONNECTION) != 0; }
 
     public void merge(PlayerInfoPayload other) {
-        for (Map.Entry<Byte, PlayerDataComponent> entry : other.components.entrySet()) {
-            this.flags |= entry.getKey();
-            this.components.put(entry.getKey(), entry.getValue().copy());
+        this.flags |= other.flags;
+
+        for (int i = 0; i < MAX_FLAGS; i++) {
+            if (other.components[i] != null) {
+                this.components[i] = other.components[i].copy();
+            }
         }
     }
 
@@ -136,22 +159,43 @@ public class PlayerInfoPayload implements IPayload {
 
         for (ComponentInfo<?> info : COMPONENT_REGISTRY.values()) {
             if ((flags & info.flag) != 0) {
-                PlayerDataComponent component = components.get(info.flag);
+                int index = getComponentIndex(info.flag);
+                PlayerDataComponent component = components[index];
                 if (component != null) component.write(buf);
             }
         }
     }
 
     public void read(PacketByteBuf buf) {
+        int beforePayload = buf.readerIndex();
+
         buf.readUuid(); // playerId already read in constructor
         this.flags = buf.readByte();
 
+        StringBuilder componentLog = PlayerRelay.isDevelopment ? new StringBuilder() : null;
+
         for (ComponentInfo<?> info : COMPONENT_REGISTRY.values()) {
             if ((flags & info.flag) != 0) {
+                int beforeComponent = componentLog != null ? buf.readerIndex() : 0;
+
                 PlayerDataComponent component = info.constructor.get();
                 component.read(buf);
-                components.put(info.flag, component);
+
+                int index = getComponentIndex(info.flag);
+                components[index] = component;
+
+                if (componentLog != null) {
+                    int bytesRead = buf.readerIndex() - beforeComponent;
+                    componentLog.append("\n  ")
+                        .append(info.componentClass.getSimpleName())
+                        .append(" (").append(bytesRead).append(" bytes)");
+                }
             }
+        }
+
+        if (componentLog != null) {
+            PlayerRelay.LOGGER.info("PlayerInfoPayload of {} bytes:{}",
+                buf.readerIndex() - beforePayload, componentLog);
         }
     }
 

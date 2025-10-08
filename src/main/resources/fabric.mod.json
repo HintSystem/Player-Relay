@@ -24,5 +24,8 @@
 		"fabric-api": "*",
         "yet_another_config_lib_v3": "*"
 	},
-	"suggests": {}
+    "recommends": {
+      "xaerominimap": "*",
+      "xaeroworldmap": "*"
+    }
 }

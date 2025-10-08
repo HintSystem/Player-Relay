@@ -4,8 +4,7 @@
     "compatibilityLevel": "JAVA_21",
     "client": [
         "ClientPlayNetworkHandlerMixin",
-        "PingWheelNetworkMixin",
-        "SyncedRenderedPlayerTrackerMixin"
+        "PingWheelNetworkMixin"
     ],
     "injectors": {
         "defaultRequire": 1
