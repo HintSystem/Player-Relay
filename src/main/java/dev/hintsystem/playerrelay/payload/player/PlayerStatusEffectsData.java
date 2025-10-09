@@ -5,7 +5,7 @@ import dev.hintsystem.playerrelay.ClientCore;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.*;
 
@@ -75,7 +75,7 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     public List<StatusEffectEntry> getAllEffects() { return new ArrayList<>(effects); }
 
     @Override
-    public void write(PacketByteBuf buf) {
+    public void write(RegistryByteBuf buf) {
         buf.writeLong(timestamp);
         buf.writeBoolean(isFrozen);
 
@@ -88,7 +88,7 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     }
 
     @Override
-    public void read(PacketByteBuf buf) {
+    public void read(RegistryByteBuf buf) {
         this.timestamp = buf.readLong();
         this.isFrozen = buf.readBoolean();
 

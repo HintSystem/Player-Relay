@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.payload.player;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 
 public class PlayerStatsData implements PlayerDataComponent {
     public float health, absorptionAmount, xp;
@@ -18,7 +18,7 @@ public class PlayerStatsData implements PlayerDataComponent {
     }
 
     @Override
-    public void write(PacketByteBuf buf) {
+    public void write(RegistryByteBuf buf) {
         buf.writeFloat(health);
         buf.writeFloat(absorptionAmount);
         buf.writeFloat(xp);
@@ -27,7 +27,7 @@ public class PlayerStatsData implements PlayerDataComponent {
     }
 
     @Override
-    public void read(PacketByteBuf buf) {
+    public void read(RegistryByteBuf buf) {
         this.health = buf.readFloat();
         this.absorptionAmount = buf.readFloat();
         this.xp = buf.readFloat();

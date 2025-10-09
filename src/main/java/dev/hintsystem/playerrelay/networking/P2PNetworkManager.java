@@ -391,6 +391,7 @@ public class P2PNetworkManager {
     }
 
     public P2PMessageHandler getMessageHandler() { return messageHandler; }
+    public Set<PeerConnection> getConnectedPeers() { return connectedPeers; }
     public DatagramSocket getUdpSocket() { return udpSocket; }
 
     @Nullable

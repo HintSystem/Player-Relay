@@ -3,7 +3,7 @@ package dev.hintsystem.playerrelay.payload;
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 
 public class RelayVersionPayload implements IPayload {
     public int networkVersion = PlayerRelay.NETWORK_VERSION;
@@ -11,7 +11,7 @@ public class RelayVersionPayload implements IPayload {
 
     public RelayVersionPayload() {}
 
-    public RelayVersionPayload(PacketByteBuf buf) {
+    public RelayVersionPayload(RegistryByteBuf buf) {
         this.networkVersion = buf.readInt();
         this.modVersion = buf.readString();
     }
@@ -20,7 +20,7 @@ public class RelayVersionPayload implements IPayload {
     public P2PMessageType getMessageType() { return P2PMessageType.RELAY_VERSION; }
 
     @Override
-    public void write(PacketByteBuf buf) {
+    public void write(RegistryByteBuf buf) {
         buf.writeInt(networkVersion);
         buf.writeString(modVersion);
     }

@@ -1,10 +1,10 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 
 public interface PlayerDataComponent {
-    void write(PacketByteBuf buf);
-    void read(PacketByteBuf buf);
+    void write(RegistryByteBuf buf);
+    void read(RegistryByteBuf buf);
     boolean hasChanged(PlayerDataComponent other);
     PlayerDataComponent copy();
 }

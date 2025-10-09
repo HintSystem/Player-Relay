@@ -4,19 +4,18 @@ import dev.hintsystem.playerrelay.networking.NetworkProtocol;
 import dev.hintsystem.playerrelay.networking.message.P2PMessage;
 import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 
-import net.minecraft.network.PacketByteBuf;
-
 import io.netty.buffer.Unpooled;
+import net.minecraft.network.RegistryByteBuf;
 
 public interface IPayload {
     P2PMessageType getMessageType();
 
     default NetworkProtocol getPreferredProtocol() { return NetworkProtocol.TCP; }
 
-    void write(PacketByteBuf buf);
+    void write(RegistryByteBuf buf);
 
     default byte[] bytes() {
-        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), Utility.getRegistryManager());
         write(buf);
 
         byte[] data = new byte[buf.readableBytes()];

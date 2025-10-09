@@ -3,7 +3,7 @@ package dev.hintsystem.playerrelay.payload;
 import dev.hintsystem.playerrelay.networking.NetworkProtocol;
 import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 
 public class UdpPingPayload implements IPayload {
     private final boolean isResponse;
@@ -16,7 +16,7 @@ public class UdpPingPayload implements IPayload {
         this.sequenceNumber = sequenceNumber;
     }
 
-    public UdpPingPayload(PacketByteBuf buf) {
+    public UdpPingPayload(RegistryByteBuf buf) {
         this.isResponse = buf.readBoolean();
         this.timestamp = buf.readLong();
         this.sequenceNumber = buf.readInt();
@@ -29,7 +29,7 @@ public class UdpPingPayload implements IPayload {
     public NetworkProtocol getPreferredProtocol() { return isResponse ? NetworkProtocol.TCP : NetworkProtocol.UDP; }
 
     @Override
-    public void write(PacketByteBuf buf) {
+    public void write(RegistryByteBuf buf) {
         buf.writeBoolean(isResponse);
         buf.writeLong(timestamp);
         buf.writeInt(sequenceNumber);

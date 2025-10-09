@@ -18,6 +18,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class P2PMessageHandler {
     public final PlayerRelayLogger logger;
@@ -26,6 +29,8 @@ public class P2PMessageHandler {
 
     private final List<PlayerInfoHandler> playerInfoHandlers = new ArrayList<>();
     private final List<PacketHandler> packetHandlers = new ArrayList<>();
+
+    private final ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingInventoryRequests = new ConcurrentHashMap<>();
 
     public P2PMessageHandler(P2PNetworkManager networkManager) {
         this.logger = networkManager.logger.withLocation(LogLocation.MESSAGE_HANDLER);
@@ -67,6 +72,21 @@ public class P2PMessageHandler {
                     handlePlayerInfo(infoPayload, sender);
                     break;
 
+                case PLAYER_INVENTORY:
+                    PlayerInventoryPayload inventory = new PlayerInventoryPayload(message.getPayloadByteBuf());
+
+                    if (inventory.isRequest()) {
+                        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+
+                        if (player != null && player.getUuid().equals(inventory.playerId)) {
+                            sender.sendMessage(PlayerInventoryPayload.respond(player).message());
+                        }
+                    } else {
+                        CompletableFuture<PlayerInventoryPayload> future = pendingInventoryRequests.remove(inventory.playerId);
+                        if (future != null) { future.complete(inventory); }
+                    }
+                    break;
+
                 case PLAYER_DISCONNECT:
                     UUID playerId = message.getPayloadByteBuf().readUuid();
 
@@ -89,6 +109,21 @@ public class P2PMessageHandler {
         } catch (Exception e) {
             logger.error().message("Error handling message of type '{}': {}", message.getType(), e.getMessage(), e).build();
         }
+    }
+
+    public CompletableFuture<PlayerInventoryPayload> requestInventory(UUID playerId) {
+        CompletableFuture<PlayerInventoryPayload> future = new CompletableFuture<>();
+        pendingInventoryRequests.put(playerId, future);
+
+        future.whenComplete((r, e) -> pendingInventoryRequests.remove(playerId));
+
+        for (PeerConnection peer : networkManager.getConnectedPeers()) {
+            if (peer.announcedPlayers.contains(playerId)) {
+                peer.sendMessage(PlayerInventoryPayload.request(playerId).message());
+            }
+        }
+
+        return future;
     }
 
     @Nullable

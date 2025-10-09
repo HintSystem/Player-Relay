@@ -6,7 +6,7 @@ import dev.hintsystem.playerrelay.payload.player.*;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.world.World;
 
@@ -56,7 +56,7 @@ public class PlayerInfoPayload implements IPayload {
         this.playerId = playerId;
     }
 
-    public PlayerInfoPayload(PacketByteBuf buf) {
+    public PlayerInfoPayload(RegistryByteBuf buf) {
         int idx = buf.readerIndex();
         this.playerId = buf.readUuid();
         buf.readerIndex(idx);
@@ -153,7 +153,7 @@ public class PlayerInfoPayload implements IPayload {
     }
 
     @Override
-    public void write(PacketByteBuf buf) {
+    public void write(RegistryByteBuf buf) {
         buf.writeUuid(playerId);
         buf.writeByte(flags);
 
@@ -166,7 +166,7 @@ public class PlayerInfoPayload implements IPayload {
         }
     }
 
-    public void read(PacketByteBuf buf) {
+    public void read(RegistryByteBuf buf) {
         int beforePayload = buf.readerIndex();
 
         buf.readUuid(); // playerId already read in constructor

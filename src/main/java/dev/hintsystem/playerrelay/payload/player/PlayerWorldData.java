@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.payload.player;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.world.Difficulty;
@@ -26,14 +26,14 @@ public class PlayerWorldData implements PlayerDataComponent {
     }
 
     @Override
-    public void write(PacketByteBuf buf) {
+    public void write(RegistryByteBuf buf) {
         buf.writeIdentifier(dimension.getValue());
         Difficulty.PACKET_CODEC.encode(buf, difficulty);
         buf.writeBoolean(hardcore);
     }
 
     @Override
-    public void read(PacketByteBuf buf) {
+    public void read(RegistryByteBuf buf) {
         this.dimension = RegistryKey.of(RegistryKeys.WORLD, buf.readIdentifier());
         this.difficulty = Difficulty.PACKET_CODEC.decode(buf);
         this.hardcore = buf.readBoolean();

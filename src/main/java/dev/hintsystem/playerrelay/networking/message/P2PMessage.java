@@ -1,7 +1,10 @@
 package dev.hintsystem.playerrelay.networking.message;
 
 import dev.hintsystem.playerrelay.networking.NetworkProtocol;
+import dev.hintsystem.playerrelay.payload.Utility;
+
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 
@@ -129,7 +132,7 @@ public class P2PMessage {
     public UUID getId() { return messageId; }
     public Identifier getPacketId() { return packetId; }
     public byte[] getPayload() { return payload; }
-    public PacketByteBuf getPayloadByteBuf() { return new PacketByteBuf(Unpooled.wrappedBuffer(payload)); }
+    public RegistryByteBuf getPayloadByteBuf() { return new RegistryByteBuf(Unpooled.wrappedBuffer(payload), Utility.getRegistryManager()); }
 
     // Reconstruct packet instance from this message
     public CustomPayload toPacket(Class<? extends CustomPayload> classType) {

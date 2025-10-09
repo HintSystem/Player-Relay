@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.payload.player;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.util.math.Vec3d;
 
 public class PlayerPositionData implements PlayerDataComponent {
@@ -14,14 +14,14 @@ public class PlayerPositionData implements PlayerDataComponent {
     }
 
     @Override
-    public void write(PacketByteBuf buf) {
+    public void write(RegistryByteBuf buf) {
         buf.writeFloat((float) coords.x);
         buf.writeFloat((float) coords.y);
         buf.writeFloat((float) coords.z);
     }
 
     @Override
-    public void read(PacketByteBuf buf) {
+    public void read(RegistryByteBuf buf) {
         this.coords = new Vec3d(buf.readFloat(), buf.readFloat(), buf.readFloat());
     }
 
