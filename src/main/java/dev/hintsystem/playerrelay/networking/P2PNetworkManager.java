@@ -58,7 +58,7 @@ public class P2PNetworkManager {
     public void startServer() throws Exception {
         if (running.get()) { throw new Exception("Server already running"); }
 
-        if (upnpManager == null) {
+        if (upnpManager == null && PlayerRelay.config.UPnPEnabled) {
             try {
                 upnpManager = new UPnPManager(logger);
             } catch (Exception e) {
@@ -82,7 +82,7 @@ public class P2PNetworkManager {
         }
 
         // Open port via UPnP if available
-        if (upnpManager != null) {
+        if (upnpManager != null && PlayerRelay.config.UPnPEnabled) {
             boolean tcpOpened = upnpManager.openPort(serverPort, "TCP");
             boolean udpOpened = upnpManager.openPort(serverPort, "UDP");
             if (tcpOpened && udpOpened) {

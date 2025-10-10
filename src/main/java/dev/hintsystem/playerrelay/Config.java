@@ -30,6 +30,7 @@ public class Config {
     public static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve(PlayerRelay.MOD_ID + ".json");
 
     public boolean autoHost = false;
+    public boolean UPnPEnabled = true;
     public String connectionAddress = "external";
     public int defaultHostingPort = P2PNetworkManager.DEFAULT_PORT;
 
@@ -40,6 +41,7 @@ public class Config {
     public int playerListMaxPlayers = 8;
     public AnchorPoint playerListAnchorPoint = AnchorPoint.TOP_RIGHT;
     public Vector2i playerListOffset = new Vector2i(5, 5);
+    public int playerListInfoWidth = 86;
     public Color playerListbackgroundColor = new Color(0, 0, 0, 60);
 
     public boolean showTrackedPlayers = true;
@@ -74,6 +76,20 @@ public class Config {
                             .append(Text.literal(" → Relay must be started manually"))
                         ))
                         .binding(DEFAULTS.autoHost, () -> autoHost, val -> autoHost = val)
+                        .controller(TickBoxControllerBuilder::create)
+                        .build())
+                    .option(Option.<Boolean>createBuilder()
+                        .name(Text.literal("UPnP Enabled"))
+                        .description(OptionDescription.of(Text.literal("Automatically configure port forwarding using UPnP.\n\n")
+                            .append(Text.literal("• ").formatted(Formatting.GRAY))
+                            .append(Text.literal("Enabled").formatted(Formatting.GREEN, Formatting.BOLD))
+                            .append(Text.literal(" → Automatically opens the hosting port on your router\n"))
+                            .append(Text.literal("• ").formatted(Formatting.GRAY))
+                            .append(Text.literal("Disabled").formatted(Formatting.RED))
+                            .append(Text.literal(" → You must manually forward the port\n\n"))
+                            .append(Text.literal("⚠ Requires a UPnP-capable router").formatted(Formatting.GOLD))
+                        ))
+                        .binding(DEFAULTS.UPnPEnabled, () -> UPnPEnabled, val -> UPnPEnabled = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<String>createBuilder()
@@ -162,6 +178,11 @@ public class Config {
                         .binding(DEFAULTS.playerListOffset.y, () -> playerListOffset.y, val -> playerListOffset.y = val)
                         .controller(IntegerFieldControllerBuilder::create)
                         .build())
+                    .option(Option.<Integer>createBuilder()
+                        .name(Text.literal("Info Width"))
+                        .binding(DEFAULTS.playerListInfoWidth, () -> playerListInfoWidth, val -> playerListInfoWidth = val)
+                        .controller(IntegerFieldControllerBuilder::create)
+                        .build())
                     .option(Option.<Color>createBuilder()
                         .name(Text.literal("Background Color"))
                         .binding(DEFAULTS.playerListbackgroundColor, () -> playerListbackgroundColor, val -> playerListbackgroundColor = val)
@@ -174,11 +195,22 @@ public class Config {
                     .name(Text.literal("Xaero's Minimap / WorldMap"))
                     .option(Option.<Boolean>createBuilder()
                         .name(Text.literal("Show Players"))
+                        .description(OptionDescription.of(Text.literal("Display connected relay players on Xaero's Minimap and World Map as tracked players.\n\n")))
                         .binding(DEFAULTS.showTrackedPlayers, () -> showTrackedPlayers, val -> showTrackedPlayers = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Boolean>createBuilder()
                         .name(Text.literal("Show Players From Other Servers"))
+                        .description(OptionDescription.of(Text.literal("Show relay players even when they're on different servers.\n\n")
+                            .append(Text.literal("• ").formatted(Formatting.GRAY))
+                            .append(Text.literal("Enabled").formatted(Formatting.GREEN, Formatting.BOLD))
+                            .append(Text.literal(" → See all relay players across servers\n"))
+                            .append(Text.literal("• ").formatted(Formatting.GRAY))
+                            .append(Text.literal("Disabled").formatted(Formatting.RED))
+                            .append(Text.literal(" → Only show players on your current server\n\n"))
+                            .append(Text.literal("Note: ").formatted(Formatting.GRAY))
+                            .append(Text.literal("Requires 'Show Players' to be enabled").formatted(Formatting.YELLOW))
+                        ))
                         .binding(DEFAULTS.showTrackedPlayersFromOtherServers, () -> showTrackedPlayersFromOtherServers, val -> showTrackedPlayersFromOtherServers = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
@@ -188,6 +220,14 @@ public class Config {
                     .name(Text.literal("Ping Wheel"))
                     .option(Option.<Boolean>createBuilder()
                         .name(Text.literal("Show Pings From Other Servers"))
+                        .description(OptionDescription.of(Text.literal("Display ping markers from relay players on different servers.\n\n")
+                            .append(Text.literal("• ").formatted(Formatting.GRAY))
+                            .append(Text.literal("Enabled").formatted(Formatting.GREEN, Formatting.BOLD))
+                            .append(Text.literal(" → See pings across all servers\n"))
+                            .append(Text.literal("• ").formatted(Formatting.GRAY))
+                            .append(Text.literal("Disabled").formatted(Formatting.RED))
+                            .append(Text.literal(" → Only see pings on your current server\n\n"))
+                        ))
                         .binding(DEFAULTS.showPingsFromOtherServers, () -> showPingsFromOtherServers, val -> showPingsFromOtherServers = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())

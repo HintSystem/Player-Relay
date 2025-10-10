@@ -28,11 +28,6 @@ public class PlayerListEntry {
     private static final Identifier XP_BACKGROUND = Identifier.ofVanilla("hud/experience_bar_background");
     private static final Identifier XP_PROGRESS = Identifier.ofVanilla("hud/experience_bar_progress");
 
-    public static final int headSize = 24;
-    public static final int maxEffectInfoWidth = 40;
-    public static final int infoWidth = 86;
-    public static final int padding = 4;
-
     private PlayerInfoPayload playerInfo;
 
     private float lastHealth = 0f;
@@ -44,10 +39,12 @@ public class PlayerListEntry {
 
     public PlayerInfoPayload getPlayerInfo() { return playerInfo; }
 
-    public static int getWidth() { return headSize + padding + infoWidth; }
-    public static int getHeight() { return 32; }
+    public record Dimensions(int headSize, int maxEffectInfoWidth, int infoWidth, int padding) {
+        public int getWidth() { return headSize + padding + infoWidth; }
+        public int getHeight() { return 28; }
+    }
 
-    public void render(DrawContext context, int x, int y, RenderTickCounter tickCounter) {
+    public void render(DrawContext context, int x, int y, Dimensions dims) {
         MinecraftClient client = MinecraftClient.getInstance();
 
         PlayerStatsData playerStats = playerInfo.getComponentOrEmpty(PlayerStatsData.class);
@@ -55,13 +52,13 @@ public class PlayerListEntry {
 
         // Render player head
         SkinTextures skin = client.getSkinProvider().getSkinTextures(playerInfo.toGameProfile());
-        PlayerSkinDrawer.draw(context, skin, x, y, headSize);
-        x += headSize + padding;
+        PlayerSkinDrawer.draw(context, skin, x, y, dims.headSize);
+        x += dims.headSize + dims.padding;
 
         // Render player name
-        int maxNameX = x + infoWidth;
+        int maxNameX = x + dims.infoWidth;
         if (playerStatusEffects != null) {
-            maxNameX = renderStatusEffects(context, playerStatusEffects, x + infoWidth, y);
+            maxNameX = renderStatusEffects(context, playerStatusEffects, x + dims.infoWidth, y, dims);
         }
         context.enableScissor(x, y, maxNameX, y + 9);
         context.drawTextWithShadow(client.textRenderer, playerInfo.getName(), x, y, Colors.WHITE);
@@ -76,7 +73,7 @@ public class PlayerListEntry {
 
         drawStat(context, getHeartTypeTexture(InGameHud.HeartType.CONTAINER, isHalfHeart, shouldBlink), heartTexture,
             (int)Math.ceil(playerStats.health + playerStats.absorptionAmount),
-            x, y, 0xFFFF6666, StatAnchor.LEFT);
+            x, y, 0xFFFF6666, StatAnchor.LEFT, dims);
 
         // Render armor
         Identifier armorTexture = (playerStats.armor >= 10) ? ARMOR_FULL_TEXTURE
@@ -85,7 +82,7 @@ public class PlayerListEntry {
 
         drawStat(context, armorTexture, null,
             playerStats.armor,
-            x, y, 0xFFafd8ed, StatAnchor.CENTER);
+            x, y, 0xFFafd8ed, StatAnchor.CENTER, dims);
 
         // Render food
         int foodBlipValue = (playerStats.hunger >= 10) ? 2
@@ -94,22 +91,22 @@ public class PlayerListEntry {
 
         drawStat(context, getFoodTexture(0), getFoodTexture(foodBlipValue),
             playerStats.hunger,
-            x, y, 0xFFba8d4e, StatAnchor.RIGHT);
+            x, y, 0xFFba8d4e, StatAnchor.RIGHT, dims);
 
         y += 12;
 
         // Render XP bar
-        renderXpBar(context, playerStats.xp, infoWidth, x, y);
+        renderXpBar(context, playerStats.xp, dims.infoWidth, x, y);
     }
 
-    private int renderStatusEffects(DrawContext context, PlayerStatusEffectsData statusEffects, int x, int y) {
+    private int renderStatusEffects(DrawContext context, PlayerStatusEffectsData statusEffects, int x, int y, Dimensions dims) {
         int startX = x;
         int endX = startX;
         int effectIconSize = 9;
 
         for (PlayerStatusEffectsData.StatusEffectEntry effect : statusEffects.getActiveStatusEffects()) {
             x -= effectIconSize;
-            if (startX - x > maxEffectInfoWidth) break;
+            if (startX - x > dims.maxEffectInfoWidth) break;
 
             float opacity = 1f;
             float remainingSeconds = statusEffects.getEffectRemainingMs(effect) / 1000f;
@@ -137,7 +134,8 @@ public class PlayerListEntry {
                           int value,
                           int x, int y,
                           int color,
-                          StatAnchor anchor) {
+                          StatAnchor anchor,
+                          Dimensions dims) {
         MinecraftClient client = MinecraftClient.getInstance();
         String text = (value > 99) ? "99+" : String.format("%2d", value);
 
@@ -146,8 +144,8 @@ public class PlayerListEntry {
 
         int drawX;
         switch (anchor) {
-            case CENTER -> drawX = x + infoWidth / 2 - elementWidth / 2;
-            case RIGHT -> drawX = x + infoWidth - elementWidth;
+            case CENTER -> drawX = x + dims.infoWidth / 2 - elementWidth / 2;
+            case RIGHT -> drawX = x + dims.infoWidth - elementWidth;
             default -> drawX = x;
         }
 

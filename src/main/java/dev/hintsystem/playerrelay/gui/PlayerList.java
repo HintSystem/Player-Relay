@@ -16,7 +16,8 @@ import java.util.UUID;
 public class PlayerList implements HudElement {
     private final Map<UUID, PlayerListEntry> entries = new LinkedHashMap<>();
 
-    public static final int entryPadding = 5;
+    public static final int entryGap = 5;
+    public static final int backgroundPadding = 4;
 
     public void render(DrawContext context, RenderTickCounter tickCounter) {
         Map<UUID, PlayerInfoPayload> connectedPlayers = PlayerRelay.getNetworkManager().connectedPlayers;
@@ -27,12 +28,14 @@ public class PlayerList implements HudElement {
 
         updateEntries(connectedPlayers);
 
-        int entryWidth = PlayerListEntry.getWidth() + PlayerListEntry.padding;
-        int entryHeight = PlayerListEntry.getHeight() + PlayerListEntry.padding;
+        PlayerListEntry.Dimensions dims = new PlayerListEntry.Dimensions(24, 40, PlayerRelay.config.playerListInfoWidth, backgroundPadding);
 
-        int totalHeight = (entryHeight + entryPadding)
+        int entryWidth = dims.getWidth() + backgroundPadding*2;
+        int entryHeight = dims.getHeight() + backgroundPadding*2;
+
+        int totalHeight = (entryHeight + entryGap)
             * Math.min(entries.size(), PlayerRelay.config.playerListMaxPlayers)
-            - entryPadding;
+            - entryGap;
 
         AnchorPoint anchor = PlayerRelay.config.playerListAnchorPoint;
         Vector2i offset = PlayerRelay.config.playerListOffset;
@@ -50,13 +53,13 @@ public class PlayerList implements HudElement {
 
             context.fill(
                 x, y,
-                x + entryWidth + PlayerListEntry.padding, y + entryHeight,
+                x + entryWidth, y + entryHeight,
                 PlayerRelay.config.playerListbackgroundColor.getRGB()
             );
 
-            entry.render(context, x + PlayerListEntry.padding, y + PlayerListEntry.padding, tickCounter);
+            entry.render(context, x + backgroundPadding, y + backgroundPadding, dims);
 
-            y += entryHeight + entryPadding;
+            y += entryHeight + entryGap;
         }
     }
 

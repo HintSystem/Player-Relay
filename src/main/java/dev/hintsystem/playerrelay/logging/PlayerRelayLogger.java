@@ -61,6 +61,11 @@ public class PlayerRelayLogger {
         }
     }
 
+    public void debug(String message) { new LoggingBuilder(this, Level.DEBUG).message(message).build(); }
+    public void info(String message) { new LoggingBuilder(this, Level.INFO).message(message).build(); }
+    public void warn(String message) { new LoggingBuilder(this, Level.WARN).message(message).build(); }
+    public void error(String message) { new LoggingBuilder(this, Level.ERROR).message(message).build(); }
+
     public LoggingBuilder debug() { return new LoggingBuilder(this, Level.DEBUG); }
     public LoggingBuilder info() { return new LoggingBuilder(this, Level.INFO); }
     public LoggingBuilder warn() { return new LoggingBuilder(this, Level.WARN); }
