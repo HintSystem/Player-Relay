@@ -116,7 +116,7 @@ public class RemoteInventoryScreen extends Screen {
         }
 
         // Render player name
-        context.drawText(this.textRenderer, "Viewing: " + player.getName(), x + 8, y + 6, Colors.DARK_GRAY, false);
+        context.drawText(this.textRenderer, "Viewing: " + player.getName(), x + 8, y + 7, Colors.DARK_GRAY, false);
 
         // Render hotbar
         for (int j = 0; j < 9; j++) {

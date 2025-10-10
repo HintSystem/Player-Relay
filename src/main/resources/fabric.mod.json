@@ -1,31 +1,43 @@
 {
-	"schemaVersion": 1,
-	"id": "player-relay",
-	"version": "${version}",
-	"name": "Player Relay",
-	"description": "Broadcast and view your friends’ position, health, and XP with simple client-side relays",
-	"authors": ["HintSystem"],
-	"contact": {
-		"sources": "https://github.com/HintSystem/Player-Relay"
-	},
-	"license": "AGPL-3.0",
-	"icon": "assets/player-relay/icon.png",
-	"environment": "client",
-	"entrypoints": {
-		"client": ["dev.hintsystem.playerrelay.PlayerRelay"],
-        "modmenu": ["dev.hintsystem.playerrelay.mods.SupportModMenu"]
-	},
-	"mixins": ["player-relay.mixins.json"],
+    "schemaVersion": 1,
+    "id": "player-relay",
+    "version": "${version}",
+    "name": "Player Relay",
+    "description": "Broadcast and view your friends’ position, health, and XP with simple client-side relays",
+    "authors": [
+        "HintSystem"
+    ],
+    "contact": {
+        "issues": "https://github.com/HintSystem/Player-Relay/issues",
+        "sources": "https://github.com/HintSystem/Player-Relay"
+    },
+    "license": "AGPL-3.0-only",
+    "icon": "assets/player-relay/icon.png",
+    "environment": "client",
+    "entrypoints": {
+        "client": [
+            "dev.hintsystem.playerrelay.PlayerRelay"
+        ],
+        "modmenu": [
+            "dev.hintsystem.playerrelay.mods.SupportModMenu"
+        ]
+    },
+    "mixins": [
+        "player-relay.mixins.json"
+    ],
     "accessWidener": "player-relay.accesswidener",
-	"depends": {
+    "depends": {
         "java": ">=21",
         "minecraft": "~1.21.8",
-		"fabricloader": ">=0.17.0",
-		"fabric-api": "*",
+        "fabricloader": ">=0.17.0",
+        "fabric-api": "*",
         "yet_another_config_lib_v3": "*"
-	},
+    },
     "recommends": {
-      "xaerominimap": "*",
-      "xaeroworldmap": "*"
+        "xaerominimap": "*",
+        "xaeroworldmap": "*"
+    },
+    "suggests": {
+        "ping-wheel": "~1.11.0"
     }
 }

@@ -1,6 +1,7 @@
 package dev.hintsystem.playerrelay.networking.message;
 
 import dev.hintsystem.playerrelay.ClientCore;
+import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 import dev.hintsystem.playerrelay.mods.SupportPingWheel;
@@ -160,7 +161,8 @@ public class P2PMessageHandler {
         }
 
         Identifier packetId = message.getPacketId();
-        logger.info().message("Received packet: {}", packetId).build();
+
+        if (PlayerRelay.isDevelopment) logger.info().message("Received packet: {}", packetId).build();
 
         boolean packetUsed = false;
         for (PacketHandler packetHandler : packetHandlers) {
