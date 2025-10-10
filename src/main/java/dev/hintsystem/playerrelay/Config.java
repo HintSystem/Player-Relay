@@ -48,7 +48,7 @@ public class Config {
     public boolean showPingsFromOtherServers = false;
 
     public int peerConnectionTimeout = 6000;
-    public int tcpSendIntervalMs = 400;
+    public int tcpSendIntervalMs = 500;
     public int udpSendIntervalMs = 100;
     public int udpPingIntervalMs = 5000;
     public int udpPingTimeoutMs = 2000;

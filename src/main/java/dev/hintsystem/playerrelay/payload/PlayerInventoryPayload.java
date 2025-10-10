@@ -3,6 +3,7 @@ package dev.hintsystem.playerrelay.payload;
 import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
 
@@ -23,7 +24,7 @@ public class PlayerInventoryPayload implements IPayload {
         this.isRequest = false;
         this.playerId = player.getUuid();
 
-        for (int i = 0; i < 36; i++) {
+        for (int i = 0; i < PlayerInventory.MAIN_SIZE; i++) {
             ItemStack stack = player.getInventory().getStack(i);
 
             this.inventoryItems.add(stack.copy());

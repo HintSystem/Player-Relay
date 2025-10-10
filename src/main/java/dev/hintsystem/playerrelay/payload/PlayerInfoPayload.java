@@ -27,6 +27,7 @@ public class PlayerInfoPayload implements IPayload {
         registerComponent(PlayerWorldData.class, PlayerWorldData::new);
         registerComponent(PlayerPositionData.class, PlayerPositionData::new);
         registerComponent(PlayerStatsData.class, PlayerStatsData::new);
+        registerComponent(PlayerEquipmentData.class, PlayerEquipmentData::new);
         registerComponent(PlayerStatusEffectsData.class, PlayerStatusEffectsData::new);
     }
 
@@ -99,13 +100,11 @@ public class PlayerInfoPayload implements IPayload {
     }
 
     public <T extends PlayerDataComponent> PlayerInfoPayload setComponent(T component) {
-        ComponentInfo<?> info = COMPONENT_REGISTRY.get(component.getClass());
-        if (info == null) throw new IllegalArgumentException("Unknown component class: " + component.getClass());
-
-        int index = getComponentIndex(info.flag);
+        byte flag = getComponentInfo(component.getClass()).flag;
+        int index = getComponentIndex(flag);
         components[index] = component;
 
-        this.flags |= info.flag;
+        this.flags |= flag;
         return this;
     }
 
