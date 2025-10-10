@@ -11,7 +11,6 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.PlayerSkinDrawer;
 import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.util.Colors;
@@ -72,7 +71,7 @@ public class PlayerListEntry {
         Identifier heartTexture = (playerStats.health > 0) ? getHeartTexture(isHalfHeart, shouldBlink) : null;
 
         drawStat(context, getHeartTypeTexture(InGameHud.HeartType.CONTAINER, isHalfHeart, shouldBlink), heartTexture,
-            (int)Math.ceil(playerStats.health + playerStats.absorptionAmount),
+            (int) Math.ceil(playerStats.health + playerStats.absorptionAmount),
             x, y, 0xFFFF6666, StatAnchor.LEFT, dims);
 
         // Render armor
@@ -160,9 +159,13 @@ public class PlayerListEntry {
         float currentHealth = stats.health;
         long now = Util.getMeasuringTimeMs();
 
-        if (currentHealth < lastHealth) {
+        // Check if we crossed an integer boundary (new heart gained/lost)
+        int lastHeartLevel = (int) Math.ceil(lastHealth);
+        int currentHeartLevel = (int) Math.ceil(currentHealth);
+
+        if (currentHeartLevel < lastHeartLevel) {
             heartBlinkEndTimeMs = now + 20L * ClientCore.msPerTick;
-        } else if (currentHealth > lastHealth) {
+        } else if (currentHeartLevel > lastHeartLevel) {
             heartBlinkEndTimeMs = now + 10L * ClientCore.msPerTick;
         }
 
