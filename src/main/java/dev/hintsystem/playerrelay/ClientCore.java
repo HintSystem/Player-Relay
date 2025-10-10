@@ -20,6 +20,7 @@ public class ClientCore {
     private static long lastSentTcpTime = 0;
 
     private static PlayerInfoPayload clientInfo;
+    private static PlayerInfoPayload pendingTcpPayload = null;
 
     @Nullable
     public static PlayerInfoPayload updateClientInfo() {
@@ -40,6 +41,7 @@ public class ClientCore {
         if (clientInfo == null) { updateClientInfo(); return; }
 
         long now = System.currentTimeMillis();
+
         if (now - lastSentUdpTime > PlayerRelay.config.udpSendIntervalMs) {
             PlayerInfoPayload posPayload = new PlayerInfoPayload(client.player.getUuid());
 
@@ -51,21 +53,22 @@ public class ClientCore {
         }
 
         if (now - lastSentTcpTime > PlayerRelay.config.tcpSendIntervalMs) {
-            PlayerInfoPayload infoPayload = new PlayerInfoPayload(client.player.getUuid());
+            if (pendingTcpPayload == null) pendingTcpPayload = new PlayerInfoPayload(client.player.getUuid());
 
-            if (updateInfoPayloadGeneralData(infoPayload, client.player)) {
+            if (updateInfoPayloadGeneralData(pendingTcpPayload, client.player)) {
                 lastSentTcpTime = now;
-                clientInfo.merge(infoPayload);
-                PlayerRelay.getNetworkManager().broadcastMessage(infoPayload.setNewConnectionFlag(false).message());
+                clientInfo.merge(pendingTcpPayload);
+                PlayerRelay.getNetworkManager().broadcastMessage(pendingTcpPayload.setNewConnectionFlag(false).message());
+                pendingTcpPayload = null;
             }
         }
     }
 
     private static boolean updateComponent(PlayerInfoPayload info, PlayerDataComponent component) {
-        boolean shouldUpdate = clientInfo.hasComponentChanged(component);
+        boolean hasChanged = clientInfo.hasComponentChanged(component);
 
-        if (shouldUpdate) info.setComponent(component);
-        return shouldUpdate;
+        if (hasChanged) info.setComponent(component);
+        return hasChanged;
     }
 
     private static boolean updateInfoPayloadPosData(PlayerInfoPayload info, ClientPlayerEntity player) {
@@ -73,9 +76,10 @@ public class ClientCore {
     }
 
     private static boolean updateInfoPayloadGeneralData(PlayerInfoPayload info, ClientPlayerEntity player) {
-        return updateComponent(info, new PlayerStatsData(player))
-            || updateComponent(info, new PlayerStatusEffectsData(player))
-            || updateComponent(info, new PlayerWorldData(player));
+        return updateComponent(info, new PlayerWorldData(player)) // Use bitwise OR to prevent short-circuit
+            | updateComponent(info, new PlayerStatsData(player))
+            | updateComponent(info, new PlayerEquipmentData(player))
+            | updateComponent(info, new PlayerStatusEffectsData(player));
     }
 
     public static int ticksToMs(int ticks) { return Math.round((ticks / tickRate) * 1000); }
