@@ -19,7 +19,6 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class P2PNetworkManager {
     public final PlayerRelayLogger logger = new PlayerRelayLogger(LogLocation.NETWORK_MANAGER);
@@ -410,11 +409,15 @@ public class P2PNetworkManager {
 
         // Send info about host player
         PlayerInfoPayload clientInfo = ClientCore.updateClientInfo();
-        if (clientInfo != null) { peer.sendMessage(clientInfo.setNewConnectionFlag(false).message()); }
+        if (clientInfo != null) {
+            clientInfo.setFlag(PlayerInfoPayload.FLAGS.NEW_CONNECTION, false);
+            peer.sendMessage(clientInfo.message());
+        }
 
         // Send info about all connected players
-        for (PlayerInfoPayload player : connectedPlayers.values()) {
-            peer.sendMessage(player.setNewConnectionFlag(false).message());
+        for (PlayerInfoPayload playerInfo : connectedPlayers.values()) {
+            playerInfo.setFlag(PlayerInfoPayload.FLAGS.NEW_CONNECTION, false);
+            peer.sendMessage(playerInfo.message());
         }
     }
 
@@ -426,7 +429,10 @@ public class P2PNetworkManager {
 
             // Send info about client player to host
             PlayerInfoPayload clientInfo = ClientCore.updateClientInfo();
-            if (clientInfo != null) { peer.sendMessage(clientInfo.setNewConnectionFlag(true).message()); }
+            if (clientInfo != null) {
+                clientInfo.setFlag(PlayerInfoPayload.FLAGS.NEW_CONNECTION, true);
+                peer.sendMessage(clientInfo.message());
+            }
         });
     }
 

@@ -15,10 +15,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Supplier;
 
-public class PlayerInfoPayload implements IPayload {
-    private static final byte FLAG_NEW_CONNECTION = 1 << 0;
+public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
+    implements IPayload {
+    public enum FLAGS { NEW_CONNECTION, AFK }
+
     private static final int MAX_FLAGS = 8;
-    private static final int RESERVED_FLAGS = 1;
+    private static final int RESERVED_FLAGS = FLAGS.values().length;
 
     private static final LinkedHashMap<Class<? extends PlayerDataComponent>, ComponentInfo<? extends PlayerDataComponent>>
         COMPONENT_REGISTRY = new LinkedHashMap<>();
@@ -48,10 +50,8 @@ public class PlayerInfoPayload implements IPayload {
         COMPONENT_REGISTRY.put(componentClass, info);
     }
 
-    
-    public final UUID playerId;
-    private byte flags = 0;
 
+    public final UUID playerId;
     private final PlayerDataComponent[] components = new PlayerDataComponent[MAX_FLAGS];
 
     public PlayerInfoPayload(UUID playerId) {
@@ -124,16 +124,6 @@ public class PlayerInfoPayload implements IPayload {
         return setComponent(new PlayerBasicData(name));
     }
 
-    public PlayerInfoPayload setNewConnectionFlag(boolean isNewConnection) {
-        if (isNewConnection) {
-            this.flags |= FLAG_NEW_CONNECTION;
-        } else {
-            this.flags &= ~FLAG_NEW_CONNECTION;
-        }
-
-        return this;
-    }
-
     public String getName() {
         PlayerBasicData basicData = getComponent(PlayerBasicData.class);
         return (basicData != null) ? basicData.name : this.playerId.toString();
@@ -144,9 +134,6 @@ public class PlayerInfoPayload implements IPayload {
         PlayerWorldData worldData = getComponent(PlayerWorldData.class);
         return (worldData != null) ? worldData.dimension : null;
     }
-
-    public boolean hasAnyInfo() { return flags != 0; }
-    public boolean hasNewConnectionFlag() { return (flags & FLAG_NEW_CONNECTION) != 0; }
 
     public void merge(PlayerInfoPayload other) {
         this.flags |= other.flags;
@@ -161,7 +148,7 @@ public class PlayerInfoPayload implements IPayload {
     @Override
     public void write(RegistryByteBuf buf) {
         buf.writeUuid(playerId);
-        buf.writeByte(flags);
+        writeFlags(buf, 1);
 
         for (ComponentInfo<?> info : COMPONENT_REGISTRY.values()) {
             if ((flags & info.flag) != 0) {
@@ -176,7 +163,7 @@ public class PlayerInfoPayload implements IPayload {
         int beforePayload = buf.readerIndex();
 
         buf.readUuid(); // playerId already read in constructor
-        this.flags = buf.readByte();
+        readFlags(buf, 1);
 
         StringBuilder componentLog = PlayerRelay.isDevelopment ? new StringBuilder() : null;
 

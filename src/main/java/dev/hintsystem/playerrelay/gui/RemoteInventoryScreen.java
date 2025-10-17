@@ -72,11 +72,6 @@ public class RemoteInventoryScreen extends Screen {
         this.playerEntity = new AbstractClientPlayerEntity(clientWorld, playerPayload.toGameProfile()) {};
     }
 
-    @Override
-    protected void init() {
-        super.init();
-    }
-
     private void updatePlayerEntityEquipment(PlayerEquipmentData equipmentData) {
         if (prevEquipment != null && !prevEquipment.hasChanged(equipmentData)) return;
 

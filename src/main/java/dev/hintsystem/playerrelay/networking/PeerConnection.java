@@ -39,7 +39,7 @@ public class PeerConnection implements Runnable {
     private final ScheduledExecutorService healthCheckExecutor = Executors.newSingleThreadScheduledExecutor();
     private int consecutiveFailedUdpPings = 0;
 
-    public Set<UUID> announcedPlayers = ConcurrentHashMap.newKeySet();
+    public final Set<UUID> announcedPlayers = ConcurrentHashMap.newKeySet();
 
     public PeerConnection(Socket socket, P2PNetworkManager manager) throws IOException {
         this.logger = manager.logger.withLocation(LogLocation.PEER_CONNECTION);

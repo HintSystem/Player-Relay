@@ -2,6 +2,7 @@ package dev.hintsystem.playerrelay.payload.player;
 
 import dev.hintsystem.playerrelay.ClientCore;
 
+import dev.hintsystem.playerrelay.payload.FlagHolder;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
@@ -16,12 +17,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class PlayerStatusEffectsData implements PlayerDataComponent {
+public class PlayerStatusEffectsData extends FlagHolder<PlayerStatusEffectsData.FLAGS>
+    implements PlayerDataComponent {
     // Maximum difference in remaining milliseconds before considering an effect duration "changed"
     private static final int MAX_REMAINING_MS_DIF = 500;
 
+    public enum FLAGS { FROZEN, ON_FIRE }
+
     private long timestamp;
-    public boolean isFrozen;
     private final List<StatusEffectEntry> effects = new ArrayList<>();
 
     public record StatusEffectEntry(RegistryEntry<StatusEffect> statusEffect, int amplifier, int duration) {
@@ -32,7 +35,8 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
 
     public PlayerStatusEffectsData(PlayerEntity player) {
         this.timestamp = System.currentTimeMillis();
-        this.isFrozen = player.isFrozen();
+        setFlag(FLAGS.FROZEN, player.isFrozen());
+        setFlag(FLAGS.ON_FIRE, player.isOnFire());
 
         for (StatusEffectInstance effectInstance : Ordering.natural().reverse().sortedCopy(player.getStatusEffects())) {
             if (effectInstance == null) continue;
@@ -45,6 +49,9 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
             ));
         }
     }
+
+    public boolean isFrozen() { return hasFlag(FLAGS.FROZEN); }
+    public boolean isOnFire() { return hasFlag(FLAGS.ON_FIRE); }
 
     public long getEffectRemainingMs(StatusEffectEntry effect) {
         return getEffectRemainingMs(effect, System.currentTimeMillis());
@@ -77,7 +84,7 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     @Override
     public void write(RegistryByteBuf buf) {
         buf.writeLong(timestamp);
-        buf.writeBoolean(isFrozen);
+        writeFlags(buf, 1);
 
         buf.writeByte(effects.size()); // max 255
         for (StatusEffectEntry e : effects) {
@@ -90,7 +97,7 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     @Override
     public void read(RegistryByteBuf buf) {
         this.timestamp = buf.readLong();
-        this.isFrozen = buf.readBoolean();
+        readFlags(buf, 1);
 
         effects.clear();
         int count = buf.readUnsignedByte();
@@ -110,7 +117,7 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     public boolean hasChanged(PlayerDataComponent other) {
         if (!(other instanceof PlayerStatusEffectsData otherStatus)) return true;
 
-        if (this.isFrozen != otherStatus.isFrozen) return true;
+        if (!equalsFlags(otherStatus)) return true;
 
         if (this.effects.size() != otherStatus.effects.size()) return true;
         for (int i = 0; i < this.effects.size(); i++) {
@@ -131,7 +138,7 @@ public class PlayerStatusEffectsData implements PlayerDataComponent {
     public PlayerStatusEffectsData copy() {
         PlayerStatusEffectsData copy = new PlayerStatusEffectsData();
         copy.timestamp = this.timestamp;
-        copy.isFrozen = this.isFrozen;
+        copy.setFlags(this.getFlags());
         copy.effects.addAll(this.effects);
         return copy;
     }

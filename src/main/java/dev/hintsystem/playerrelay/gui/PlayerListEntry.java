@@ -24,8 +24,6 @@ import net.minecraft.util.math.MathHelper;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
-
 public class PlayerListEntry {
     private static final Identifier ARMOR_FULL_TEXTURE = Identifier.ofVanilla("hud/armor_full");
     private static final Identifier ARMOR_HALF_TEXTURE = Identifier.ofVanilla("hud/armor_half");
@@ -337,7 +335,7 @@ public class PlayerListEntry {
                 heartType = InGameHud.HeartType.POISONED;
             } else if (effects.hasStatusEffect(StatusEffects.WITHER)) {
                 heartType = InGameHud.HeartType.WITHERED;
-            } else if (effects.isFrozen) {
+            } else if (effects.isFrozen()) {
                 heartType = InGameHud.HeartType.FROZEN;
             } else if (effects.hasStatusEffect(StatusEffects.ABSORPTION)) {
                 heartType = InGameHud.HeartType.ABSORBING;

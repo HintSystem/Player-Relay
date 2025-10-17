@@ -37,7 +37,9 @@ public class ClientCore {
     }
 
     public static void onTickEnd(MinecraftClient client) {
-        if (client.player == null || !PlayerRelay.isNetworkActive()) { return; }
+        if (!PlayerRelay.isNetworkActive()) return;
+
+        if (client.player == null) return;
         if (clientInfo == null) { updateClientInfo(); return; }
 
         long now = System.currentTimeMillis();
@@ -58,7 +60,7 @@ public class ClientCore {
             if (updateInfoPayloadGeneralData(pendingTcpPayload, client.player)) {
                 lastSentTcpTime = now;
                 clientInfo.merge(pendingTcpPayload);
-                PlayerRelay.getNetworkManager().broadcastMessage(pendingTcpPayload.setNewConnectionFlag(false).message());
+                PlayerRelay.getNetworkManager().broadcastMessage(pendingTcpPayload.message());
                 pendingTcpPayload = null;
             }
         }

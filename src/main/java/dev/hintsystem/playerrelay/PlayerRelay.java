@@ -10,10 +10,10 @@ import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.text.*;
 import net.minecraft.util.Identifier;
 
 import org.slf4j.Logger;
@@ -26,6 +26,7 @@ public class PlayerRelay implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(PlayerRelay.class);
 
     public static final boolean isDevelopment;
+    public static long lastInputTime;
 
     static {
         isDevelopment = FabricLoader.getInstance().isDevelopmentEnvironment();

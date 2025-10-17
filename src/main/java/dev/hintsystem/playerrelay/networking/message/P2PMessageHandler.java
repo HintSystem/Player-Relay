@@ -8,7 +8,6 @@ import dev.hintsystem.playerrelay.mods.SupportPingWheel;
 import dev.hintsystem.playerrelay.networking.*;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
-import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import net.minecraft.util.Identifier;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -142,7 +141,7 @@ public class P2PMessageHandler {
             existingPlayerInfo.merge(infoPayload);
         }
 
-        if (infoPayload.hasNewConnectionFlag()
+        if (infoPayload.hasFlag(PlayerInfoPayload.FLAGS.NEW_CONNECTION)
             && infoPayload.getComponent(PlayerBasicData.class) != null) {
             ClientCore.onPlayerConnected(infoPayload);
         }

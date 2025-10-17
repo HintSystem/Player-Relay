@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public class PlayerInventoryPayload implements IPayload {
     private boolean isRequest = true;
-    public UUID playerId;
+    public final UUID playerId;
     public List<ItemStack> inventoryItems = new ArrayList<>();
 
     public PlayerInventoryPayload(UUID playerId) { this.playerId = playerId; }
