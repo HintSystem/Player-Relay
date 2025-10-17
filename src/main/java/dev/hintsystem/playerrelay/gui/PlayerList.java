@@ -4,6 +4,7 @@ import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 
@@ -17,7 +18,11 @@ public class PlayerList implements HudElement {
     private final Map<UUID, PlayerListEntry> entries = new LinkedHashMap<>();
 
     public static final int entryGap = 5;
-    public static final int backgroundPadding = 4;
+    public static final int backgroundPadding = 3;
+
+    public void onClientTickEnd(MinecraftClient client) {
+        for (PlayerListEntry entry : entries.values()) entry.tick();
+    }
 
     public void render(DrawContext context, RenderTickCounter tickCounter) {
         Map<UUID, PlayerInfoPayload> connectedPlayers = PlayerRelay.getNetworkManager().connectedPlayers;
@@ -28,17 +33,21 @@ public class PlayerList implements HudElement {
 
         updateEntries(connectedPlayers);
 
-        PlayerListEntry.Dimensions dims = new PlayerListEntry.Dimensions(24, 40, PlayerRelay.config.playerListInfoWidth, backgroundPadding);
+        AnchorPoint anchor = PlayerRelay.config.playerListAnchorPoint;
+        Vector2i offset = PlayerRelay.config.playerListOffset;
+        PlayerListEntry.Config entryConfig = new PlayerListEntry.Config.Builder()
+            .infoWidth(PlayerRelay.config.playerListInfoWidth)
+            .padding(backgroundPadding)
+            .playerIconType(PlayerRelay.config.playerListIconType)
+            .anchorPoint(anchor).build();
 
-        int entryWidth = dims.getWidth() + backgroundPadding*2;
-        int entryHeight = dims.getHeight() + backgroundPadding*2;
+        int entryWidth = entryConfig.getWidth() + backgroundPadding*2;
+        int entryHeight = entryConfig.getHeight() + backgroundPadding*2;
 
         int totalHeight = (entryHeight + entryGap)
             * Math.min(entries.size(), PlayerRelay.config.playerListMaxPlayers)
             - entryGap;
 
-        AnchorPoint anchor = PlayerRelay.config.playerListAnchorPoint;
-        Vector2i offset = PlayerRelay.config.playerListOffset;
         int xOffset = (anchor.x == 1) ? -offset.x : offset.x;
         int yOffset = (anchor.y == 1) ? -offset.y : offset.y;
 
@@ -57,7 +66,8 @@ public class PlayerList implements HudElement {
                 PlayerRelay.config.playerListbackgroundColor.getRGB()
             );
 
-            entry.render(context, x + backgroundPadding, y + backgroundPadding, dims);
+            entry.config = entryConfig;
+            entry.render(context, x + backgroundPadding, y + backgroundPadding, tickCounter);
 
             y += entryHeight + entryGap;
         }
@@ -75,7 +85,7 @@ public class PlayerList implements HudElement {
                 entry = new PlayerListEntry(playerInfo);
                 entries.put(playerId, entry);
             } else {
-                entry.setPlayerInfo(playerInfo);
+                entry.playerInfo = playerInfo;
             }
         }
     }

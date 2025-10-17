@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class PlayerRelay implements ClientModInitializer {
     public static final String MOD_ID = "player-relay";
-    public static final int NETWORK_VERSION = 3;
+    public static final int NETWORK_VERSION = 4;
     public static final String VERSION;
     public static final Logger LOGGER = LoggerFactory.getLogger(PlayerRelay.class);
 
@@ -56,8 +56,9 @@ public class PlayerRelay implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(ClientCore::onTickEnd);
         ClientLifecycleEvents.CLIENT_STOPPING.register(ClientCore::onStopping);
 
-        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "before_chat"),
-            new PlayerList());
+        PlayerList playerList = new PlayerList();
+        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "before_chat"), playerList);
+        ClientTickEvents.END_CLIENT_TICK.register(playerList::onClientTickEnd);
 
         new PlayerRelayCommands(networkManager).register();
     }

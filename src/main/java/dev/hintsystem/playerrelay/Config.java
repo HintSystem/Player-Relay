@@ -1,6 +1,7 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.gui.AnchorPoint;
+import dev.hintsystem.playerrelay.gui.PlayerListEntry;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 
 import dev.isxander.yacl3.api.*;
@@ -39,6 +40,7 @@ public class Config {
 
     public boolean showPlayerList = true;
     public int playerListMaxPlayers = 8;
+    public PlayerListEntry.PlayerIconType playerListIconType = PlayerListEntry.PlayerIconType.PLAYER_MODEL;
     public AnchorPoint playerListAnchorPoint = AnchorPoint.TOP_RIGHT;
     public Vector2i playerListOffset = new Vector2i(5, 5);
     public int playerListInfoWidth = 86;
@@ -161,6 +163,12 @@ public class Config {
                         .binding(DEFAULTS.playerListMaxPlayers, () -> playerListMaxPlayers, val -> playerListMaxPlayers = val)
                         .controller(opt -> IntegerFieldControllerBuilder.create(opt)
                             .range(1, 20))
+                        .build())
+                    .option(Option.<PlayerListEntry.PlayerIconType>createBuilder()
+                        .name(Text.literal("Player Icon Type"))
+                        .binding(DEFAULTS.playerListIconType, () -> playerListIconType, val -> playerListIconType = val)
+                        .controller(opt -> EnumControllerBuilder.create(opt)
+                            .enumClass(PlayerListEntry.PlayerIconType.class))
                         .build())
                     .option(Option.<AnchorPoint>createBuilder()
                         .name(Text.literal("Anchor Point"))

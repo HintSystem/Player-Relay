@@ -72,7 +72,7 @@ public class ClientCore {
     }
 
     private static boolean updateInfoPayloadPosData(PlayerInfoPayload info, ClientPlayerEntity player) {
-        return updateComponent(info, new PlayerPositionData(player.getPos()));
+        return updateComponent(info, new PlayerPositionData(player));
     }
 
     private static boolean updateInfoPayloadGeneralData(PlayerInfoPayload info, ClientPlayerEntity player) {

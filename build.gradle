@@ -55,10 +55,10 @@ dependencies {
     modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 
-    modImplementation "maven.modrinth:ping-wheel:1.11.0-fabric,1.21.8"
+    modImplementation "maven.modrinth:ping-wheel:${project.pingwheel_version}"
 
-    modImplementation "maven.modrinth:xaeros-minimap:25.2.12_Fabric_1.21.8"
-    modImplementation "maven.modrinth:xaeros-world-map:1.39.13_Fabric_1.21.8"
+    modImplementation "maven.modrinth:xaeros-minimap:${project.xaerosminimap_version}"
+    modImplementation "maven.modrinth:xaeros-world-map:${project.xaerosworldmap_version}"
 }
 
 loom {
@@ -106,9 +106,11 @@ publishing {
 
 publishMods {
     file = remapJar.archiveFile
+    additionalFiles.from(remapSourcesJar.archiveFile)
+
     changelog = file("CHANGELOG.md").text
-    type = BETA
     modLoaders.add("fabric")
+    type = BETA
 
     modrinth {
         accessToken = project.findProperty("MODRINTH_API_KEY") ?: providers.environmentVariable("MODRINTH_API_KEY")
@@ -118,8 +120,8 @@ publishMods {
         requires("fabric-api")
         requires("yacl")
         optional("modmenu")
-        optional("ping-wheel")
         optional("xaeros-minimap")
         optional("xaeros-world-map")
+        optional("ping-wheel")
     }
 }

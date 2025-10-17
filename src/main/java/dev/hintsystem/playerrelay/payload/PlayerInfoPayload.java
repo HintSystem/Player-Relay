@@ -6,6 +6,7 @@ import dev.hintsystem.playerrelay.payload.player.*;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.world.World;
@@ -63,6 +64,12 @@ public class PlayerInfoPayload implements IPayload {
         buf.readerIndex(idx);
 
         read(buf);
+    }
+
+    public void applyToPlayer(PlayerEntity player) {
+        for (PlayerDataComponent component : components) {
+            if (component != null) component.applyToPlayer(player);
+        }
     }
 
     public PlayerListEntry toPlayerListEntry() { return new PlayerListEntry(toGameProfile(), false); }

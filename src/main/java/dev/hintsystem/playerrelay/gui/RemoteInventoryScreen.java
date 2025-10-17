@@ -81,7 +81,8 @@ public class RemoteInventoryScreen extends Screen {
         if (prevEquipment != null && !prevEquipment.hasChanged(equipmentData)) return;
 
         this.prevEquipment = equipmentData.copy();
-        equipmentData.forEach(playerEntity::equipStack);
+        equipmentData.applyToPlayer(playerEntity);
+
     }
 
     @Override

@@ -51,6 +51,13 @@ public class PlayerEquipmentData implements PlayerDataComponent {
     }
 
     @Override
+    public void applyToPlayer(PlayerEntity player) {
+        for (int i = 0; i < EQUIPMENT_SLOT_ORDER.length; i++) {
+            player.equipStack(EQUIPMENT_SLOT_ORDER[i], equipment.get(i));
+        }
+    }
+
+    @Override
     public void write(RegistryByteBuf buf) {
         for (int i = 0; i < EQUIPMENT_SLOT_ORDER.length; i++) {
             ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, equipment.get(i));

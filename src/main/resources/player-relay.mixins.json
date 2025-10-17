@@ -4,12 +4,14 @@
     "compatibilityLevel": "JAVA_21",
     "client": [
         "ClientPlayNetworkHandlerMixin",
-        "PingWheelNetworkMixin"
+        "PingWheelNetworkMixin",
+        "EntityAccessor",
+        "LivingEntityInvoker"
     ],
     "injectors": {
         "defaultRequire": 1
     },
     "overwrites": {
         "requireAnnotations": true
-	}
+    }
 }
