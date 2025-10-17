@@ -124,6 +124,8 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
         return setComponent(new PlayerBasicData(name));
     }
 
+    public boolean isAfk() { return hasFlag(FLAGS.AFK); }
+
     public String getName() {
         PlayerBasicData basicData = getComponent(PlayerBasicData.class);
         return (basicData != null) ? basicData.name : this.playerId.toString();
@@ -136,7 +138,13 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
     }
 
     public void merge(PlayerInfoPayload other) {
-        this.flags |= other.flags;
+        byte reservedMask = (byte) ((1 << RESERVED_FLAGS) - 1);
+
+        // Clear reserved flags and replace with other's
+        this.flags = (byte) ((this.flags & ~reservedMask) | (other.flags & reservedMask));
+
+        // Combine component flags
+        this.flags |= (other.flags & ~reservedMask);
 
         for (int i = 0; i < MAX_FLAGS; i++) {
             if (other.components[i] != null) {

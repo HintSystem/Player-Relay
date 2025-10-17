@@ -191,7 +191,7 @@ public class PlayerListEntry {
 
     enum IconOverlayState {
         NONE,
-        AFK("AFK", Colors.WHITE, ColorHelper.withAlpha(0.2f, Colors.GRAY), ColorHelper.withAlpha(0.2f, Colors.GRAY)),
+        AFK("AFK", Colors.WHITE, ColorHelper.withAlpha(0.65f, Colors.DARK_GRAY), 0),
         DEAD("DEAD", Colors.RED, ColorHelper.withAlpha(0.2f, Colors.RED), ColorHelper.withAlpha(0.2f, Colors.RED));
 
         public final String statusText;
@@ -211,8 +211,10 @@ public class PlayerListEntry {
         }
 
         public static IconOverlayState getState(PlayerInfoPayload infoPayload) {
+            if (infoPayload.isAfk()) return AFK;
+
             PlayerStatsData statsData = infoPayload.getComponent(PlayerStatsData.class);
-            if (statsData != null && statsData.health <= 0.0f) { return DEAD; }
+            if (statsData != null && statsData.health <= 0.0f) return DEAD;
             return NONE;
         }
     }

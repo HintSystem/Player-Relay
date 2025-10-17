@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.mixin;
+package dev.hintsystem.playerrelay.mixin.minecraft;
 
 import net.minecraft.entity.LivingEntity;
 

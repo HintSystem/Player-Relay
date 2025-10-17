@@ -38,14 +38,12 @@ public class ClientCore {
 
     public static void onTickEnd(MinecraftClient client) {
         if (!PlayerRelay.isNetworkActive()) return;
-
-        if (client.player == null) return;
         if (clientInfo == null) { updateClientInfo(); return; }
 
         long now = System.currentTimeMillis();
 
-        if (now - lastSentUdpTime > PlayerRelay.config.udpSendIntervalMs) {
-            PlayerInfoPayload posPayload = new PlayerInfoPayload(client.player.getUuid());
+        if (client.player != null && now - lastSentUdpTime > PlayerRelay.config.udpSendIntervalMs) {
+            PlayerInfoPayload posPayload = new PlayerInfoPayload(clientInfo.playerId);
 
             if (updateInfoPayloadPosData(posPayload, client.player)) {
                 lastSentUdpTime = now;
@@ -55,9 +53,12 @@ public class ClientCore {
         }
 
         if (now - lastSentTcpTime > PlayerRelay.config.tcpSendIntervalMs) {
-            if (pendingTcpPayload == null) pendingTcpPayload = new PlayerInfoPayload(client.player.getUuid());
+            if (pendingTcpPayload == null) pendingTcpPayload = new PlayerInfoPayload(clientInfo.playerId);
 
-            if (updateInfoPayloadGeneralData(pendingTcpPayload, client.player)) {
+            boolean updated = (client.player != null) && updateInfoPayloadGeneralData(pendingTcpPayload, client.player);
+            updated |= updateInfoPayloadClientData(pendingTcpPayload);
+
+            if (updated) {
                 lastSentTcpTime = now;
                 clientInfo.merge(pendingTcpPayload);
                 PlayerRelay.getNetworkManager().broadcastMessage(pendingTcpPayload.message());
@@ -70,6 +71,14 @@ public class ClientCore {
         boolean hasChanged = clientInfo.hasComponentChanged(component);
 
         if (hasChanged) info.setComponent(component);
+        return hasChanged;
+    }
+
+    private static boolean updateInfoPayloadClientData(PlayerInfoPayload info) {
+        boolean isAfk = PlayerRelay.isClientAfk();
+        boolean hasChanged = clientInfo.isAfk() != isAfk;
+
+        info.setFlag(PlayerInfoPayload.FLAGS.AFK, isAfk);
         return hasChanged;
     }
 

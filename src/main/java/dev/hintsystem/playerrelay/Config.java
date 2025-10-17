@@ -36,6 +36,7 @@ public class Config {
     public int defaultHostingPort = P2PNetworkManager.DEFAULT_PORT;
 
     public String autoConnectAddress = "";
+    public int afkTimeout = 2 * 60 * 1000;
     public double minPlayerMove = 0.2;
 
     public boolean showPlayerList = true;
@@ -132,6 +133,15 @@ public class Config {
 //                        .binding(DEFAULTS.autoConnectAddress, () -> autoConnectAddress, val -> autoConnectAddress = val)
 //                        .controller(StringControllerBuilder::create)
 //                        .build())
+                    .option(Option.<Integer>createBuilder()
+                        .name(Text.literal("AFK Timeout"))
+                        .description(OptionDescription.of(Text.literal(
+                            "Time (in ms) before you are marked as AFK after no keyboard or mouse input."
+                        )))
+                        .binding(DEFAULTS.afkTimeout, () -> afkTimeout, val -> afkTimeout = val)
+                        .controller(opt -> IntegerFieldControllerBuilder.create(opt)
+                            .range(4000, 30 * 60 * 1000))
+                        .build())
                     .option(Option.<Double>createBuilder()
                         .name(Text.literal("Minimum Player Movement"))
                         .description(OptionDescription.of(Text.literal(

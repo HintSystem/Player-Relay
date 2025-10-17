@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.mixin;
+package dev.hintsystem.playerrelay.mixin.minecraft;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
@@ -14,7 +14,6 @@ import java.util.UUID;
 
 @Mixin(net.minecraft.client.network.ClientPlayNetworkHandler.class)
 public class ClientPlayNetworkHandlerMixin {
-
     @Inject(
         method = "getPlayerListEntry(Ljava/util/UUID;)Lnet/minecraft/client/network/PlayerListEntry;",
         at = @At("RETURN"),

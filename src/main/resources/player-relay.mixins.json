@@ -3,10 +3,12 @@
     "package": "dev.hintsystem.playerrelay.mixin",
     "compatibilityLevel": "JAVA_21",
     "client": [
-        "ClientPlayNetworkHandlerMixin",
-        "PingWheelNetworkMixin",
-        "EntityAccessor",
-        "LivingEntityInvoker"
+        "minecraft.ClientPlayNetworkHandlerMixin",
+        "minecraft.EntityAccessor",
+        "minecraft.LivingEntityInvoker",
+        "minecraft.KeyboardMixin",
+        "minecraft.MouseMixin",
+        "PingWheelNetworkMixin"
     ],
     "injectors": {
         "defaultRequire": 1

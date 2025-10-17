@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.gui;
 
-import dev.hintsystem.playerrelay.mixin.EntityAccessor;
-import dev.hintsystem.playerrelay.mixin.LivingEntityInvoker;
+import dev.hintsystem.playerrelay.mixin.minecraft.EntityAccessor;
+import dev.hintsystem.playerrelay.mixin.minecraft.LivingEntityInvoker;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;

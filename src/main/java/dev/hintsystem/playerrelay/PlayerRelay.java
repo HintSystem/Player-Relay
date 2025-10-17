@@ -10,11 +10,11 @@ import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,7 @@ public class PlayerRelay implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(PlayerRelay.class);
 
     public static final boolean isDevelopment;
-    public static long lastInputTime;
+    public static long lastInputTime = Util.getMeasuringTimeMs();
 
     static {
         isDevelopment = FabricLoader.getInstance().isDevelopmentEnvironment();
@@ -64,9 +64,11 @@ public class PlayerRelay implements ClientModInitializer {
         new PlayerRelayCommands(networkManager).register();
     }
 
+    public static boolean isClientAfk() { return Util.getMeasuringTimeMs() - lastInputTime > config.afkTimeout; }
+    public static void updateInputActivity() { lastInputTime = Util.getMeasuringTimeMs(); }
+
     public static boolean isNetworkActive() {
         return networkManager != null && networkManager.getPeerCount() != 0;
     }
-
     public static P2PNetworkManager getNetworkManager() { return networkManager; }
 }
