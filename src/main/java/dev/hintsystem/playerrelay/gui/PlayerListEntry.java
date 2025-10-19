@@ -110,6 +110,9 @@ public class PlayerListEntry {
         PlayerStatsData statsData = playerInfo.getComponent(PlayerStatsData.class);
         if (statsData != null) paperDollRenderer.applyHealth(player, statsData.health);
 
+        PlayerStatusEffectsData statusEffectsData = playerInfo.getComponent(PlayerStatusEffectsData.class);
+        if (statusEffectsData != null) playerEntity.setOnFire(statusEffectsData.isOnFire());
+
         PlayerEquipmentData equipmentData = playerInfo.getComponent(PlayerEquipmentData.class);
         if (equipmentData != null) equipmentData.applyToPlayer(player);
     }
