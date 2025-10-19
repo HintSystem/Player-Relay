@@ -238,16 +238,15 @@ public class P2PNetworkManager {
         }
     }
 
-    private boolean shouldForwardMessage(P2PMessage message) {
-        synchronized (recentMessageIds) {
-            return isHost() && message.getType().shouldForward()
-                && recentMessageIds.add(message.getId()); // Do not forward if message id has been seen before, to stop packets from continuously looping through the network
-        }
-    }
+    private boolean shouldForwardMessage(P2PMessage message) { return isHost() && message.getType().shouldForward(); }
 
     public void handleMessage(PeerConnection sender, P2PMessage message) {
-        messageHandler.handleMessage(message, sender);
-        if (shouldForwardMessage(message)) broadcastToAllPeers(message, sender);
+        synchronized (recentMessageIds) {
+            if (!recentMessageIds.add(message.getId())) return; // Do not process if message id has been seen before, to stop packets from continuously looping through the network
+
+            messageHandler.handleMessage(message, sender);
+            if (shouldForwardMessage(message)) broadcastToAllPeers(message, sender);
+        }
     }
 
     private void handleUdpMessages() {

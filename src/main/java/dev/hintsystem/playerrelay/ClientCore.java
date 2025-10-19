@@ -37,6 +37,8 @@ public class ClientCore {
     }
 
     public static void onTickEnd(MinecraftClient client) {
+        EnderChestTracker.tick();
+
         if (!PlayerRelay.isNetworkActive()) return;
         if (clientInfo == null) { updateClientInfo(); return; }
 

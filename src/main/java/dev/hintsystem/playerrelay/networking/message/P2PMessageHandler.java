@@ -31,6 +31,7 @@ public class P2PMessageHandler {
     private final List<PacketHandler> packetHandlers = new ArrayList<>();
 
     private final ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingInventoryRequests = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingEnderChestRequests = new ConcurrentHashMap<>();
 
     public P2PMessageHandler(P2PNetworkManager networkManager) {
         this.logger = networkManager.logger.withLocation(LogLocation.MESSAGE_HANDLER);
@@ -79,11 +80,25 @@ public class P2PMessageHandler {
                         ClientPlayerEntity player = MinecraftClient.getInstance().player;
 
                         if (player != null && player.getUuid().equals(inventory.playerId)) {
-                            sender.sendMessage(PlayerInventoryPayload.respond(player).message());
+                            sender.sendMessage(PlayerInventoryPayload.respond(player, inventory.isEnderChest()).message());
                         }
                     } else {
-                        CompletableFuture<PlayerInventoryPayload> future = pendingInventoryRequests.remove(inventory.playerId);
-                        if (future != null) { future.complete(inventory); }
+                        ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingRequests = inventory.isEnderChest()
+                            ? pendingEnderChestRequests : pendingInventoryRequests;
+
+                        CompletableFuture<PlayerInventoryPayload> future = pendingRequests.remove(inventory.playerId);
+
+                        if (future == null) return; // No pending request for this player
+
+                        if (inventory.hasData()) {
+                            future.complete(inventory);
+                        } else {
+                            String errorMessage = inventory.isEnderChest()
+                                ? "Ender chest data unavailable - player must open their ender chest at least once before it can be tracked"
+                                : "Player inventory data unavailable";
+
+                            future.completeExceptionally(new IllegalStateException(errorMessage));
+                        }
                     }
                     break;
 
@@ -111,15 +126,18 @@ public class P2PMessageHandler {
         }
     }
 
-    public CompletableFuture<PlayerInventoryPayload> requestInventory(UUID playerId) {
-        CompletableFuture<PlayerInventoryPayload> future = new CompletableFuture<>();
-        pendingInventoryRequests.put(playerId, future);
+    public CompletableFuture<PlayerInventoryPayload> requestInventory(UUID playerId, boolean isEnderChest) {
+        ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingRequests = isEnderChest
+            ? pendingEnderChestRequests : pendingInventoryRequests;
 
-        future.whenComplete((r, e) -> pendingInventoryRequests.remove(playerId));
+        CompletableFuture<PlayerInventoryPayload> future = new CompletableFuture<>();
+        future.whenComplete((r, e) -> pendingRequests.remove(playerId));
+
+        pendingRequests.put(playerId, future);
 
         for (PeerConnection peer : networkManager.getConnectedPeers()) {
             if (peer.announcedPlayers.contains(playerId)) {
-                peer.sendMessage(PlayerInventoryPayload.request(playerId).message());
+                peer.sendMessage(PlayerInventoryPayload.request(playerId, isEnderChest).message());
             }
         }
 

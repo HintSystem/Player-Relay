@@ -21,7 +21,6 @@ public class P2PMessage {
     private Identifier packetId;
     private final byte[] payload;
 
-
     public P2PMessage(P2PMessageType type, byte[] payload, NetworkProtocol preferredProtocol) {
         this.preferredProtocol = preferredProtocol;
         this.type = type;

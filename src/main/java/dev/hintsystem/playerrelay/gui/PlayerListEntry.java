@@ -191,7 +191,7 @@ public class PlayerListEntry {
 
     enum IconOverlayState {
         NONE,
-        AFK("AFK", Colors.WHITE, ColorHelper.withAlpha(0.65f, Colors.DARK_GRAY), 0),
+        AFK("AFK", Colors.WHITE, ColorHelper.withAlpha(0.6f, Colors.DARK_GRAY), 0),
         DEAD("DEAD", Colors.RED, ColorHelper.withAlpha(0.2f, Colors.RED), ColorHelper.withAlpha(0.2f, Colors.RED));
 
         public final String statusText;
