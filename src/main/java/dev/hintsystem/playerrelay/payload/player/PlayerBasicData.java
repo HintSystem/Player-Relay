@@ -6,13 +6,15 @@ import java.awt.Color;
 import java.util.Objects;
 
 public class PlayerBasicData implements PlayerDataComponent {
+    public static final Color DEFAULT_NAME_COLOR = Color.WHITE;
+
     public String name;
     public int nameColor;
 
     public PlayerBasicData() {}
 
     public PlayerBasicData(String name) {
-        this(name, Color.WHITE);
+        this(name, DEFAULT_NAME_COLOR);
     }
 
     public PlayerBasicData(String name, Color nameColor) {

@@ -150,11 +150,13 @@ public class PlayerListEntry {
             x += config.iconWidth + config.padding;
         }
 
+
+
         // Render player name
         int maxNameX = (playerStatusEffects != null) ? renderStatusEffects(context, playerStatusEffects, x + config.infoWidth, y)
             : x + config.infoWidth;
         context.enableScissor(x, y, maxNameX, y + 9);
-        context.drawTextWithShadow(client.textRenderer, playerInfo.getName(), x, y, Colors.WHITE);
+        context.drawTextWithShadow(client.textRenderer, playerInfo.getName(), x, y, playerInfo.getNameColor());
         context.disableScissor();
 
         y += 10;

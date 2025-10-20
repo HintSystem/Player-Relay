@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.mixin;
+package dev.hintsystem.playerrelay.mixin.pingwheel;
 
 import dev.hintsystem.playerrelay.mods.SupportPingWheel;
 import dev.hintsystem.playerrelay.networking.message.P2PMessage;
@@ -6,6 +6,7 @@ import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.PlayerRelay;
 
 import net.minecraft.client.MinecraftClient;
+
 import nx.pingwheel.common.network.IPacket;
 import nx.pingwheel.common.network.PingLocationC2SPacket;
 import nx.pingwheel.common.network.PingLocationS2CPacket;

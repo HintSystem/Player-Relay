@@ -120,15 +120,16 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
         return (currentData == null) || newComponent.hasChanged(currentData);
     }
 
-    public PlayerInfoPayload setName(String name) {
-        return setComponent(new PlayerBasicData(name));
-    }
-
     public boolean isAfk() { return hasFlag(FLAGS.AFK); }
 
     public String getName() {
         PlayerBasicData basicData = getComponent(PlayerBasicData.class);
         return (basicData != null) ? basicData.name : this.playerId.toString();
+    }
+
+    public int getNameColor() {
+        PlayerBasicData basicData = getComponent(PlayerBasicData.class);
+        return (basicData != null) ? basicData.nameColor : PlayerBasicData.DEFAULT_NAME_COLOR.getRGB();
     }
 
     @Nullable
@@ -198,9 +199,5 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
             PlayerRelay.LOGGER.info("PlayerInfoPayload of {} bytes:{}",
                 buf.readerIndex() - beforePayload, componentLog);
         }
-    }
-
-    public static Set<Class<? extends PlayerDataComponent>> getRegisteredComponents() {
-        return Collections.unmodifiableSet(COMPONENT_REGISTRY.keySet());
     }
 }

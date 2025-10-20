@@ -28,10 +28,8 @@ public class ClientCore {
         if (player == null) return clientInfo;
 
         clientInfo = new PlayerInfoPayload(player.getUuid());
-        clientInfo.setName(player.getName().getString());
-
-        updateInfoPayloadPosData(clientInfo, player);
         updateInfoPayloadGeneralData(clientInfo, player);
+        updateInfoPayloadPosData(clientInfo, player);
 
         return clientInfo;
     }
@@ -69,13 +67,6 @@ public class ClientCore {
         }
     }
 
-    private static boolean updateComponent(PlayerInfoPayload info, PlayerDataComponent component) {
-        boolean hasChanged = clientInfo.hasComponentChanged(component);
-
-        if (hasChanged) info.setComponent(component);
-        return hasChanged;
-    }
-
     private static boolean updateInfoPayloadClientData(PlayerInfoPayload info) {
         boolean isAfk = PlayerRelay.isClientAfk();
         boolean hasChanged = clientInfo.isAfk() != isAfk;
@@ -89,10 +80,19 @@ public class ClientCore {
     }
 
     private static boolean updateInfoPayloadGeneralData(PlayerInfoPayload info, ClientPlayerEntity player) {
-        return updateComponent(info, new PlayerWorldData(player)) // Use bitwise OR to prevent short-circuit
+        // Use bitwise OR to prevent short-circuit
+        return updateComponent(info, new PlayerBasicData(player.getName().getString(), PlayerRelay.config.displayNameColor))
+            | updateComponent(info, new PlayerWorldData(player))
             | updateComponent(info, new PlayerStatsData(player))
             | updateComponent(info, new PlayerEquipmentData(player))
             | updateComponent(info, new PlayerStatusEffectsData(player));
+    }
+
+    private static boolean updateComponent(PlayerInfoPayload info, PlayerDataComponent component) {
+        boolean hasChanged = clientInfo.hasComponentChanged(component);
+
+        if (hasChanged) info.setComponent(component);
+        return hasChanged;
     }
 
     public static int ticksToMs(int ticks) { return Math.round((ticks / tickRate) * 1000); }

@@ -3,12 +3,17 @@
     "package": "dev.hintsystem.playerrelay.mixin",
     "compatibilityLevel": "JAVA_21",
     "client": [
+        "pingwheel.PingWheelNetworkMixin",
+        "pingwheel.DrawContextMixin",
+        "pingwheel.PingLocationRendererMixin",
+        "pingwheel.DirectionIndicatorRendererMixin",
+        "PlayerTrackerMinimapElementRendererMixin",
+        "PlayerTrackerMapElementRendererMixin",
         "minecraft.ClientPlayNetworkHandlerMixin",
         "minecraft.EntityAccessor",
-        "minecraft.LivingEntityInvoker",
         "minecraft.KeyboardMixin",
-        "minecraft.MouseMixin",
-        "PingWheelNetworkMixin"
+        "minecraft.LivingEntityInvoker",
+        "minecraft.MouseMixin"
     ],
     "injectors": {
         "defaultRequire": 1

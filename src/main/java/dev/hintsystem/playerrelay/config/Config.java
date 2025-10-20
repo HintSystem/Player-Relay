@@ -1,8 +1,10 @@
-package dev.hintsystem.playerrelay;
+package dev.hintsystem.playerrelay.config;
 
+import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.gui.AnchorPoint;
 import dev.hintsystem.playerrelay.gui.PlayerListEntry;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
+import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
@@ -26,9 +28,13 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 public class Config {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    public static final Config DEFAULTS = new Config();
     public static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve(PlayerRelay.MOD_ID + ".json");
+    private static final Gson GSON = new GsonBuilder()
+        .setPrettyPrinting()
+        .registerTypeAdapter(Color.class, new ColorTypeAdapter())
+        .create();
+
+    public static final Config DEFAULTS = new Config();
 
     public boolean autoHost = false;
     public boolean UPnPEnabled = true;
@@ -36,6 +42,7 @@ public class Config {
     public int defaultHostingPort = P2PNetworkManager.DEFAULT_PORT;
 
     public String autoConnectAddress = "";
+    public Color displayNameColor = PlayerBasicData.DEFAULT_NAME_COLOR;
     public int afkTimeout = 2 * 60 * 1000;
     public double minPlayerMove = 0.2;
 
@@ -133,6 +140,12 @@ public class Config {
 //                        .binding(DEFAULTS.autoConnectAddress, () -> autoConnectAddress, val -> autoConnectAddress = val)
 //                        .controller(StringControllerBuilder::create)
 //                        .build())
+                    .option(Option.<Color>createBuilder()
+                        .name(Text.literal("Display Name Color"))
+                        .binding(DEFAULTS.displayNameColor, () -> displayNameColor, val -> displayNameColor = val)
+                        .controller(opt -> ColorControllerBuilder.create(opt)
+                            .allowAlpha(false))
+                        .build())
                     .option(Option.<Integer>createBuilder()
                         .name(Text.literal("AFK Timeout"))
                         .description(OptionDescription.of(Text.literal(
