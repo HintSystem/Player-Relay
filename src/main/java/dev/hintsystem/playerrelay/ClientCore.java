@@ -24,12 +24,11 @@ public class ClientCore {
 
     @Nullable
     public static PlayerInfoPayload updateClientInfo() {
-        ClientPlayerEntity player = MinecraftClient.getInstance().player;
-        if (player == null) return clientInfo;
+        MinecraftClient client = MinecraftClient.getInstance();
 
-        clientInfo = new PlayerInfoPayload(player.getUuid());
-        updateInfoPayloadGeneralData(clientInfo, player);
-        updateInfoPayloadPosData(clientInfo, player);
+        clientInfo = new PlayerInfoPayload(client.getSession().getUuidOrNull());
+        updateInfoPayloadGeneralData(clientInfo, client.player);
+        if (client.player != null) updateInfoPayloadPosData(clientInfo, client.player);
 
         return clientInfo;
     }
@@ -55,7 +54,7 @@ public class ClientCore {
         if (now - lastSentTcpTime > PlayerRelay.config.tcpSendIntervalMs) {
             if (pendingTcpPayload == null) pendingTcpPayload = new PlayerInfoPayload(clientInfo.playerId);
 
-            boolean updated = (client.player != null) && updateInfoPayloadGeneralData(pendingTcpPayload, client.player);
+            boolean updated = updateInfoPayloadGeneralData(pendingTcpPayload, client.player);
             updated |= updateInfoPayloadClientData(pendingTcpPayload);
 
             if (updated) {
@@ -79,13 +78,21 @@ public class ClientCore {
         return updateComponent(info, new PlayerPositionData(player));
     }
 
-    private static boolean updateInfoPayloadGeneralData(PlayerInfoPayload info, ClientPlayerEntity player) {
+    private static boolean updateInfoPayloadGeneralData(PlayerInfoPayload info, @Nullable ClientPlayerEntity player) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        String playerName = (player != null) ? player.getName().getString() : client.getSession().getUsername();
+
         // Use bitwise OR to prevent short-circuit
-        return updateComponent(info, new PlayerBasicData(player.getName().getString(), PlayerRelay.config.displayNameColor))
-            | updateComponent(info, new PlayerWorldData(player))
-            | updateComponent(info, new PlayerStatsData(player))
-            | updateComponent(info, new PlayerEquipmentData(player))
-            | updateComponent(info, new PlayerStatusEffectsData(player));
+        boolean hasChanged = updateComponent(info, new PlayerBasicData(playerName, PlayerRelay.config.displayNameColor));
+        hasChanged |= updateComponent(info, new PlayerWorldData(player));
+
+        if (player != null) {
+            hasChanged |= updateComponent(info, new PlayerStatsData(player));
+            hasChanged |= updateComponent(info, new PlayerEquipmentData(player));
+            hasChanged |= updateComponent(info, new PlayerStatusEffectsData(player));
+        }
+
+        return hasChanged;
     }
 
     private static boolean updateComponent(PlayerInfoPayload info, PlayerDataComponent component) {

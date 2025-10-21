@@ -15,14 +15,22 @@ import net.minecraft.client.util.SkinTextures;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix3x2fStack;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class PlayerListEntry {
     private static final Identifier ARMOR_FULL_TEXTURE = Identifier.ofVanilla("hud/armor_full");
@@ -41,7 +49,7 @@ public class PlayerListEntry {
     private float lastHealth = 0f;
     private long heartBlinkEndTimeMs = 0L;
 
-    public enum PlayerIconType { NONE, PLAYER_HEAD, PLAYER_MODEL }
+    public enum PlayerIconType { NONE, PLAYER_MODEL, PLAYER_HEAD }
 
     public record Config(
         int iconWidth,
@@ -130,6 +138,7 @@ public class PlayerListEntry {
     public void render(DrawContext context, int x, int y, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
 
+        PlayerWorldData playerWorld = playerInfo.getComponentOrEmpty(PlayerWorldData.class);
         PlayerStatsData playerStats = playerInfo.getComponentOrEmpty(PlayerStatsData.class);
         PlayerStatusEffectsData playerStatusEffects = playerInfo.getComponent(PlayerStatusEffectsData.class);
 
@@ -147,10 +156,9 @@ public class PlayerListEntry {
             }
 
             renderIconOverlay(context, x, y, x2, y2, null);
+            renderDimensionIcon(context, playerWorld.dimension, x, y2);
             x += config.iconWidth + config.padding;
         }
-
-
 
         // Render player name
         int maxNameX = (playerStatusEffects != null) ? renderStatusEffects(context, playerStatusEffects, x + config.infoWidth, y)
@@ -245,6 +253,46 @@ public class PlayerListEntry {
         }
     }
 
+    public enum DimensionIcon {
+        OVERWORLD(World.OVERWORLD, new ItemStack(Items.GRASS_BLOCK)),
+        NETHER(World.NETHER, new ItemStack(Items.NETHERRACK)),
+        END(World.END, new ItemStack(Items.END_PORTAL_FRAME));
+
+        public final RegistryKey<World> dimension;
+        public final ItemStack displayItem;
+
+        private static final Map<RegistryKey<World>, DimensionIcon> BY_DIMENSION = new HashMap<>();
+
+        static {
+            for (DimensionIcon icon : values()) BY_DIMENSION.put(icon.dimension, icon);
+        }
+
+        DimensionIcon(RegistryKey<World> dimension, ItemStack displayItem) {
+            this.dimension = dimension;
+            this.displayItem = displayItem;
+        }
+
+        @Nullable
+        public static DimensionIcon getIcon(RegistryKey<World> dimension) { return BY_DIMENSION.get(dimension); }
+    }
+
+    private void renderDimensionIcon(DrawContext context, RegistryKey<World> dimension, int centerX, int centerY) {
+        DimensionIcon dimensionIcon = DimensionIcon.getIcon(dimension);
+        if (dimensionIcon == null) return;
+
+        Matrix3x2fStack matrices = context.getMatrices();
+        matrices.pushMatrix();
+
+        float scale = 0.8f;
+        int scaledSize = (int)(16 * scale);
+        matrices.translate(centerX - (int)(scaledSize/4), centerY - (int)(scaledSize/2));
+        matrices.scale(scale, scale);
+
+        context.drawItem(dimensionIcon.displayItem, 0, 0);
+
+        matrices.popMatrix();
+    }
+
     private int renderStatusEffects(DrawContext context, PlayerStatusEffectsData statusEffects, int x, int y) {
         int startX = x;
         int endX = startX;
@@ -327,7 +375,7 @@ public class PlayerListEntry {
     private Identifier getHeartTypeTexture(InGameHud.HeartType heartType, boolean half, boolean blinking) {
         PlayerWorldData world = playerInfo.getComponent(PlayerWorldData.class);
         return heartType.getTexture(
-            world != null && world.hardcore,
+            world != null && world.isHardcore(),
             half,
             blinking
         );

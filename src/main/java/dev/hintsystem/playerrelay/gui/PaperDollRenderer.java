@@ -170,14 +170,14 @@ public class PaperDollRenderer {
     }
 
     /** @see net.minecraft.client.gui.screen.ingame.InventoryScreen#drawEntity(DrawContext, int, int, int, int, float, Vector3f, Quaternionf, Quaternionf, LivingEntity)  **/
-    public static void drawEntity(DrawContext drawer, int x1, int y1, int x2, int y2, float scale, Vector3f translation,
+    public static void drawEntity(DrawContext context, int x1, int y1, int x2, int y2, float scale, Vector3f translation,
                                   Quaternionf rotation, @Nullable Quaternionf overrideCameraAngle, LivingEntity livingEntity, RenderTickCounter tickCounter) {
         EntityRenderDispatcher entityRenderDispatcher = MinecraftClient.getInstance().getEntityRenderDispatcher();
         EntityRenderer<? super LivingEntity, ?> entityRenderer = entityRenderDispatcher.getRenderer(livingEntity);
         EntityRenderState entityRenderState = entityRenderer.getAndUpdateRenderState(livingEntity, tickCounter.getTickProgress(false));
         entityRenderState.displayName = null;
         entityRenderState.hitbox = null;
-        drawer.addEntity(entityRenderState, scale, translation, rotation, overrideCameraAngle, x1, y1, x2, y2);
+        context.addEntity(entityRenderState, scale, translation, rotation, overrideCameraAngle, x1, y1, x2, y2);
     }
 
     private void applyEntityTransforms(LivingEntity livingEntity, Vector3f translation, Quaternionf rotation) {
