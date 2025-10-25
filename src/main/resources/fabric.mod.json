@@ -28,16 +28,14 @@
     "accessWidener": "player-relay.accesswidener",
     "depends": {
         "java": ">=21",
-        "minecraft": "~1.21.8",
+        "minecraft": ">=1.21.6 <=1.21.8",
         "fabricloader": ">=0.17.0",
         "fabric-api": "*",
         "yet_another_config_lib_v3": "*"
     },
     "recommends": {
         "xaerominimap": "*",
-        "xaeroworldmap": "*"
-    },
-    "suggests": {
-        "ping-wheel": "~1.11.0"
+        "xaeroworldmap": "*",
+        "ping-wheel": "~1.12.0"
     }
 }
