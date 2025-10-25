@@ -9,6 +9,7 @@
         "pingwheel.DirectionIndicatorRendererMixin",
         "PlayerTrackerMinimapElementRendererMixin",
         "PlayerTrackerMapElementRendererMixin",
+        "WaypointSharingHandlerMixin",
         "minecraft.ClientPlayNetworkHandlerMixin",
         "minecraft.EntityAccessor",
         "minecraft.KeyboardMixin",

@@ -63,9 +63,6 @@ public class P2PMessageHandler {
                     sender.onUdpPingReceived(ping);
                     break;
 
-                case CHAT:
-                    break;
-
                 case PLAYER_INFO:
                     PlayerInfoPayload infoPayload = new PlayerInfoPayload(message.getPayloadByteBuf());
                     if (infoPayload.playerId.equals(getClientPlayerUuid())) { break; }
@@ -112,6 +109,12 @@ public class P2PMessageHandler {
                         handler.onPlayerDisconnect(playerId, lastInfo);
                     }
                     if (lastInfo != null) ClientCore.onPlayerDisconnected(lastInfo);
+                    break;
+
+                case WAYPOINT:
+                    WaypointPayload waypoint = new WaypointPayload(message.getPayloadByteBuf());
+
+                    ClientCore.onWaypointReceived(waypoint);
                     break;
 
                 case PACKET:

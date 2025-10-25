@@ -4,11 +4,12 @@ public enum P2PMessageType {
     RELAY_VERSION(0, false),
     UDP_HANDSHAKE(1, false),
     UDP_PING(2, false),
-    CHAT(3),
-    PLAYER_INFO(4),
-    PLAYER_INVENTORY(5),
-    PLAYER_DISCONNECT(6),
-    PACKET(7);
+    PLAYER_INFO(3),
+    PLAYER_INVENTORY(4),
+    PLAYER_DISCONNECT(5),
+    WAYPOINT(6),
+    CHAT(7),
+    PACKET(8);
 
     private final byte id;
     private final boolean shouldForward;

@@ -5,7 +5,7 @@ import dev.hintsystem.playerrelay.config.Config;
 import dev.hintsystem.playerrelay.gui.PlayerList;
 import dev.hintsystem.playerrelay.logging.ClientLogHandler;
 import dev.hintsystem.playerrelay.logging.ConsoleLogHandler;
-import dev.hintsystem.playerrelay.mods.xaero.MapIntegration;
+import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
@@ -48,7 +48,7 @@ public class PlayerRelay implements ClientModInitializer {
 
     private void initModSupport() {
         if (FabricLoader.getInstance().isModLoaded("xaerominimap")
-            || FabricLoader.getInstance().isModLoaded("xaeroworldmap")) { MapIntegration.init(); }
+            || FabricLoader.getInstance().isModLoaded("xaeroworldmap")) { SupportXaerosMapMods.init(); }
     }
 
     @Override

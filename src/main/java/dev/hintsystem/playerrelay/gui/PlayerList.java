@@ -38,6 +38,7 @@ public class PlayerList implements HudElement {
         PlayerListEntry.Config entryConfig = new PlayerListEntry.Config.Builder()
             .infoWidth(PlayerRelay.config.playerListInfoWidth)
             .padding(backgroundPadding)
+            .showDimensionIcon(PlayerRelay.config.showPlayerListDimensionIcon)
             .playerIconType(PlayerRelay.config.playerListIconType)
             .anchorPoint(anchor).build();
 

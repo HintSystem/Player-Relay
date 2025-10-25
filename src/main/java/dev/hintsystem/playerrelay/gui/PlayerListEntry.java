@@ -56,6 +56,7 @@ public class PlayerListEntry {
         int maxEffectInfoWidth,
         int infoWidth,
         int padding,
+        boolean showDimensionIcon,
         PlayerIconType playerIconType,
         AnchorPoint anchorPoint
     ) {
@@ -72,6 +73,7 @@ public class PlayerListEntry {
             private int maxEffectInfoWidth = 40;
             private int infoWidth = 86;
             private int padding = 4;
+            private boolean showDimensionIcon;
             private PlayerIconType playerIconType = PlayerIconType.PLAYER_MODEL;
             private AnchorPoint anchorPoint = AnchorPoint.TOP_RIGHT;
 
@@ -79,11 +81,12 @@ public class PlayerListEntry {
             public Builder maxEffectInfoWidth(int v) { maxEffectInfoWidth = v; return this; }
             public Builder infoWidth(int v) { infoWidth = v; return this; }
             public Builder padding(int v) { padding = v; return this; }
+            public Builder showDimensionIcon(boolean v) { showDimensionIcon = v; return this; }
             public Builder playerIconType(PlayerIconType v) { playerIconType = v; return this; }
             public Builder anchorPoint(AnchorPoint v) { anchorPoint = v; return this; }
 
             public Config build() {
-                return new Config(iconWidth, maxEffectInfoWidth, infoWidth, padding, playerIconType, anchorPoint);
+                return new Config(iconWidth, maxEffectInfoWidth, infoWidth, padding, showDimensionIcon, playerIconType, anchorPoint);
             }
         }
     }
@@ -143,6 +146,8 @@ public class PlayerListEntry {
         PlayerStatusEffectsData playerStatusEffects = playerInfo.getComponent(PlayerStatusEffectsData.class);
 
         // Render player icon
+        int dimensionIconX = x;
+        int dimensionIconY = y + config.getIconHeight();
         if (config.playerIconType != PlayerIconType.NONE) {
             int x2 = x + config.iconWidth, y2 = y + config.getIconHeight();
 
@@ -156,7 +161,6 @@ public class PlayerListEntry {
             }
 
             renderIconOverlay(context, x, y, x2, y2, null);
-            renderDimensionIcon(context, playerWorld.dimension, x, y2);
             x += config.iconWidth + config.padding;
         }
 
@@ -200,6 +204,8 @@ public class PlayerListEntry {
 
         // Render XP bar
         renderXpBar(context, playerStats.xp, config.infoWidth, x, y);
+
+        if (config.showDimensionIcon) renderDimensionIcon(context, playerWorld.dimension, dimensionIconX, dimensionIconY);
     }
 
     enum IconOverlayState {

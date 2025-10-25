@@ -6,7 +6,7 @@ import xaero.map.WorldMap;
 import xaero.map.radar.tracker.system.IPlayerTrackerSystem;
 import xaero.map.radar.tracker.system.ITrackedPlayerReader;
 
-public class WorldMapLoader {
+public class WorldMapIntegration {
     public static class WorldMapPlayerTracker extends RelayPlayerTracker implements IPlayerTrackerSystem<PlayerInfoPayload> {
         public static class WorldMapTrackedPlayerReader extends RelayTrackedPlayerReader implements ITrackedPlayerReader<PlayerInfoPayload> {}
 
@@ -16,7 +16,7 @@ public class WorldMapLoader {
         public ITrackedPlayerReader<PlayerInfoPayload> getReader() { return this.reader; }
     }
 
-    static void register() {
+    public static void register() {
         WorldMap.playerTrackerSystemManager
             .register("player_relay", new WorldMapPlayerTracker());
     }

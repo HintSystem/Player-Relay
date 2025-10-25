@@ -1,16 +1,24 @@
 package dev.hintsystem.playerrelay;
 
+import dev.hintsystem.playerrelay.command.PlayerRelayCommands;
+import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
 import dev.hintsystem.playerrelay.networking.NetworkProtocol;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
+import dev.hintsystem.playerrelay.payload.WaypointPayload;
 import dev.hintsystem.playerrelay.payload.player.*;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClientCore {
     public static final float tickRate = 20;
@@ -21,6 +29,8 @@ public class ClientCore {
 
     private static PlayerInfoPayload clientInfo;
     private static PlayerInfoPayload pendingTcpPayload = null;
+
+    public static final List<WaypointPayload> pendingWaypoints = new ArrayList<>();
 
     @Nullable
     public static PlayerInfoPayload updateClientInfo() {
@@ -109,6 +119,37 @@ public class ClientCore {
         if (clientPlayer == null) { return; }
 
         clientPlayer.sendMessage(message, false);
+    }
+
+    @Nullable
+    public static WaypointPayload acceptWaypoint(int waypointIndex) {
+        WaypointPayload waypoint = pendingWaypoints.get(waypointIndex);
+
+        if (waypoint != null) SupportXaerosMapMods.addWaypoint(waypoint);
+        return waypoint;
+    }
+
+    public static void onWaypointReceived(WaypointPayload waypoint) {
+        PlayerInfoPayload author = PlayerRelay.getConnectedPlayer(waypoint.playerId);
+        String playerName = (author != null) ? author.getName() : waypoint.playerId.toString();
+
+        int waypointIndex;
+        synchronized (pendingWaypoints) {
+            waypointIndex = pendingWaypoints.size();
+            pendingWaypoints.add(waypoint);
+        }
+
+        sendClientMessage(
+            Text.literal(String.format("%s shared waypoint \"%s\" from dimension \"%s\" with Player Relay ", playerName, waypoint.name, waypoint.getDimensionIdString()))
+                .append(Text.literal("[Add]").formatted(Formatting.DARK_GREEN).formatted(Formatting.UNDERLINE))
+                .setStyle(Style.EMPTY
+                    .withFormatting(Formatting.GRAY)
+                    .withHoverEvent(new HoverEvent.ShowText(Text.literal(
+                        waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ()
+                    )))
+                    .withClickEvent(new ClickEvent.RunCommand("/" + PlayerRelayCommands.WAYPOINT_COMMAND + " accept " + waypointIndex))
+                )
+        );
     }
 
     public static void onPlayerConnected(PlayerInfoPayload playerInfo) {

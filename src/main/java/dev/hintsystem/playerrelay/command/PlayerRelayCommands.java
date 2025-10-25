@@ -8,8 +8,10 @@ import dev.hintsystem.playerrelay.gui.RemoteInventoryScreen;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.PlayerInventoryPayload;
+import dev.hintsystem.playerrelay.payload.WaypointPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
@@ -20,9 +22,13 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class PlayerRelayCommands {
+    public static final String BASE_COMMAND = "prelay";
+    public static final String WAYPOINT_COMMAND = BASE_COMMAND + "_waypoints";
+
     private final P2PNetworkManager networkManager;
 
     public PlayerRelayCommands(P2PNetworkManager networkManager) {
@@ -34,7 +40,7 @@ public class PlayerRelayCommands {
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
 
-            dispatcher.register(ClientCommandManager.literal("prelay")
+            dispatcher.register(ClientCommandManager.literal(BASE_COMMAND)
                 .then(ClientCommandManager.literal("host")
                     .executes(context -> {
                         context.getSource().sendFeedback(Text.literal("Starting Player Relay server..."));
@@ -132,10 +138,12 @@ public class PlayerRelayCommands {
                         return 1;
                     }))
 
+
+
                 .then(ClientCommandManager.literal("inv")
                     .then(registerInventoryCommand(false, client)))
 
-                .then(ClientCommandManager.literal("ender")
+                .then(ClientCommandManager.literal("echest")
                     .executes(context -> {
                         ClientPlayerEntity player = client.player;
                         if (player == null) return 0;
@@ -160,8 +168,47 @@ public class PlayerRelayCommands {
                         return 1;
                     })
                     .then(registerInventoryCommand(true, client)))
-
             );
+
+            dispatcher.register(ClientCommandManager.literal(WAYPOINT_COMMAND)
+                .then(ClientCommandManager.literal("list")
+                    .executes(context -> {
+                        List<WaypointPayload> pendingWaypoints = ClientCore.pendingWaypoints;
+                        if (pendingWaypoints.isEmpty()) {
+                            context.getSource().sendFeedback(Text.literal("No pending waypoints"));
+                            return 1;
+                        }
+                        for (int i = 0; i < pendingWaypoints.size(); i++) {
+                            WaypointPayload waypoint = pendingWaypoints.get(i);
+                            context.getSource().sendFeedback(Text.literal(
+                                String.format("[%d] %s (%s)", i, waypoint.name, waypoint.getDimensionIdString())
+                            ));
+                        }
+                        return 1;
+                    }))
+                .then(ClientCommandManager.literal("accept")
+                    .executes(context -> {
+                        // Accept all
+                        List<WaypointPayload> pendingWaypoints = ClientCore.pendingWaypoints;
+                        for (int i = 0; i < pendingWaypoints.size(); i++) {
+                            ClientCore.acceptWaypoint(i);
+                        }
+
+                        context.getSource().sendFeedback(Text.literal("Accepted all shared waypoints"));
+                        return 1;
+                    })
+                    .then(ClientCommandManager.argument("id", IntegerArgumentType.integer(0))
+                        .executes(context -> {
+                            int id = IntegerArgumentType.getInteger(context, "id");
+                            WaypointPayload waypoint = ClientCore.acceptWaypoint(id);
+                            if (waypoint == null) {
+                                context.getSource().sendError(Text.literal("Invalid waypoint ID"));
+                                return 0;
+                            }
+                            context.getSource().sendFeedback(Text.literal("Added waypoint: " + waypoint.name));
+                            return 1;
+                        }))));
+
         });
     }
 

@@ -48,12 +48,14 @@ public class Config {
 
     public boolean showPlayerList = true;
     public int playerListMaxPlayers = 8;
+    public boolean showPlayerListDimensionIcon = true;
     public PlayerListEntry.PlayerIconType playerListIconType = PlayerListEntry.PlayerIconType.PLAYER_MODEL;
     public AnchorPoint playerListAnchorPoint = AnchorPoint.TOP_RIGHT;
     public Vector2i playerListOffset = new Vector2i(5, 5);
     public int playerListInfoWidth = 86;
     public Color playerListbackgroundColor = new Color(0, 0, 0, 60);
 
+    public boolean shareWaypointsViaRelay = true;
     public boolean showTrackedPlayers = true;
     public boolean showTrackedPlayersFromOtherServers = false;
 
@@ -187,6 +189,11 @@ public class Config {
                         .controller(opt -> IntegerFieldControllerBuilder.create(opt)
                             .range(1, 20))
                         .build())
+                    .option(Option.<Boolean>createBuilder()
+                        .name(Text.literal("Show Dimension Icon"))
+                        .binding(DEFAULTS.showPlayerListDimensionIcon, () -> showPlayerListDimensionIcon, val -> showPlayerListDimensionIcon = val)
+                        .controller(TickBoxControllerBuilder::create)
+                        .build())
                     .option(Option.<PlayerListEntry.PlayerIconType>createBuilder()
                         .name(Text.literal("Player Icon Type"))
                         .binding(DEFAULTS.playerListIconType, () -> playerListIconType, val -> playerListIconType = val)
@@ -225,8 +232,14 @@ public class Config {
                 .group(OptionGroup.createBuilder()
                     .name(Text.literal("Xaero's Minimap / WorldMap"))
                     .option(Option.<Boolean>createBuilder()
+                        .name(Text.literal("Share Waypoints Via Player Relay"))
+                        .description(OptionDescription.of(Text.literal("Share waypoints through the connected relays instead of public chat.")))
+                        .binding(DEFAULTS.shareWaypointsViaRelay, () -> shareWaypointsViaRelay, val -> shareWaypointsViaRelay = val)
+                        .controller(TickBoxControllerBuilder::create)
+                        .build())
+                    .option(Option.<Boolean>createBuilder()
                         .name(Text.literal("Show Players"))
-                        .description(OptionDescription.of(Text.literal("Display connected relay players on Xaero's Minimap and World Map as tracked players.\n\n")))
+                        .description(OptionDescription.of(Text.literal("Display connected relay players on Xaero's Minimap and World Map as tracked players.")))
                         .binding(DEFAULTS.showTrackedPlayers, () -> showTrackedPlayers, val -> showTrackedPlayers = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
