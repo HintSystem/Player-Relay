@@ -1,28 +1,33 @@
 > ⚠️ **Warning**
 > 
-> **This version is incompatible with versions 1.2.1 and below.** New network features have been added that break compatibility with older versions. If you're running version 1.2.0 or above, you'll receive a warning when trying to connect to incompatible versions.
+> **This version is incompatible with versions 1.3.0 and below.**
 
 ### New Features
 
-* Show active status effects in the player list
-* Display context-sensitive heart, armor, and food icons based on player status (poison, wither, frozen, etc.)
-* Added `peekinv` command:
-  * View another player's inventory and equipment 
-  * Equipment changes update live 
-  * Inventory updates when you re-run the command
-* Added config options:
-    * **Host**
-        * UPnP Enabled - automatically configure port forwarding *(default: `ON`)*
+* **Player list**
+  * Added player model rendering
+  * Added dimension icons
+  * Added player status overlay (AFK and death)
+* Added `echest` command:
+  * View another player's ender chest
+  * Player must have opened their ender chest at least once in the current world
+  * Lets you view your own ender chest if a player isn't specified
+  * Ender chest inventory updates when you re-run the command
+* Added custom player name colors
+  * Colors also apply to pings from Ping Wheel
+* Added Xaero's Minimap / WorldMap waypoint sharing via Player Relay
+* **New config options:**
+    * **Client**
+        * Display Name Color *(default: `#FFFFFF`)*
+        * AFK Timeout *(default: `120'000`ms)*
     * **Player List**
-        * Info Width - customize width of player list *(default: `86`)*
+        * Show Dimension Icon *(default: `ON`)*
+        * Player Icon Type *(default: `PLAYER_MODEL`, previously `PLAYER_HEAD`)*
     * **Xaero's Minimap / WorldMap**
-        * Show Players *(default: `ON`)*
-        * Show Players From Other Servers *(default: `OFF`, previously `ON`)*
-    * **Ping Wheel**
-        * Show Pings From Other Servers *(default: `OFF`, previously `ON`)*
+        * Share Waypoints Via Player Relay *(default: `ON` previously `OFF`)*
 
-### Fixes & Improvements
+### Changes & Fixes
 
-* Fixed multiple player info packets not being grouped into a single update (reduces network congestion)
-* Improved XP bar rendering
-* Corrected player list stat alignment (left-aligned, center-aligned, right-aligned)
+* Renamed `peekinv` command to `inv`
+* Fixed config not saving color types correctly
+* Fixed player name and UUID being unknown until a world is loaded

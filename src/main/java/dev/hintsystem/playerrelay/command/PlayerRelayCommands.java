@@ -138,8 +138,6 @@ public class PlayerRelayCommands {
                         return 1;
                     }))
 
-
-
                 .then(ClientCommandManager.literal("inv")
                     .then(registerInventoryCommand(false, client)))
 
