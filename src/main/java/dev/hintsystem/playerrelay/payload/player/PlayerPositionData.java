@@ -15,7 +15,7 @@ public class PlayerPositionData implements PlayerDataComponent {
     public PlayerPositionData() {}
 
     public PlayerPositionData(ClientPlayerEntity player) {
-        this.coords = player.getPos();
+        this.coords = player.getEntityPos();
         this.yaw = player.getYaw();
         this.pitch = player.getPitch();
         this.pose = (player.getVehicle() != null) ? EntityPose.SITTING : player.getPose();

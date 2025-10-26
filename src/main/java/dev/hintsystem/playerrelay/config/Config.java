@@ -146,7 +146,7 @@ public class Config {
                         .name(Text.literal("Display Name Color"))
                         .binding(DEFAULTS.displayNameColor, () -> displayNameColor, val -> displayNameColor = val)
                         .controller(opt -> ColorControllerBuilder.create(opt)
-                            .allowAlpha(false))
+                            .allowAlpha(true)) // TODO: set allowAlpha to false when YACL fixes the crash caused by ColorPickerWidget
                         .build())
                     .option(Option.<Integer>createBuilder()
                         .name(Text.literal("AFK Timeout"))

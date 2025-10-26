@@ -6,7 +6,7 @@ import dev.hintsystem.playerrelay.mixin.minecraft.LivingEntityInvoker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.entity.EntityRenderDispatcher;
+import net.minecraft.client.render.entity.EntityRenderManager;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.entity.Entity;
@@ -88,7 +88,7 @@ public class PaperDollRenderer {
 
     public void setFakeVehicle(LivingEntity livingEntity) {
         if (fakeVehicle == null) {
-            fakeVehicle = new Entity(EntityType.ARMOR_STAND, livingEntity.getWorld()) {
+            fakeVehicle = new Entity(EntityType.ARMOR_STAND, livingEntity.getEntityWorld()) {
                 @Override
                 protected void initDataTracker(DataTracker.Builder builder) {}
                 @Override
@@ -126,7 +126,10 @@ public class PaperDollRenderer {
             headYawOffset = headYawOffsetO = centerYaw = 0.0f;
         }
 
-        if (livingEntity.isAlive()) livingEntity.tick();
+        if (livingEntity.isAlive()) {
+            livingEntity.tick();
+            livingEntity.age++;
+        }
     }
 
     public void renderPaperDoll(DrawContext context, int x1, int y1, int x2, int y2, int scale, LivingEntity livingEntity, RenderTickCounter tickCounter) {
@@ -172,11 +175,14 @@ public class PaperDollRenderer {
     /** @see net.minecraft.client.gui.screen.ingame.InventoryScreen#drawEntity(DrawContext, int, int, int, int, float, Vector3f, Quaternionf, Quaternionf, LivingEntity)  **/
     public static void drawEntity(DrawContext context, int x1, int y1, int x2, int y2, float scale, Vector3f translation,
                                   Quaternionf rotation, @Nullable Quaternionf overrideCameraAngle, LivingEntity livingEntity, RenderTickCounter tickCounter) {
-        EntityRenderDispatcher entityRenderDispatcher = MinecraftClient.getInstance().getEntityRenderDispatcher();
-        EntityRenderer<? super LivingEntity, ?> entityRenderer = entityRenderDispatcher.getRenderer(livingEntity);
+        EntityRenderManager entityRenderManager = MinecraftClient.getInstance().getEntityRenderDispatcher();
+        EntityRenderer<? super LivingEntity, ?> entityRenderer = entityRenderManager.getRenderer(livingEntity);
         EntityRenderState entityRenderState = entityRenderer.getAndUpdateRenderState(livingEntity, tickCounter.getTickProgress(false));
         entityRenderState.displayName = null;
         entityRenderState.hitbox = null;
+        entityRenderState.light = 15728880;
+        entityRenderState.shadowPieces.clear();
+        entityRenderState.outlineColor = 0;
         context.addEntity(entityRenderState, scale, translation, rotation, overrideCameraAngle, x1, y1, x2, y2);
     }
 

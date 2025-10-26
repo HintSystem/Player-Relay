@@ -28,7 +28,7 @@
     "accessWidener": "player-relay.accesswidener",
     "depends": {
         "java": ">=21",
-        "minecraft": ">=1.21.6 <=1.21.8",
+        "minecraft": ">=1.21.9 <=1.21.10",
         "fabricloader": ">=0.17.0",
         "fabric-api": "*",
         "yet_another_config_lib_v3": "*"

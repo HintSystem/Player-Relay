@@ -11,7 +11,8 @@ import net.minecraft.client.gui.PlayerSkinDrawer;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.util.SkinTextures;
+import net.minecraft.component.type.ProfileComponent;
+import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
@@ -122,7 +123,10 @@ public class PlayerListEntry {
         if (statsData != null) paperDollRenderer.applyHealth(player, statsData.health);
 
         PlayerStatusEffectsData statusEffectsData = playerInfo.getComponent(PlayerStatusEffectsData.class);
-        if (statusEffectsData != null) playerEntity.setOnFire(statusEffectsData.isOnFire());
+        if (statusEffectsData != null) {
+            playerEntity.setFrozenTicks(statusEffectsData.isFrozen() ? playerEntity.getMinFreezeDamageTicks() + 4 : 0);
+            playerEntity.setOnFire(statusEffectsData.isOnFire());
+        }
 
         PlayerEquipmentData equipmentData = playerInfo.getComponent(PlayerEquipmentData.class);
         if (equipmentData != null) equipmentData.applyToPlayer(player);
@@ -131,11 +135,17 @@ public class PlayerListEntry {
     @Nullable
     public OtherClientPlayerEntity getRenderPlayerEntity() {
         ClientWorld world = MinecraftClient.getInstance().world;
-        if ((this.playerEntity == null || this.playerEntity.clientWorld != world) && world != null) {
+        if ((this.playerEntity == null || this.playerEntity.getEntityWorld() != world) && world != null) {
             this.playerEntity = new OtherClientPlayerEntity(world, playerInfo.toGameProfile());
         }
 
         return this.playerEntity;
+    }
+
+    public SkinTextures getPlayerSkinTextures() {
+        return MinecraftClient.getInstance().getPlayerSkinCache()
+            .get(ProfileComponent.ofStatic(playerInfo.toGameProfile()))
+            .getTextures();
     }
 
     public void render(DrawContext context, int x, int y, RenderTickCounter tickCounter) {
@@ -156,8 +166,7 @@ public class PlayerListEntry {
                 renderIconUnderlay(context, x, y, x2, y2, null);
                 paperDollRenderer.renderPaperDoll(context, x, y, x2, y2, 22, playerEntity, tickCounter);
             } else {
-                SkinTextures skin = client.getSkinProvider().getSkinTextures(playerInfo.toGameProfile());
-                PlayerSkinDrawer.draw(context, skin, x, y, config.iconWidth);
+                PlayerSkinDrawer.draw(context, getPlayerSkinTextures(), x, y, config.iconWidth);
             }
 
             renderIconOverlay(context, x, y, x2, y2, null);

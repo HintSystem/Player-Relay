@@ -33,10 +33,10 @@ public class PlayerWorldData extends FlagHolder<PlayerWorldData.FLAGS>
         if (player == null) { return; }
 
         setFlag(FLAGS.IN_WORLD, true);
-        WorldProperties worldProperties = player.getWorld().getLevelProperties();
+        WorldProperties worldProperties = player.getEntityWorld().getLevelProperties();
 
         setFlag(FLAGS.HARDCORE, worldProperties.isHardcore());
-        this.dimension = player.getWorld().getRegistryKey();
+        this.dimension = player.getEntityWorld().getRegistryKey();
         this.difficulty = worldProperties.getDifficulty();
     }
 
