@@ -1,10 +1,10 @@
 plugins {
 	id "fabric-loom" version "${loom_version}"
 	id "maven-publish"
-    id "me.modmuss50.mod-publish-plugin" version "1.0.0"
+    id "me.modmuss50.mod-publish-plugin" version "1.1.0"
 }
 
-version = project.mod_version
+version = "${project.mod_version}+${project.minecraft_version}"
 group = project.maven_group
 
 base {
@@ -36,7 +36,6 @@ repositories {
 
     maven { url "https://maven.terraformersmc.com/" } // Mod menu
     maven { url "https://maven.isxander.dev/releases" } // YACL
-    maven { url "https://maven.shedaniel.me/" } // Cloth Config
 
     mavenCentral()
 }

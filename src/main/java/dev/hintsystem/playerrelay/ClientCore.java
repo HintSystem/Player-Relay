@@ -115,10 +115,10 @@ public class ClientCore {
     public static int ticksToMs(int ticks) { return Math.round((ticks / tickRate) * 1000); }
 
     public static void sendClientMessage(Text message) {
-        ClientPlayerEntity clientPlayer = MinecraftClient.getInstance().player;
-        if (clientPlayer == null) { return; }
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player == null) { return; }
 
-        clientPlayer.sendMessage(message, false);
+        client.execute(() -> client.player.sendMessage(message, false));
     }
 
     @Nullable

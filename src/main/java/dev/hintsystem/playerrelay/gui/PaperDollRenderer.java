@@ -126,7 +126,10 @@ public class PaperDollRenderer {
             headYawOffset = headYawOffsetO = centerYaw = 0.0f;
         }
 
-        if (livingEntity.isAlive()) livingEntity.tick();
+        if (livingEntity.isAlive()) {
+            livingEntity.tick();
+            livingEntity.age++;
+        }
     }
 
     public void renderPaperDoll(DrawContext context, int x1, int y1, int x2, int y2, int scale, LivingEntity livingEntity, RenderTickCounter tickCounter) {
