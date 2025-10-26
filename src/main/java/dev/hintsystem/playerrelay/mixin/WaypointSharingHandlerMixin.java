@@ -22,26 +22,24 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
-@Mixin(value = WaypointSharingHandler.class, remap = false)
+@Mixin(WaypointSharingHandler.class)
 public class WaypointSharingHandlerMixin {
     @Shadow
     private Screen confirmScreenParent;
-    @Shadow
+    @Shadow(remap = false)
     private Waypoint sharedWaypoint;
-    @Shadow
+    @Shadow(remap = false)
     private MinimapWorld minimapWorld;
 
     @Inject(
-        method = "shareWaypoint",
+        method = "shareWaypoint(Lnet/minecraft/client/gui/screen/Screen;Lxaero/common/minimap/waypoints/Waypoint;Lxaero/hud/minimap/world/MinimapWorld;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V"
         ),
         cancellable = true
     )
-    public void modifyWaypointShare(
-        CallbackInfo ci
-    ) {
+    public void modifyWaypointShare(CallbackInfo ci) {
         if (!PlayerRelay.isNetworkActive() || !PlayerRelay.config.shareWaypointsViaRelay) return;
 
         ci.cancel();
