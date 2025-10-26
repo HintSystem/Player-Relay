@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.UUID;
 
-@Mixin(value = DrawContext.class, remap = false)
+@Mixin(DrawContext.class)
 public class DrawContextMixin implements DrawContextAccessor {
     @Unique
     private UUID playerrelay$authorId;
@@ -65,7 +65,8 @@ public class DrawContextMixin implements DrawContextAccessor {
         method = "renderArrowIcon",
         at = @At("HEAD"),
         argsOnly = true,
-        ordinal = 0
+        ordinal = 0,
+        remap = false
     )
     private int modifyArrowColor(int color) {
         PlayerInfoPayload playerInfo = PlayerRelay.getConnectedPlayer(this.playerrelay$authorId);
