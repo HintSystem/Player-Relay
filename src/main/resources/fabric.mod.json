@@ -8,6 +8,7 @@
         "HintSystem"
     ],
     "contact": {
+        "homepage": "https://modrinth.com/mod/player-relay",
         "issues": "https://github.com/HintSystem/Player-Relay/issues",
         "sources": "https://github.com/HintSystem/Player-Relay"
     },
@@ -15,8 +16,14 @@
     "icon": "assets/player-relay/icon.png",
     "environment": "client",
     "entrypoints": {
-        "client": [
+        "main": [
             "dev.hintsystem.playerrelay.PlayerRelay"
+        ],
+        "client": [
+            "dev.hintsystem.playerrelay.PlayerRelayClient"
+        ],
+        "server": [
+            "dev.hintsystem.playerrelay.PlayerRelayServer"
         ],
         "modmenu": [
             "dev.hintsystem.playerrelay.mods.SupportModMenu"
@@ -36,6 +43,6 @@
     "recommends": {
         "xaerominimap": "*",
         "xaeroworldmap": "*",
-        "ping-wheel": "~1.12.0"
+        "pingwheel": "~1.12.0"
     }
 }

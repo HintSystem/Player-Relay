@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.mixin.minecraft;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.ClientCore;
 
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.input.KeyInput;
@@ -15,6 +15,6 @@ public class KeyboardMixin {
     @Inject(method = "onKey", at = @At("HEAD"))
     private void onKey(long window, int action, KeyInput input, CallbackInfo ci) {
         // Only count press or repeat (not release)
-        if (action != 0) PlayerRelay.updateInputActivity();
+        if (action != 0) ClientCore.updateInputActivity();
     }
 }

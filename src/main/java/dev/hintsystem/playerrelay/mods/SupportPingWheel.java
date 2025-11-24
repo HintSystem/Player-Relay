@@ -1,9 +1,10 @@
 package dev.hintsystem.playerrelay.mods;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.networking.message.P2PMessage;
-import dev.hintsystem.playerrelay.networking.message.PacketHandler;
+import dev.hintsystem.playerrelay.PlayerRelayClient;
+import dev.hintsystem.playerrelay.networking.handler.ClientMessageHandler;
 
+import dev.hintsystem.playerrelay.payload.GenericPacketPayload;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.packet.CustomPayload;
@@ -12,7 +13,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.UUID;
 
-public class SupportPingWheel implements PacketHandler {
+public class SupportPingWheel implements ClientMessageHandler.PacketHandler {
     private static final Identifier PING_LOCATION_ID = Identifier.of("ping-wheel-s2c", "ping-location");
     private static final String PING_WHEEL_CLASS = "nx.pingwheel.common.network.PingLocationS2CPacket";
 
@@ -41,13 +42,13 @@ public class SupportPingWheel implements PacketHandler {
     }
 
     @Override
-    public void handlePacket(P2PMessage message, ClientPlayNetworkHandler handler, MinecraftClient client) {
+    public void handlePacket(GenericPacketPayload packetPayload, ClientPlayNetworkHandler handler, MinecraftClient client) {
         if (!pingWheelAvailable) return;
 
         try {
-            CustomPayload packet = message.toPacket(pingLocationPacketClass);
+            CustomPayload packet = packetPayload.toPacket(pingLocationPacketClass);
 
-            if (!PlayerRelay.config.showPingsFromOtherServers) {
+            if (!PlayerRelayClient.config.showPingsFromOtherServers) {
                 UUID author = null;
                 if (packet instanceof nx.pingwheel.common.network.PingLocationS2CPacket pingPacket) {
                     author = pingPacket.author();

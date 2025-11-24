@@ -1,7 +1,5 @@
 package dev.hintsystem.playerrelay.payload;
 
-import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
-
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
@@ -39,9 +37,6 @@ public class WaypointPayload implements IPayload {
     public String getDimensionIdString() {
         return (dimension != null) ? dimension.getValue().toString() : "";
     }
-
-    @Override
-    public P2PMessageType getMessageType() { return P2PMessageType.WAYPOINT; }
 
     @Override
     public void write(RegistryByteBuf buf) {

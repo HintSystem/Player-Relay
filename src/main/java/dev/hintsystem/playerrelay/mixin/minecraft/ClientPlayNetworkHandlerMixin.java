@@ -1,6 +1,7 @@
 package dev.hintsystem.playerrelay.mixin.minecraft;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.ClientCore;
+import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import net.minecraft.client.network.PlayerListEntry;
@@ -20,8 +21,8 @@ public class ClientPlayNetworkHandlerMixin {
         cancellable = true
     )
     private void playerListEntryFallback(UUID uuid, CallbackInfoReturnable<PlayerListEntry> cir) {
-        if (cir.getReturnValue() == null && PlayerRelay.isNetworkActive()) {
-            PlayerInfoPayload fallback = PlayerRelay.getNetworkManager().connectedPlayers.get(uuid);
+        if (cir.getReturnValue() == null && ClientCore.isP2PNetworkActive()) {
+            PlayerInfoPayload fallback = CommonCore.p2pPlayers.get(uuid);
 
             if (fallback != null) { cir.setReturnValue(fallback.toPlayerListEntry()); }
         }

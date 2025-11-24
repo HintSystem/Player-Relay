@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.mixin.pingwheel;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.cast.pingwheel.DrawContextAccessor;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
@@ -39,7 +39,7 @@ public class DrawContextMixin implements DrawContextAccessor {
         int newColor = color;
         boolean newShadow = shadow;
 
-        PlayerInfoPayload playerInfo = PlayerRelay.getConnectedPlayer(this.playerrelay$authorId);
+        PlayerInfoPayload playerInfo = ClientCore.getTrackedPlayer(this.playerrelay$authorId);
         if (playerInfo != null) {
             newColor = playerInfo.getNameColor();
             newShadow = true;
@@ -55,7 +55,7 @@ public class DrawContextMixin implements DrawContextAccessor {
         ordinal = 0
     )
     private int modifyPingColor(int color) {
-        PlayerInfoPayload playerInfo = PlayerRelay.getConnectedPlayer(this.playerrelay$authorId);
+        PlayerInfoPayload playerInfo = ClientCore.getTrackedPlayer(this.playerrelay$authorId);
         if (playerInfo != null) return playerInfo.getNameColor();
 
         return color;
@@ -69,7 +69,7 @@ public class DrawContextMixin implements DrawContextAccessor {
         remap = false
     )
     private int modifyArrowColor(int color) {
-        PlayerInfoPayload playerInfo = PlayerRelay.getConnectedPlayer(this.playerrelay$authorId);
+        PlayerInfoPayload playerInfo = ClientCore.getTrackedPlayer(this.playerrelay$authorId);
         if (playerInfo != null) return playerInfo.getNameColor();
 
         return color;

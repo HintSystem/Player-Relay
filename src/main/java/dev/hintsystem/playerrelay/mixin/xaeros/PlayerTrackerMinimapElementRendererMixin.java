@@ -1,13 +1,13 @@
-package dev.hintsystem.playerrelay.mixin;
+package dev.hintsystem.playerrelay.mixin.xaeros;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
-
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.font.TextRenderer;
 
 import xaero.hud.minimap.player.tracker.PlayerTrackerMinimapElement;
 import xaero.hud.minimap.player.tracker.PlayerTrackerMinimapElementRenderer;
+
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.font.TextRenderer;
 
 import org.joml.Matrix4f;
 
@@ -42,7 +42,7 @@ public class PlayerTrackerMinimapElementRendererMixin {
         int newColor = color;
         boolean newShadow = shadow;
 
-        PlayerInfoPayload playerInfo = PlayerRelay.getNetworkManager().connectedPlayers.get(e.getPlayerId());
+        PlayerInfoPayload playerInfo = CommonCore.playerInfoTracker.getTrackedPlayer(e.getPlayerId());
         if (playerInfo != null) {
             newColor = playerInfo.getNameColor();
             newShadow = true;

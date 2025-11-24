@@ -1,6 +1,7 @@
-package dev.hintsystem.playerrelay.mixin;
+package dev.hintsystem.playerrelay.mixin.xaeros;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.ClientCore;
+import dev.hintsystem.playerrelay.PlayerRelayClient;
 import dev.hintsystem.playerrelay.payload.WaypointPayload;
 
 import xaero.common.minimap.waypoints.Waypoint;
@@ -40,7 +41,7 @@ public class WaypointSharingHandlerMixin {
         cancellable = true
     )
     public void modifyWaypointShare(CallbackInfo ci) {
-        if (!PlayerRelay.isNetworkActive() || !PlayerRelay.config.shareWaypointsViaRelay) return;
+        if (!ClientCore.isNetworkActive() || !PlayerRelayClient.config.shareWaypointsViaRelay) return;
 
         ci.cancel();
         MinecraftClient.getInstance().setScreen(new ConfirmScreen(
@@ -60,9 +61,9 @@ public class WaypointSharingHandlerMixin {
             RegistryKey<World> dimension = this.minimapWorld.getDimId();
             BlockPos pos = new BlockPos(this.sharedWaypoint.getX(), this.sharedWaypoint.getY(), this.sharedWaypoint.getZ());
 
-            PlayerRelay.getNetworkManager().broadcastMessage(new WaypointPayload(
-                client.getSession().getUuidOrNull(), this.sharedWaypoint.getName(), dimension, pos, this.sharedWaypoint.getYaw(), this.sharedWaypoint.getWaypointColor().getHex()
-            ).message());
+            ClientCore.broadcastPayload(new WaypointPayload(
+                ClientCore.getClientUuid(), this.sharedWaypoint.getName(), dimension, pos, this.sharedWaypoint.getYaw(), this.sharedWaypoint.getWaypointColor().getHex()
+            ));
 
             MinecraftClient.getInstance().setScreen(null);
         }

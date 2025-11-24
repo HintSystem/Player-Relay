@@ -1,9 +1,9 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.PlayerRelayClient;
 
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.util.math.Vec3d;
 
@@ -14,7 +14,7 @@ public class PlayerPositionData implements PlayerDataComponent {
 
     public PlayerPositionData() {}
 
-    public PlayerPositionData(ClientPlayerEntity player) {
+    public PlayerPositionData(PlayerEntity player) {
         this.coords = player.getEntityPos();
         this.yaw = player.getYaw();
         this.pitch = player.getPitch();
@@ -43,7 +43,7 @@ public class PlayerPositionData implements PlayerDataComponent {
     public boolean hasChanged(PlayerDataComponent other) {
         if (!(other instanceof PlayerPositionData otherPos)) return true;
 
-        double minPlayerMove = PlayerRelay.config.minPlayerMove;
+        double minPlayerMove = PlayerRelayClient.config.minPlayerMove;
         return this.coords.squaredDistanceTo(otherPos.coords) >= minPlayerMove * minPlayerMove
             || Math.abs(this.yaw - otherPos.yaw) > 5.0F
             || Math.abs(this.pitch - otherPos.pitch) > 5.0F

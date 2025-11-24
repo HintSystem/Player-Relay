@@ -1,39 +1,29 @@
 package dev.hintsystem.playerrelay;
 
-import dev.hintsystem.playerrelay.command.PlayerRelayCommands;
-import dev.hintsystem.playerrelay.config.Config;
-import dev.hintsystem.playerrelay.gui.PlayerList;
-import dev.hintsystem.playerrelay.logging.ClientLogHandler;
-import dev.hintsystem.playerrelay.logging.ConsoleLogHandler;
-import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
+import dev.hintsystem.playerrelay.networking.PayloadMessage;
+import dev.hintsystem.playerrelay.networking.handler.C2SMessageHandler;
 
-import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
 
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
-
-public class PlayerRelay implements ClientModInitializer {
+public class PlayerRelay implements ModInitializer {
     public static final String MOD_ID = "player-relay";
     public static final int NETWORK_VERSION = 4;
     public static final String VERSION;
-    public static final Logger LOGGER = LoggerFactory.getLogger(PlayerRelay.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public static final boolean isDevelopment;
-    public static long lastInputTime = Util.getMeasuringTimeMs();
+
+    private static P2PNetworkManager p2pNetworkManager;
 
     static {
         isDevelopment = FabricLoader.getInstance().isDevelopmentEnvironment();
@@ -43,49 +33,30 @@ public class PlayerRelay implements ClientModInitializer {
             .orElse("Unknown Version");
     }
 
-    public static Config config = Config.deserialize();
-    private static P2PNetworkManager networkManager;
-
-    private void initModSupport() {
-        if (FabricLoader.getInstance().isModLoaded("xaerominimap")
-            || FabricLoader.getInstance().isModLoaded("xaeroworldmap")) { SupportXaerosMapMods.init(); }
-    }
-
     @Override
-    public void onInitializeClient() {
-        networkManager = new P2PNetworkManager();
-        networkManager.logger
-            .addLogHandler(new ConsoleLogHandler(LOGGER))
-            .addLogHandler(new ClientLogHandler());
+    public void onInitialize() {
+        PayloadTypeRegistry.playS2C().register(PayloadMessage.Packet.PACKET_TYPE, PayloadMessage.Packet.PACKET_CODEC);
+        PayloadTypeRegistry.playC2S().register(PayloadMessage.Packet.PACKET_TYPE, PayloadMessage.Packet.PACKET_CODEC);
 
-        if (config.autoHost) { networkManager.startServerAsync(); }
+        C2SMessageHandler serverHandler = new C2SMessageHandler(CommonCore.networkLogger, CommonCore.serverPlayers);
+        ServerPlayNetworking.registerGlobalReceiver(PayloadMessage.Packet.PACKET_TYPE, (payloadMessage, context) -> {
+            serverHandler.handleMessage(payloadMessage, context.player());
+        });
 
-        ClientLifecycleEvents.CLIENT_STARTED.register(client -> initModSupport());
-        ClientTickEvents.END_CLIENT_TICK.register(ClientCore::onTickEnd);
-        ClientLifecycleEvents.CLIENT_STOPPING.register(ClientCore::onStopping);
-
-        PlayerList playerList = new PlayerList();
-        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "before_chat"), playerList);
-        ClientTickEvents.END_CLIENT_TICK.register(playerList::onClientTickEnd);
-
-        new PlayerRelayCommands(networkManager).register();
+        ServerPlayerEvents.LEAVE.register(ServerCore::onPlayerLeave);
+        ServerTickEvents.END_WORLD_TICK.register(ServerCore::onTickEnd);
     }
 
-    public static boolean isClientAfk() { return Util.getMeasuringTimeMs() - lastInputTime > config.afkTimeout; }
-    public static void updateInputActivity() { lastInputTime = Util.getMeasuringTimeMs(); }
+    public static EnvType getEnvironmentType() { return FabricLoader.getInstance().getEnvironmentType(); }
 
-    /**
-     * Returns a connected player's {@link PlayerInfoPayload} or the client's PlayerInfoPayload if UUID is equal
-     */
-    @Nullable
-    public static PlayerInfoPayload getConnectedPlayer(UUID playerId) {
-        ClientPlayerEntity clientPlayer = MinecraftClient.getInstance().player;
-        return (clientPlayer != null && clientPlayer.getUuid().equals(playerId))
-            ? ClientCore.updateClientInfo() : networkManager.connectedPlayers.get(playerId);
+    public static void initializeP2PNetwork(P2PNetworkManager networkManager) {
+        if (p2pNetworkManager != null) {
+            LOGGER.warn("P2P Network manager already initialized!");
+            return;
+        }
+
+        p2pNetworkManager = networkManager;
     }
 
-    public static boolean isNetworkActive() {
-        return networkManager != null && networkManager.getPeerCount() != 0;
-    }
-    public static P2PNetworkManager getNetworkManager() { return networkManager; }
+    public static P2PNetworkManager getP2PNetworkManager() { return p2pNetworkManager; }
 }

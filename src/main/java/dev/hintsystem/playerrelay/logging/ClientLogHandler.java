@@ -1,7 +1,6 @@
 package dev.hintsystem.playerrelay.logging;
 
 import dev.hintsystem.playerrelay.ClientCore;
-import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 
 import net.minecraft.text.HoverEvent;
@@ -17,13 +16,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ClientLogHandler implements LogHandler {
-
     @Override
     public void handle(LogEvent event) {
         if (event.getType() == null) return;
 
         switch (event.getType()) {
-            case UPNP_FAIL -> ClientCore.sendClientMessage(formatMessage(event, Text.empty()
+            case UPNP_FAIL -> ClientCore.sendClientChatMessage(formatMessage(event, Text.empty()
                     .append(Text.literal("Could not discover a UPnP gateway.\n")
                         .setStyle(Style.EMPTY.withColor(Formatting.RED)))
                     .append(Text.literal("The server will continue running, however you will have:\n"))
@@ -32,7 +30,7 @@ public class ClientLogHandler implements LogHandler {
                     .append(Text.literal("• No detection of your local/external IP")
                         .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
             ));
-            case PORT_MAP_FAIL -> ClientCore.sendClientMessage(formatMessage(event, Text.empty()
+            case PORT_MAP_FAIL -> ClientCore.sendClientChatMessage(formatMessage(event, Text.empty()
                     .append(Text.literal("UPnP port mapping failed.\n")
                         .setStyle(Style.EMPTY.withColor(Formatting.RED)))
                     .append(Text.literal("Clients outside your network will not be able to connect.\n"))
@@ -43,24 +41,24 @@ public class ClientLogHandler implements LogHandler {
                 Object version = event.getContext().get("version");
 
                 if (version instanceof RelayVersionPayload versionPayload) {
-                    ClientCore.sendClientMessage(Text.empty()
+                    ClientCore.sendClientChatMessage(Text.empty()
                         .append(formatTitle("Version mismatch detected", LevelFormat.ERROR))
                         .append(Text.literal("\n\n"))
                         .append(Text.literal("Host requires: ")
                             .setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
-                        .append(Text.literal("mod version " + versionPayload.modVersion + ", network v" + versionPayload.networkVersion)
+                        .append(Text.literal("mod version " + versionPayload.versionString + ", network v" + versionPayload.networkVersion)
                             .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
                         .append(Text.literal("\n"))
                         .append(Text.literal("Your client: ")
                             .setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
-                        .append(Text.literal("mod version " + PlayerRelay.VERSION + ", network v" + PlayerRelay.NETWORK_VERSION)
+                        .append(Text.literal("mod version " + RelayVersionPayload.VERSION_STRING + ", network v" + RelayVersionPayload.NETWORK_VERSION)
                             .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
                         .append(Text.literal("\n\n"))
                         .append(Text.literal("⚠ Please install the matching mod version.")
                             .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
                     );
                 } else {
-                    ClientCore.sendClientMessage(formatMessage(event, Text.empty()
+                    ClientCore.sendClientChatMessage(formatMessage(event, Text.empty()
                         .append(Text.literal("No relay version received.\n")
                             .setStyle(Style.EMPTY.withColor(Formatting.RED)))
                         .append(Text.literal("This could mean either the relay you are connecting to, or your client is outdated.\n"))

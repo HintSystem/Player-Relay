@@ -1,8 +1,9 @@
 package dev.hintsystem.playerrelay.command;
 
 import dev.hintsystem.playerrelay.ClientCore;
+import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.EnderChestTracker;
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.PlayerRelayClient;
 import dev.hintsystem.playerrelay.gui.RemoteEnderChestScreen;
 import dev.hintsystem.playerrelay.gui.RemoteInventoryScreen;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
@@ -102,7 +103,7 @@ public class PlayerRelayCommands {
                         MutableText playerList = Text.empty().append(Text.literal("=== Connected Players ===")
                             .setStyle(Style.EMPTY.withColor(Formatting.GOLD).withBold(true)));
 
-                        for (PlayerInfoPayload player : networkManager.connectedPlayers.values()) {
+                        for (PlayerInfoPayload player : CommonCore.playerInfoTracker.getAllTrackedPlayers().values()) {
                             MutableText line = Text.empty().append(Text.literal("\n" + player.getName() + " ")
                                 .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true)));
 
@@ -134,7 +135,7 @@ public class PlayerRelayCommands {
 
                 .then(ClientCommandManager.literal("config")
                     .executes(context -> {
-                        client.send(() -> client.setScreen(PlayerRelay.config.createScreen(null)));
+                        client.send(() -> client.setScreen(PlayerRelayClient.config.createScreen(null)));
                         return 1;
                     }))
 
@@ -157,7 +158,7 @@ public class PlayerRelayCommands {
                                 PlayerInventoryPayload localEnderChest = new PlayerInventoryPayload(client.player.getUuid());
                                 localEnderChest.inventoryItems = EnderChestTracker.getEnderChestInventory();
 
-                                client.setScreen(new RemoteEnderChestScreen(localEnderChest, ClientCore.updateClientInfo()));
+                                client.setScreen(new RemoteEnderChestScreen(localEnderChest, ClientCore.getUpdatedClientInfo()));
                             } catch (Exception e) {
                                 context.getSource().sendError(Text.literal("Failed to open ender chest: " + e.getMessage()));
                             }
@@ -218,8 +219,7 @@ public class PlayerRelayCommands {
 
                     context.getSource().sendFeedback(Text.literal("Requesting " + type + " for " + player.getName() + "..."));
 
-                    networkManager.getMessageHandler()
-                        .requestInventory(player.playerId, isEnderChest)
+                    ClientCore.requestInventory(player.playerId, isEnderChest)
                         .orTimeout(5, TimeUnit.SECONDS)
                         .thenAccept(inventory -> client.send(() -> {
                             try {

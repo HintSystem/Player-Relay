@@ -1,47 +1,27 @@
 package dev.hintsystem.playerrelay.config;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import dev.hintsystem.playerrelay.gui.AnchorPoint;
 import dev.hintsystem.playerrelay.gui.PlayerListEntry;
-import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
-
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
-
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonObject;
 import org.joml.Vector2i;
 
 import java.awt.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
 
-public class Config {
-    public static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve(PlayerRelay.MOD_ID + ".json");
+public class ClientConfig extends CommonConfig {
     private static final Gson GSON = new GsonBuilder()
         .setPrettyPrinting()
         .registerTypeAdapter(Color.class, new ColorTypeAdapter())
         .create();
 
-    public static final Config DEFAULTS = new Config();
+    public static final ClientConfig DEFAULTS = new ClientConfig();
 
-    public boolean autoHost = false;
-    public boolean UPnPEnabled = true;
-    public String connectionAddress = "external";
-    public int defaultHostingPort = P2PNetworkManager.DEFAULT_PORT;
-
-    public String autoConnectAddress = "";
     public Color displayNameColor = PlayerBasicData.DEFAULT_NAME_COLOR;
     public int afkTimeout = 2 * 60 * 1000;
     public double minPlayerMove = 0.2;
@@ -61,16 +41,15 @@ public class Config {
 
     public boolean showPingsFromOtherServers = false;
 
-    public int peerConnectionTimeout = 6000;
-    public int tcpSendIntervalMs = 500;
-    public int udpSendIntervalMs = 100;
-    public int udpPingIntervalMs = 5000;
-    public int udpPingTimeoutMs = 2000;
-    public int maxFailedUdpPings = 3;
+    @Override
+    public ClientConfig getDefaults() { return DEFAULTS; }
+
+    @Override
+    protected Gson getGson() { return GSON; }
 
     public Screen createScreen(Screen parent) {
         return YetAnotherConfigLib.createBuilder()
-            .title(Text.literal("PlayerRelay Config"))
+            .title(Text.literal("PlayerRelayClient Config"))
 
             .category(ConfigCategory.createBuilder()
                 .name(Text.literal("General"))
@@ -348,43 +327,5 @@ public class Config {
             .save(this::serialize)
             .build()
             .generateScreen(parent);
-    }
-
-    public void serialize() {
-        JsonObject root = new JsonObject();
-
-        try {
-            for (Field f : Config.class.getFields()) {
-                if (!Modifier.isStatic(f.getModifiers())) {
-                    Object current = f.get(this);
-                    Object def = f.get(DEFAULTS);
-
-                    if (!Objects.equals(current, def)) {
-                        root.add(f.getName(), GSON.toJsonTree(current));
-                    }
-                }
-            }
-            Files.writeString(PATH, GSON.toJson(root));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static Config deserialize() {
-        Config cfg = new Config();
-        if (!Files.exists(PATH)) return cfg;
-
-        try {
-            JsonObject root = JsonParser.parseString(Files.readString(PATH)).getAsJsonObject();
-            for (Field f : Config.class.getFields()) {
-                if (!Modifier.isStatic(f.getModifiers()) && root.has(f.getName())) {
-                    Object val = GSON.fromJson(root.get(f.getName()), f.getType());
-                    f.set(cfg, val);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return cfg;
     }
 }

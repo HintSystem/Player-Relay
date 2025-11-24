@@ -11,7 +11,7 @@ public class PlayerBasicData implements PlayerDataComponent {
     public String name;
     public int nameColor;
 
-    public PlayerBasicData() {}
+    public PlayerBasicData() { this(null); }
 
     public PlayerBasicData(String name) {
         this(name, DEFAULT_NAME_COLOR);

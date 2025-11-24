@@ -1,12 +1,13 @@
 package dev.hintsystem.playerrelay.payload;
 
 import dev.hintsystem.playerrelay.EnderChestTracker;
-import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.EnderChestInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,15 +29,26 @@ public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FL
         this.setFlag(FLAGS.IS_ENDER_CHEST, isEnderChest);
 
         if (isEnderChest) {
-            this.setFlag(FLAGS.PLAYER_HAS_DATA, EnderChestTracker.hasEnderChestInventory());
-            if (EnderChestTracker.hasEnderChestInventory()) {
-                this.inventoryItems = EnderChestTracker.getEnderChestInventory();
+            if (player instanceof ServerPlayerEntity serverPlayer) {
+                this.setFlag(FLAGS.PLAYER_HAS_DATA, true);
+                EnderChestInventory enderChest = serverPlayer.getEnderChestInventory();
+
+                for (ItemStack stack : enderChest.getHeldStacks()) {
+                    this.inventoryItems.add(stack.copy());
+                }
+            } else {
+                this.setFlag(FLAGS.PLAYER_HAS_DATA, EnderChestTracker.hasEnderChestInventory());
+
+                if (EnderChestTracker.hasEnderChestInventory()) {
+                    this.inventoryItems = EnderChestTracker.getEnderChestInventory();
+                }
             }
             return;
         }
 
         this.setFlag(FLAGS.PLAYER_HAS_DATA, true);
         PlayerInventory inventory = player.getInventory();
+
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack stack = inventory.getStack(i);
 
@@ -66,9 +78,6 @@ public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FL
 
     public boolean hasData() { return hasFlag(FLAGS.PLAYER_HAS_DATA); }
     public boolean isEnderChest() { return hasFlag(FLAGS.IS_ENDER_CHEST); }
-
-    @Override
-    public P2PMessageType getMessageType() { return P2PMessageType.PLAYER_INVENTORY; }
 
     @Override
     public void write(RegistryByteBuf buf) {

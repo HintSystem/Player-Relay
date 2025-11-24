@@ -1,13 +1,13 @@
-package dev.hintsystem.playerrelay.mixin;
+package dev.hintsystem.playerrelay.mixin.xaeros;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
-
-import net.minecraft.client.font.TextRenderer;
 
 import xaero.map.element.MapElementGraphics;
 import xaero.map.radar.tracker.PlayerTrackerMapElement;
 import xaero.map.radar.tracker.PlayerTrackerMapElementRenderer;
+
+import net.minecraft.client.font.TextRenderer;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.injection.At;
@@ -37,7 +37,7 @@ public class PlayerTrackerMapElementRendererMixin {
 
         int newRgbColor = 0xFFFFFF;
         boolean newShadow = false;
-        PlayerInfoPayload playerInfo = PlayerRelay.getNetworkManager().connectedPlayers.get(e.getPlayerId());
+        PlayerInfoPayload playerInfo = CommonCore.playerInfoTracker.getTrackedPlayer(e.getPlayerId());
         if (playerInfo != null) {
             newRgbColor = playerInfo.getNameColor() & 0xFFFFFF; // Strip any alpha from custom color
             newShadow = true;

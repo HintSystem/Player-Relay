@@ -1,0 +1,16 @@
+package dev.hintsystem.playerrelay.networking;
+
+public class NetworkConfig {
+    public boolean autoHost = false;
+    public String autoConnectAddress = "";
+    public boolean UPnPEnabled = true;
+    public String connectionAddress = "external";
+    public int defaultHostingPort = P2PNetworkManager.DEFAULT_PORT;
+
+    public int peerConnectionTimeout = 6000;
+    public int tcpSendIntervalMs = 500;
+    public int udpSendIntervalMs = 100;
+    public int udpPingIntervalMs = 5000;
+    public int udpPingTimeoutMs = 2000;
+    public int maxFailedUdpPings = 3;
+}

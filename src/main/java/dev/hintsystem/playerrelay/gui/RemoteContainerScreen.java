@@ -1,5 +1,6 @@
 package dev.hintsystem.playerrelay.gui;
 
+import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.PlayerInventoryPayload;
@@ -65,7 +66,7 @@ public abstract class RemoteContainerScreen extends Screen {
         if (world == null) throw new Exception("Client not in a world");
 
         if (playerPayload == null) {
-            playerPayload = PlayerRelay.getNetworkManager().connectedPlayers.get(inventoryPayload.playerId);
+            playerPayload = ClientCore.getTrackedPlayer(inventoryPayload.playerId);
             if (playerPayload == null) throw new Exception("Player not connected to relay");
         }
 

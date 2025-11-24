@@ -1,6 +1,7 @@
 package dev.hintsystem.playerrelay.mods.xaero;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.CommonCore;
+import dev.hintsystem.playerrelay.PlayerRelayClient;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 import dev.hintsystem.playerrelay.payload.player.PlayerWorldData;
@@ -14,13 +15,13 @@ import java.util.*;
 
 public class RelayPlayerTracker {
     public Iterator<PlayerInfoPayload> getTrackedPlayerIterator() {
-        if (!PlayerRelay.config.showTrackedPlayers) return Collections.emptyIterator();
+        if (!PlayerRelayClient.config.showTrackedPlayers) return Collections.emptyIterator();
 
-        final Collection<UUID> serverPlayers = PlayerRelay.config.showTrackedPlayersFromOtherServers
+        final Collection<UUID> serverPlayers = PlayerRelayClient.config.showTrackedPlayersFromOtherServers
             ? null : getServerPlayerUuids();
 
         return Iterators.filter(
-            PlayerRelay.getNetworkManager().connectedPlayers.values().iterator(),
+            CommonCore.playerInfoTracker.getAllTrackedPlayers().values().iterator(),
             player -> {
                 if (player == null) return false;
 

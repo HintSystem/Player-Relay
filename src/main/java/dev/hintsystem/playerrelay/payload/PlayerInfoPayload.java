@@ -1,12 +1,10 @@
 package dev.hintsystem.playerrelay.payload;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
 import dev.hintsystem.playerrelay.payload.player.*;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.world.World;
@@ -66,17 +64,8 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
         read(buf);
     }
 
-    public void applyToPlayer(PlayerEntity player) {
-        for (PlayerDataComponent component : components) {
-            if (component != null) component.applyToPlayer(player);
-        }
-    }
-
     public PlayerListEntry toPlayerListEntry() { return new PlayerListEntry(toGameProfile(), false); }
     public GameProfile toGameProfile() { return new GameProfile(this.playerId, getName()); }
-
-    @Override
-    public P2PMessageType getMessageType() { return P2PMessageType.PLAYER_INFO; }
 
     @SuppressWarnings("unchecked")
     private <T extends PlayerDataComponent> ComponentInfo<T> getComponentInfo(Class<T> componentClass) {
@@ -120,6 +109,13 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
         return (currentData == null) || newComponent.hasChanged(currentData);
     }
 
+    public boolean updateComponent(@Nullable PlayerInfoPayload oldInfo, PlayerDataComponent component) {
+        boolean hasChanged = oldInfo == null || oldInfo.hasComponentChanged(component);
+
+        if (hasChanged) setComponent(component);
+        return hasChanged;
+    }
+
     public boolean isAfk() { return hasFlag(FLAGS.AFK); }
 
     public String getName() {
@@ -139,6 +135,8 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
     }
 
     public void merge(PlayerInfoPayload other) {
+        if (this == other || other == null) return;
+
         byte reservedMask = (byte) ((1 << RESERVED_FLAGS) - 1);
 
         // Clear reserved flags and replace with other's

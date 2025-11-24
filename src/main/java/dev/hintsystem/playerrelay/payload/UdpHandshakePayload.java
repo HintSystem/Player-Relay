@@ -1,7 +1,5 @@
 package dev.hintsystem.playerrelay.payload;
 
-import dev.hintsystem.playerrelay.networking.message.P2PMessageType;
-
 import net.minecraft.network.RegistryByteBuf;
 
 public class UdpHandshakePayload implements IPayload {
@@ -21,9 +19,6 @@ public class UdpHandshakePayload implements IPayload {
         this.udpId = buf.readShort();
         this.udpPort = buf.readInt();
     }
-
-    @Override
-    public P2PMessageType getMessageType() { return P2PMessageType.UDP_HANDSHAKE; }
 
     @Override
     public void write(RegistryByteBuf buf) {

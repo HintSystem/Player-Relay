@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.logging.LogEventTypes;
-import dev.hintsystem.playerrelay.logging.PlayerRelayLogger;
+import dev.hintsystem.playerrelay.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 
 import org.bitlet.weupnp.GatewayDevice;
@@ -12,14 +12,12 @@ import java.net.InetAddress;
 import java.util.Map;
 
 public class UPnPManager {
-    public final PlayerRelayLogger logger;
+    public final NetworkLogger logger;
 
     private GatewayDevice gateway;
     private String localIP;
 
-    public UPnPManager() throws Exception { this(new PlayerRelayLogger(LogLocation.UPNP_MANAGER)); }
-
-    public UPnPManager(PlayerRelayLogger logger) throws Exception {
+    public UPnPManager(NetworkLogger logger) throws Exception {
         this.logger = logger.withLocation(LogLocation.UPNP_MANAGER);
         discoverGateway();
     }

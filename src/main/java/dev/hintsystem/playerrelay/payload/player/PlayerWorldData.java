@@ -19,15 +19,11 @@ public class PlayerWorldData extends FlagHolder<PlayerWorldData.FLAGS>
     public enum FLAGS { IN_WORLD, HARDCORE }
 
     @Nullable
-    public RegistryKey<World> dimension;
+    public RegistryKey<World> dimension = null;
     @Nullable
-    public Difficulty difficulty;
+    public Difficulty difficulty = null;
 
-    public PlayerWorldData() {
-        setFlag(FLAGS.IN_WORLD, false);
-        this.dimension = null;
-        this.difficulty = null;
-    }
+    public PlayerWorldData() {}
 
     public PlayerWorldData(@Nullable PlayerEntity player) {
         if (player == null) { return; }
