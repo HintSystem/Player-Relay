@@ -28,27 +28,37 @@ public class EnderChestTracker {
     public static void tick() {
         MinecraftClient client = MinecraftClient.getInstance();
         updateCurrentWorldId(client);
-
-        if (currentWorldId == null) return;
-        if (client.currentScreen instanceof GenericContainerScreen containerScreen) {
-            TextContent titleContent = containerScreen.getTitle().getContent();
-            if (!(titleContent instanceof TranslatableTextContent translatableText)) return;
-
-            if (translatableText.getKey().equals(ENDER_CHEST_NAME_KEY)) {
-                List<ItemStack> items = new ArrayList<>();
-                int slots = containerScreen.getScreenHandler().getRows() * 9;
-
-                for (int i = 0; i < slots; i++) {
-                    ItemStack stack = containerScreen.getScreenHandler().slots.get(i).getStack();
-                    items.add(stack.copy());
-                }
-
-                enderChestCache.put(currentWorldId, items);
-            }
-        }
+        updateViaScreenReading(client);
     }
 
-    private static void updateCurrentWorldId(MinecraftClient client) {
+    private static void updateViaScreenReading(MinecraftClient client) {
+        if (currentWorldId == null) return;
+        if (!(client.currentScreen instanceof GenericContainerScreen containerScreen)) return;
+
+        TextContent titleContent = containerScreen.getTitle().getContent();
+        if (!(titleContent instanceof TranslatableTextContent translatableText)) return;
+
+        if (!translatableText.getKey().equals(ENDER_CHEST_NAME_KEY)) return;
+
+        int slots = containerScreen.getScreenHandler().getRows() * 9;
+
+        List<ItemStack> items = new ArrayList<>();
+        for (int i = 0; i < slots; i++) {
+            ItemStack stack = containerScreen.getScreenHandler().slots.get(i).getStack();
+            items.add(stack.copy());
+        }
+
+        enderChestCache.put(currentWorldId, items);
+    }
+
+    public static void update(List<ItemStack> items) {
+        if (currentWorldId == null) return;
+
+        List<ItemStack> copy = items.stream().map(ItemStack::copy).toList();
+        enderChestCache.put(currentWorldId, copy);
+    }
+
+    public static void updateCurrentWorldId(MinecraftClient client) {
         if (client.player == null || client.world == null) {
             currentWorldId = null;
             return;
@@ -69,7 +79,6 @@ public class EnderChestTracker {
         }
 
         worldId.append(client.player.getUuidAsString());
-
         currentWorldId = worldId.toString();
     }
 

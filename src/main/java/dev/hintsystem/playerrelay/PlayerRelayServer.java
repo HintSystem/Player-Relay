@@ -3,7 +3,7 @@ package dev.hintsystem.playerrelay;
 import dev.hintsystem.playerrelay.config.ServerConfig;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.networking.PayloadMessage;
-import dev.hintsystem.playerrelay.networking.handler.P2PMessageHandler;
+import dev.hintsystem.playerrelay.networking.handler.DefaultP2PMessageHandler;
 
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -17,16 +17,15 @@ public class PlayerRelayServer implements DedicatedServerModInitializer {
     @Override
     public void onInitializeServer() {
         CommonCore.initConfig(config);
-
-        PlayerRelay.initializeP2PNetwork(
+        CommonCore.initP2PNetwork(
             new P2PNetworkManager(
                 config,
-                new P2PMessageHandler(CommonCore.networkLogger, CommonCore.p2pPlayers, null),
+                new DefaultP2PMessageHandler(CommonCore.networkLogger, CommonCore.p2pPlayers, null, null),
                 CommonCore.networkLogger
             )
         );
 
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> ServerCore.onStopping());
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> CommonCore.onStopping());
 
         PlayerRelay.LOGGER.info("Player Relay server initialized");
     }

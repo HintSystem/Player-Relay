@@ -4,7 +4,7 @@ import net.minecraft.network.RegistryByteBuf;
 
 import java.util.UUID;
 
-public class PlayerDisconnectPayload implements IPayload {
+public class PlayerDisconnectPayload implements Payload {
     public final UUID playerId;
 
     public PlayerDisconnectPayload(UUID playerId) {

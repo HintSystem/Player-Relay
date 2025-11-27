@@ -5,7 +5,7 @@ import dev.hintsystem.playerrelay.networking.PayloadMessage;
 
 import net.minecraft.network.RegistryByteBuf;
 
-public interface IPayload {
+public interface Payload {
     void write(RegistryByteBuf buf);
 
     default PayloadMessage message() {

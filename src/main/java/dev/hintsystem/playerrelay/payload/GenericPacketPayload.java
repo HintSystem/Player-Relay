@@ -7,7 +7,7 @@ import net.minecraft.util.Identifier;
 
 import io.netty.buffer.Unpooled;
 
-public class GenericPacketPayload implements IPayload {
+public class GenericPacketPayload implements Payload {
     private final Identifier packetId;
     private final byte[] payload;
 

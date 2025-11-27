@@ -9,6 +9,7 @@ import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -22,10 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ClientCore extends CommonCore {
-    public static final float tickRate = 20;
-    public static final int msPerTick = Math.round(1000 / tickRate);
-
+public class ClientCore {
     private static final PlayerUpdateTracker c2sTracker = new PlayerUpdateTracker(getClientUuid());
     private static final PlayerUpdateTracker p2pTracker = new PlayerUpdateTracker(getClientUuid());
 
@@ -49,9 +47,11 @@ public class ClientCore extends CommonCore {
         if (isP2PNetworkActive()) sendP2PUpdate(client);
     }
 
-    public static void onServerJoin() {
+    public static void onServerJoin(MinecraftClient client) {
         serverRelayVersion = null;
         c2sTracker.reset();
+
+        EnderChestTracker.updateCurrentWorldId(client); // Update world id to accept gratuitous ender chest inventory packet
         PlayerRelayClient.sendToServer(new RelayVersionPayload().packet());
     }
 
@@ -85,7 +85,7 @@ public class ClientCore extends CommonCore {
             if (udpDelta != null) {
                 lastSentUdpTime = now;
                 p2pTracker.commitDelta(udpDelta);
-                PlayerRelay.getP2PNetworkManager()
+                CommonCore.getP2PNetworkManager()
                     .broadcastMessage(udpDelta.message(NetworkProtocol.UDP));
             }
         }
@@ -98,7 +98,7 @@ public class ClientCore extends CommonCore {
             if (tcpDelta != null) {
                 lastSentTcpTime = now;
                 p2pTracker.commitDelta(tcpDelta);
-                PlayerRelay.getP2PNetworkManager()
+                CommonCore.getP2PNetworkManager()
                     .broadcastMessage(tcpDelta.message(NetworkProtocol.TCP));
             }
         }
@@ -115,14 +115,12 @@ public class ClientCore extends CommonCore {
     }
 
     public static boolean isP2PNetworkActive() {
-        return PlayerRelay.getP2PNetworkManager() != null && PlayerRelay.getP2PNetworkManager().getPeerCount() != 0;
+        return CommonCore.getP2PNetworkManager() != null && CommonCore.getP2PNetworkManager().getPeerCount() != 0;
     }
 
     public static boolean isServerNetworkActive() {
         return serverRelayVersion != null && serverRelayVersion.networkVersion == RelayVersionPayload.NETWORK_VERSION;
     }
-
-    public static boolean serverHasPlayerRelay() { return serverRelayVersion != null; }
 
     public static void updateInputActivity() { lastInputTime = Util.getMeasuringTimeMs(); }
 
@@ -137,8 +135,6 @@ public class ClientCore extends CommonCore {
         MinecraftClient client = MinecraftClient.getInstance();
         return client.getSession().getUuidOrNull();
     }
-
-    public static int ticksToMs(int ticks) { return Math.round((ticks / tickRate) * 1000); }
 
     public static PlayerInfoPayload getUpdatedClientInfo() {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -176,8 +172,8 @@ public class ClientCore extends CommonCore {
     }
 
     /** Broadcast a payload on the P2P network and the server */
-    public static void broadcastPayload(IPayload payload) {
-        PlayerRelay.getP2PNetworkManager().broadcastMessage(payload.message());
+    public static void broadcastPayload(Payload payload) {
+        CommonCore.getP2PNetworkManager().broadcastMessage(payload.message());
         PlayerRelayClient.sendToServer(payload.packet());
     }
 
@@ -190,21 +186,46 @@ public class ClientCore extends CommonCore {
     }
 
     public static CompletableFuture<PlayerInventoryPayload> requestInventory(UUID playerId, boolean isEnderChest) {
-        ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingRequests = isEnderChest
-            ? pendingEnderChestRequests : pendingInventoryRequests;
+        ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingRequests = isEnderChest ?
+            pendingEnderChestRequests : pendingInventoryRequests;
 
         CompletableFuture<PlayerInventoryPayload> future = new CompletableFuture<>();
-        future.whenComplete((r, e) -> pendingRequests.remove(playerId));
-
         pendingRequests.put(playerId, future);
+        future.whenComplete((r, e) -> pendingRequests.remove(playerId));
 
         PlayerInventoryPayload inventoryRequest = PlayerInventoryPayload.request(playerId, isEnderChest);
 
-        PlayerRelayClient.sendToServer(inventoryRequest.packet());
-        for (PeerConnection peer : PlayerRelay.getP2PNetworkManager().getConnectedPeers()) {
+        // Requesting client's inventory
+        if (playerId.equals(getClientUuid())) {
+            if (!isServerNetworkActive()) {
+                future.completeExceptionally(new IllegalStateException(
+                    "Cannot request local player inventory: no compatible version of the mod on the server to fulfill the request"
+                ));
+            } else {
+                PlayerRelayClient.sendToServer(inventoryRequest.packet());
+            }
+            return future;
+        }
+
+        // Requesting a remote player's inventory
+        boolean routed = false;
+        if (isServerNetworkActive()) {
+            PlayerRelayClient.sendToServer(inventoryRequest.packet());
+            routed = true;
+        }
+
+        // P2P Routing
+        for (PeerConnection peer : CommonCore.getP2PNetworkManager().getConnectedPeers()) {
             if (peer.announcedPlayers.contains(playerId)) {
                 peer.sendMessage(inventoryRequest.message());
+                routed = true;
             }
+        }
+
+        if (!routed) {
+            future.completeExceptionally(new IllegalStateException(
+                "No route available to request inventory for player " + playerId
+            ));
         }
 
         return future;
@@ -231,5 +252,19 @@ public class ClientCore extends CommonCore {
                 .setStyle(Style.EMPTY.withColor(Formatting.GREEN).withBold(true))
                 .append(Text.literal(address)
                     .setStyle(Style.EMPTY.withColor(Formatting.YELLOW).withBold(false))));
+    }
+
+    public static class ClientInfoProvider implements CommonCore.LocalInfoProvider {
+        @Override
+        @Nullable
+        public PlayerInfoPayload getClientInfo() { return ClientCore.getUpdatedClientInfo(); }
+
+        @Override
+        @Nullable
+        public PlayerEntity getLocalPlayer() { return MinecraftClient.getInstance().player; }
+
+        @Override
+        @Nullable
+        public UUID getLocalPlayerId() {return ClientCore.getClientUuid(); }
     }
 }

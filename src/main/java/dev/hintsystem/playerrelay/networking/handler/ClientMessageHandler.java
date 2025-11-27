@@ -2,6 +2,7 @@ package dev.hintsystem.playerrelay.networking.handler;
 
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.CommonCore;
+import dev.hintsystem.playerrelay.EnderChestTracker;
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.command.PlayerRelayCommands;
 import dev.hintsystem.playerrelay.logging.LogLocation;
@@ -76,12 +77,17 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
     }
 
     public void onPlayerInventory(PlayerInventoryPayload inventory) {
-        if (!inventory.isResponse()) return;
+        if (inventory.isRequest()) return;
 
         ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingRequests = inventory.isEnderChest()
             ? ClientCore.pendingEnderChestRequests : ClientCore.pendingInventoryRequests;
 
         CompletableFuture<PlayerInventoryPayload> future = pendingRequests.remove(inventory.playerId);
+
+        if (inventory.playerId.equals(ClientCore.getClientUuid())
+            && inventory.isEnderChest()) {
+            EnderChestTracker.update(inventory.inventoryItems);
+        }
 
         if (future == null) return; // No pending request for this player
 

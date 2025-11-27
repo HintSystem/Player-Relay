@@ -14,7 +14,7 @@
     },
     "license": "AGPL-3.0-only",
     "icon": "assets/player-relay/icon.png",
-    "environment": "client",
+    "environment": "*",
     "entrypoints": {
         "main": [
             "dev.hintsystem.playerrelay.PlayerRelay"

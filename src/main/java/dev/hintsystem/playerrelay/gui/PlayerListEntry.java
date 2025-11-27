@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.gui;
 
-import dev.hintsystem.playerrelay.ClientCore;
+import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.*;
 
@@ -373,16 +373,16 @@ public class PlayerListEntry {
         int currentHeartLevel = (int) Math.ceil(currentHealth);
 
         if (currentHeartLevel < lastHeartLevel) {
-            heartBlinkEndTimeMs = now + 20L * ClientCore.msPerTick;
+            heartBlinkEndTimeMs = now + 20L * CommonCore.msPerTick;
         } else if (currentHeartLevel > lastHeartLevel) {
-            heartBlinkEndTimeMs = now + 10L * ClientCore.msPerTick;
+            heartBlinkEndTimeMs = now + 10L * CommonCore.msPerTick;
         }
 
         lastHealth = currentHealth;
 
         if (now < heartBlinkEndTimeMs) {
             long remaining = heartBlinkEndTimeMs - now;
-            return (remaining / (3L * ClientCore.msPerTick)) % 2 == 1;
+            return (remaining / (3L * CommonCore.msPerTick)) % 2 == 1;
         }
         return false;
     }

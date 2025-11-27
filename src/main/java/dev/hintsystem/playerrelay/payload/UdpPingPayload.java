@@ -2,7 +2,7 @@ package dev.hintsystem.playerrelay.payload;
 
 import net.minecraft.network.RegistryByteBuf;
 
-public class UdpPingPayload implements IPayload {
+public class UdpPingPayload implements Payload {
     private final boolean isResponse;
     private final long timestamp;
     private final int sequenceNumber;

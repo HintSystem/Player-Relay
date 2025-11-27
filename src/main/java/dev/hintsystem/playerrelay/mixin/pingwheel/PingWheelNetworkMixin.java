@@ -1,6 +1,7 @@
 package dev.hintsystem.playerrelay.mixin.pingwheel;
 
 import dev.hintsystem.playerrelay.ClientCore;
+import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.mods.SupportPingWheel;
 import dev.hintsystem.playerrelay.payload.GenericPacketPayload;
@@ -35,7 +36,7 @@ public class PingWheelNetworkMixin {
                 );
 
                 try {
-                    PlayerRelay.getP2PNetworkManager().broadcastMessage(pingPayload.message());
+                    CommonCore.getP2PNetworkManager().broadcastMessage(pingPayload.message());
                     if (!ClientPlayNetworking.canSend(packet.getId())) {
                         supportPingWheel.handlePacket(pingPayload, client.getNetworkHandler(), client); // Process same packet on client to see ping, when Ping Wheel isn't on current server
                     }

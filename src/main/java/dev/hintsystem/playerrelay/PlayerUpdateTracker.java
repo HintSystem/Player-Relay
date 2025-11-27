@@ -17,8 +17,12 @@ public class PlayerUpdateTracker {
     private PlayerInfoPayload lastCommitState;
 
     public PlayerUpdateTracker(UUID playerId) {
-        this.playerId = playerId;
-        this.lastCommitState = new PlayerInfoPayload(playerId);
+        this(new PlayerInfoPayload(playerId));
+    }
+
+    public PlayerUpdateTracker(PlayerInfoPayload playerInfo) {
+        this.playerId = playerInfo.playerId;
+        this.lastCommitState = playerInfo;
     }
 
     /** Builder for constructing player delta payloads */

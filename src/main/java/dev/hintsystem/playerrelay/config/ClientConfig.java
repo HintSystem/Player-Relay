@@ -24,7 +24,6 @@ public class ClientConfig extends CommonConfig {
 
     public Color displayNameColor = PlayerBasicData.DEFAULT_NAME_COLOR;
     public int afkTimeout = 2 * 60 * 1000;
-    public double minPlayerMove = 0.2;
 
     public boolean showPlayerList = true;
     public int playerListMaxPlayers = 8;

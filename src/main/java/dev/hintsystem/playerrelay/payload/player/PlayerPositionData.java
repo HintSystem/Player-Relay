@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import dev.hintsystem.playerrelay.PlayerRelayClient;
+import dev.hintsystem.playerrelay.CommonCore;
 
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.player.PlayerEntity;
@@ -43,7 +43,7 @@ public class PlayerPositionData implements PlayerDataComponent {
     public boolean hasChanged(PlayerDataComponent other) {
         if (!(other instanceof PlayerPositionData otherPos)) return true;
 
-        double minPlayerMove = PlayerRelayClient.config.minPlayerMove;
+        double minPlayerMove = CommonCore.getConfig().minPlayerMove;
         return this.coords.squaredDistanceTo(otherPos.coords) >= minPlayerMove * minPlayerMove
             || Math.abs(this.yaw - otherPos.yaw) > 5.0F
             || Math.abs(this.pitch - otherPos.pitch) > 5.0F

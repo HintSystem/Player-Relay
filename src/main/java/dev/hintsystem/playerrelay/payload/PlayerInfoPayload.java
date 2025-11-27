@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
-    implements IPayload {
+    implements Payload {
     public enum FLAGS { NEW_CONNECTION, AFK }
 
     private static final int MAX_FLAGS = 8;

@@ -2,7 +2,6 @@ package dev.hintsystem.playerrelay.networking;
 
 public class NetworkConfig {
     public boolean autoHost = false;
-    public String autoConnectAddress = "";
     public boolean UPnPEnabled = true;
     public String connectionAddress = "external";
     public int defaultHostingPort = P2PNetworkManager.DEFAULT_PORT;

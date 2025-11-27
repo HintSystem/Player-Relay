@@ -8,7 +8,7 @@ import net.minecraft.world.World;
 
 import java.util.UUID;
 
-public class WaypointPayload implements IPayload {
+public class WaypointPayload implements Payload {
     public final UUID playerId;
     public final String name;
     public final RegistryKey<World> dimension;

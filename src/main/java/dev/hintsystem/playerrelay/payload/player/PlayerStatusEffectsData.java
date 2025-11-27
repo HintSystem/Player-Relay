@@ -1,8 +1,8 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import dev.hintsystem.playerrelay.ClientCore;
-
+import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.payload.FlagHolder;
+
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
@@ -60,7 +60,7 @@ public class PlayerStatusEffectsData extends FlagHolder<PlayerStatusEffectsData.
     public long getEffectRemainingMs(StatusEffectEntry effect, long currentTime) {
         if (effect.isInfinite()) return Long.MAX_VALUE;
 
-        long effectDurationMs = ClientCore.ticksToMs(effect.duration);
+        long effectDurationMs = CommonCore.ticksToMs(effect.duration);
         long effectEndTime = timestamp + effectDurationMs;
         return Math.max(0, effectEndTime - currentTime);
     }

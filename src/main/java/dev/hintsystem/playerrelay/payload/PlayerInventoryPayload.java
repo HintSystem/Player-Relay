@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FLAGS>
-    implements IPayload {
+    implements Payload {
     public enum FLAGS { IS_REQUEST, IS_ENDER_CHEST, PLAYER_HAS_DATA }
 
     public final UUID playerId;

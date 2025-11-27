@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 public class PayloadRegistry {
     private static final Map<Byte, PayloadType<?>> BY_ID = new HashMap<>();
-    private static final Map<Class<? extends IPayload>, PayloadType<?>> BY_CLASS = new HashMap<>();
+    private static final Map<Class<? extends Payload>, PayloadType<?>> BY_CLASS = new HashMap<>();
     private static byte nextId = 0;
 
     static {
@@ -24,7 +24,7 @@ public class PayloadRegistry {
         register(GenericPacketPayload.class, GenericPacketPayload::new);
     }
 
-    public static class PayloadType<T extends IPayload> {
+    public static class PayloadType<T extends Payload> {
         private final byte id;
         private final Class<T> payloadClass;
         private final Function<RegistryByteBuf, T> factory;
@@ -52,14 +52,14 @@ public class PayloadRegistry {
         }
     }
 
-    public static <T extends IPayload> PayloadType<T> register(
+    public static <T extends Payload> PayloadType<T> register(
         Class<T> payloadClass,
         Function<RegistryByteBuf, T> factory
     ) {
         return register(payloadClass, factory, true);
     }
 
-    public static <T extends IPayload> PayloadType<T> register(
+    public static <T extends Payload> PayloadType<T> register(
         Class<T> payloadClass,
         Function<RegistryByteBuf, T> factory,
         boolean shouldForward
@@ -71,7 +71,7 @@ public class PayloadRegistry {
     }
 
     /** Registers a payload type meant only for communication between 2 peers **/
-    public static <T extends IPayload> PayloadType<T> registerPeer(
+    public static <T extends Payload> PayloadType<T> registerPeer(
         Class<T> payloadClass,
         Function<RegistryByteBuf, T> factory
     ) {
@@ -87,7 +87,7 @@ public class PayloadRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends IPayload> PayloadType<T> getByClass(Class<T> payloadClass) {
+    public static <T extends Payload> PayloadType<T> getByClass(Class<T> payloadClass) {
         PayloadType<?> type = BY_CLASS.get(payloadClass);
         if (type == null) {
             throw new IllegalArgumentException("Unregistered payload class: " + payloadClass.getName());

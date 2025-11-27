@@ -8,7 +8,7 @@ import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
 import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.networking.PayloadMessage;
 import dev.hintsystem.playerrelay.networking.handler.ClientMessageHandler;
-import dev.hintsystem.playerrelay.networking.handler.P2PMessageHandler;
+import dev.hintsystem.playerrelay.networking.handler.DefaultP2PMessageHandler;
 import dev.hintsystem.playerrelay.networking.handler.S2CMessageHandler;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -36,32 +36,33 @@ public class PlayerRelayClient implements ClientModInitializer {
             .addLogHandler(new ClientLogHandler());
 
         CommonCore.initConfig(config);
-
-        PlayerRelay.initializeP2PNetwork(
+        CommonCore.initP2PNetwork(
             new P2PNetworkManager(
                 config,
-                new P2PMessageHandler(CommonCore.networkLogger, CommonCore.p2pPlayers, new ClientMessageHandler<>(CommonCore.networkLogger)),
+                new DefaultP2PMessageHandler(CommonCore.networkLogger, CommonCore.p2pPlayers, new ClientCore.ClientInfoProvider(), new ClientMessageHandler<>(CommonCore.networkLogger)),
                 CommonCore.networkLogger
             )
         );
+
+        ServerCore.setLocalPlayerId(ClientCore.getClientUuid());
 
         S2CMessageHandler clientHandler = new S2CMessageHandler(CommonCore.networkLogger, CommonCore.serverPlayers);
         ClientPlayNetworking.registerGlobalReceiver(PayloadMessage.Packet.PACKET_TYPE, (payloadMessage, context) -> {
             clientHandler.handleMessage(payloadMessage, null);
         });
 
-        ClientPlayConnectionEvents.JOIN.register((h, s, c) -> ClientCore.onServerJoin());
+        ClientPlayConnectionEvents.JOIN.register((h, s, c) -> ClientCore.onServerJoin(c));
         ClientPlayConnectionEvents.DISCONNECT.register((h, c) -> ClientCore.onServerLeave());
 
         ClientLifecycleEvents.CLIENT_STARTED.register(c -> initModSupport());
         ClientTickEvents.END_CLIENT_TICK.register(ClientCore::onTickEnd);
-        ClientLifecycleEvents.CLIENT_STOPPING.register(c -> ServerCore.onStopping());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(c -> CommonCore.onStopping());
 
         PlayerList playerList = new PlayerList();
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(PlayerRelay.MOD_ID, "before_chat"), playerList);
         ClientTickEvents.END_CLIENT_TICK.register(playerList::onClientTickEnd);
 
-        new PlayerRelayCommands(PlayerRelay.getP2PNetworkManager()).register();
+        new PlayerRelayCommands(CommonCore.getP2PNetworkManager()).register();
     }
 
     public static void sendToServer(PayloadMessage.Packet payload) {

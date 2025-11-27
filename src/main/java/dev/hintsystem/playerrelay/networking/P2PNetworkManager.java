@@ -113,7 +113,7 @@ public class P2PNetworkManager {
         for (PeerConnection peer : connectedPeers) { peer.disconnect(); }
         connectedPeers.clear();
         connectedPeersByUdpId.clear();
-        messageHandler.playerList.clear();
+        messageHandler.onClose();
 
         // Close server socket
         if (serverSocket != null && !serverSocket.isClosed()) {
@@ -393,7 +393,7 @@ public class P2PNetworkManager {
         };
     }
 
-    public TrackedPlayerList.Sublist getPlayerList() { return messageHandler.playerList; }
+    public TrackedPlayerList.Sublist getPlayerList() { return messageHandler.getPlayerList(); }
     public Set<PeerConnection> getConnectedPeers() { return connectedPeers; }
     public DatagramSocket getUdpSocket() { return udpSocket; }
 

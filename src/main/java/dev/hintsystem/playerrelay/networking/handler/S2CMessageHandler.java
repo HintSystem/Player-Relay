@@ -25,7 +25,7 @@ public class S2CMessageHandler extends ClientMessageHandler<Void> {
 
     @Override
     public void onPlayerInfo(PlayerInfoPayload playerInfo) {
-        addPlayerInfo(playerList, playerInfo);
+        addPlayerInfo(playerList, playerInfo, ClientCore.getClientUuid());
         super.onPlayerInfo(playerInfo);
     }
 

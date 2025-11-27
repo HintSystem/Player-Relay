@@ -1,6 +1,5 @@
 package dev.hintsystem.playerrelay;
 
-import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
 import dev.hintsystem.playerrelay.networking.PayloadMessage;
 import dev.hintsystem.playerrelay.networking.handler.C2SMessageHandler;
 
@@ -23,8 +22,6 @@ public class PlayerRelay implements ModInitializer {
 
     public static final boolean isDevelopment;
 
-    private static P2PNetworkManager p2pNetworkManager;
-
     static {
         isDevelopment = FabricLoader.getInstance().isDevelopmentEnvironment();
         VERSION = FabricLoader.getInstance()
@@ -38,7 +35,7 @@ public class PlayerRelay implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(PayloadMessage.Packet.PACKET_TYPE, PayloadMessage.Packet.PACKET_CODEC);
         PayloadTypeRegistry.playC2S().register(PayloadMessage.Packet.PACKET_TYPE, PayloadMessage.Packet.PACKET_CODEC);
 
-        C2SMessageHandler serverHandler = new C2SMessageHandler(CommonCore.networkLogger, CommonCore.serverPlayers);
+        C2SMessageHandler serverHandler = new C2SMessageHandler(CommonCore.networkLogger);
         ServerPlayNetworking.registerGlobalReceiver(PayloadMessage.Packet.PACKET_TYPE, (payloadMessage, context) -> {
             serverHandler.handleMessage(payloadMessage, context.player());
         });
@@ -48,15 +45,4 @@ public class PlayerRelay implements ModInitializer {
     }
 
     public static EnvType getEnvironmentType() { return FabricLoader.getInstance().getEnvironmentType(); }
-
-    public static void initializeP2PNetwork(P2PNetworkManager networkManager) {
-        if (p2pNetworkManager != null) {
-            LOGGER.warn("P2P Network manager already initialized!");
-            return;
-        }
-
-        p2pNetworkManager = networkManager;
-    }
-
-    public static P2PNetworkManager getP2PNetworkManager() { return p2pNetworkManager; }
 }

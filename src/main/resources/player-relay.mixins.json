@@ -5,8 +5,8 @@
     "client": [
         "minecraft.ClientPlayNetworkHandlerMixin",
         "minecraft.EntityAccessor",
-        "minecraft.KeyboardMixin",
         "minecraft.LivingEntityInvoker",
+        "minecraft.KeyboardMixin",
         "minecraft.MouseMixin",
         "pingwheel.PingWheelNetworkMixin",
         "pingwheel.DrawContextMixin",

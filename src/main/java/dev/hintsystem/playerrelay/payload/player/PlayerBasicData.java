@@ -45,7 +45,7 @@ public class PlayerBasicData implements PlayerDataComponent {
         if (!(other instanceof PlayerBasicData otherInfo)) return true;
 
         return !Objects.equals(this.name, otherInfo.name)
-            || !Objects.equals(this.nameColor, otherInfo.nameColor);
+            || this.nameColor != otherInfo.nameColor;
     }
 
     @Override

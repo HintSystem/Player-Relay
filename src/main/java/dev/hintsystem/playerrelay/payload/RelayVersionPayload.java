@@ -4,7 +4,7 @@ import dev.hintsystem.playerrelay.PlayerRelay;
 
 import net.minecraft.network.RegistryByteBuf;
 
-public class RelayVersionPayload implements IPayload {
+public class RelayVersionPayload implements Payload {
     public static final int NETWORK_VERSION = PlayerRelay.NETWORK_VERSION;
     public static final String VERSION_STRING = PlayerRelay.VERSION;
 

@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.networking;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.payload.IPayload;
+import dev.hintsystem.playerrelay.payload.Payload;
 import dev.hintsystem.playerrelay.payload.PayloadRegistry;
 import dev.hintsystem.playerrelay.payload.Utility;
 
@@ -18,9 +18,9 @@ import java.util.UUID;
 public class PayloadMessage {
     protected final NetworkProtocol preferredProtocol;
     protected UUID messageId;
-    protected final IPayload payload;
+    protected final Payload payload;
 
-    public PayloadMessage(IPayload payload, NetworkProtocol preferredProtocol) {
+    public PayloadMessage(Payload payload, NetworkProtocol preferredProtocol) {
         this.preferredProtocol = preferredProtocol;
         this.messageId = UUID.randomUUID();
         this.payload = payload;
@@ -32,7 +32,7 @@ public class PayloadMessage {
 
     public PayloadRegistry.PayloadType<?> getPayloadType() { return PayloadRegistry.getByClass(payload.getClass()); }
 
-    public IPayload getPayload() { return payload; }
+    public Payload getPayload() { return payload; }
 
     public void writeTo(DataOutputStream out) throws IOException {
         PayloadRegistry.PayloadType<?> payloadType = getPayloadType();
@@ -88,7 +88,7 @@ public class PayloadMessage {
         public static final CustomPayload.Id<Packet> PACKET_TYPE = new CustomPayload.Id<>(PACKET_ID);
         public static final PacketCodec<RegistryByteBuf, Packet> PACKET_CODEC = PacketCodec.of(Packet::write, Packet::readSafe);
 
-        public Packet(IPayload payload, NetworkProtocol preferredProtocol) {
+        public Packet(Payload payload, NetworkProtocol preferredProtocol) {
             super(payload, preferredProtocol);
         }
 
@@ -100,7 +100,7 @@ public class PayloadMessage {
                 messageId = buf.readUuid();
             }
 
-            IPayload payload = null;
+            Payload payload = null;
             try {
                 payload = type.createPayload(buf);
             } catch (Exception ignored) {} finally {

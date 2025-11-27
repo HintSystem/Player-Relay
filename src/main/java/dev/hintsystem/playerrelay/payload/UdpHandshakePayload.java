@@ -2,7 +2,7 @@ package dev.hintsystem.playerrelay.payload;
 
 import net.minecraft.network.RegistryByteBuf;
 
-public class UdpHandshakePayload implements IPayload {
+public class UdpHandshakePayload implements Payload {
     private final short udpId;
     private final int udpPort;
 

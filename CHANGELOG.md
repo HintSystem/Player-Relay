@@ -1,19 +1,23 @@
-* **Addded server support** (🚧Work in Progress🚧)
+### ✨ New Features
+
+* **Server support**
   * If both the **client and the server** have Player Relay installed, the mod should work normally
   * Servers with the mod installed **cannot host their own relay or connect to other relays**
-    * There are currently no plans to support P2P relays, but could be considered in the future.
+    * There are currently no plans to support P2P relays on the server, but could be considered in the future
   * Players may still **manually connect** *(/connect)* to an external relay if they want to see player info from another server
-  * The server must have Ping Wheel installed for other players to see pings
-    * Player Relay only relays Ping Wheel pings when connected to a **P2P relay**, not a server - it's Ping Wheel's job to broadcast the packets.
+  * The server must have Ping Wheel installed for other players to send and receive pings
+    * Player Relay only relays Ping Wheel pings when connected to a **P2P relay**, not a server - it's Ping Wheel's job to broadcast the packets
 
-## 🔧 Major Code Refactors
+### 🔧️ Fixes & Improvements
 
-Large portions of the codebase were restructured to support **client ↔ server communication**.
+* Clients can now view their ender chest contents immediately on join, without needing to open an ender chest first, as long as the server has the mod installed
 
-This should improve how Player Relay works internally, but may also introduce new bugs.
+### 🔃 Major Code Refactors
 
-## 🐛 Found a Bug?
+Large portions of the codebase were restructured to support **client ↔ server communication**
 
-Please report issues here:
-* [GitHub Issues](https://github.com/HintSystem/Player-Relay/issues)
-* Or message me on Discord: [**hintsystem**](https://discord.com/users/214251582093524993)
+This should improve how Player Relay works internally, but may also introduce new bugs
+
+### 🐛 Found a Bug?
+
+Please report any problems you find to [GitHub Issues](https://github.com/HintSystem/Player-Relay/issues)

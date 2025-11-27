@@ -28,6 +28,11 @@ public class CommonConfig extends NetworkConfig {
 
     public static final CommonConfig DEFAULTS = new CommonConfig();
 
+    public double minPlayerMove = 0.2;
+
+    /** @return false if only changed fields are saved to file */
+    public boolean defaultsAreSerialized() { return false; }
+
     /** Get the default instance for comparison during serialization */
     public CommonConfig getDefaults() { return DEFAULTS; }
 
@@ -47,7 +52,7 @@ public class CommonConfig extends NetworkConfig {
                     Object current = f.get(this);
                     Object def = f.get(defaults);
 
-                    if (!Objects.equals(current, def)) {
+                    if (defaultsAreSerialized() || !Objects.equals(current, def)) {
                         root.add(f.getName(), getGson().toJsonTree(current));
                     }
                 }

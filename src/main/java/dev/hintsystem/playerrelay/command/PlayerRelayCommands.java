@@ -19,7 +19,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 
@@ -144,7 +144,7 @@ public class PlayerRelayCommands {
 
                 .then(ClientCommandManager.literal("echest")
                     .executes(context -> {
-                        ClientPlayerEntity player = client.player;
+                        PlayerEntity player = client.player;
                         if (player == null) return 0;
                         if (!EnderChestTracker.hasEnderChestInventory()) {
                             context.getSource().sendError(Text.literal(
