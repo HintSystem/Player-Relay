@@ -1,10 +1,7 @@
 package dev.hintsystem.playerrelay.config;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
-import dev.hintsystem.playerrelay.networking.NetworkConfig;
-
-import dev.isxander.yacl3.api.*;
-import dev.isxander.yacl3.api.controller.*;
+import dev.hintsystem.playerrelay.network.NetworkConfig;
 
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -13,7 +10,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
 
-import java.awt.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;

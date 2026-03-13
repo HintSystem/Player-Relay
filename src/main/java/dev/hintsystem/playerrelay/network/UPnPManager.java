@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.network;
 
 import dev.hintsystem.playerrelay.logging.LogEventTypes;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;

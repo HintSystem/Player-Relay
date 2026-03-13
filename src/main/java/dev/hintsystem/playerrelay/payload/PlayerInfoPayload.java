@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 
 public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
     implements Payload {
+
     public enum FLAGS { NEW_CONNECTION, AFK }
 
     private static final int MAX_FLAGS = 8;
@@ -56,16 +57,26 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
         this.playerId = playerId;
     }
 
-    public PlayerInfoPayload(RegistryByteBuf buf) {
-        int idx = buf.readerIndex();
-        this.playerId = buf.readUuid();
-        buf.readerIndex(idx);
-
-        read(buf);
-    }
-
     public PlayerListEntry toPlayerListEntry() { return new PlayerListEntry(toGameProfile(), false); }
     public GameProfile toGameProfile() { return new GameProfile(this.playerId, getName()); }
+
+    public boolean isAfk() { return hasFlag(FLAGS.AFK); }
+
+    public String getName() {
+        PlayerBasicData basicData = getComponent(PlayerBasicData.class);
+        return (basicData != null) ? basicData.name : this.playerId.toString();
+    }
+
+    public int getNameColor() {
+        PlayerBasicData basicData = getComponent(PlayerBasicData.class);
+        return (basicData != null) ? basicData.nameColor : PlayerBasicData.DEFAULT_NAME_COLOR.getRGB();
+    }
+
+    @Nullable
+    public RegistryKey<World> getDimension() {
+        PlayerWorldData worldData = getComponent(PlayerWorldData.class);
+        return (worldData != null) ? worldData.dimension : null;
+    }
 
     @SuppressWarnings("unchecked")
     private <T extends PlayerDataComponent> ComponentInfo<T> getComponentInfo(Class<T> componentClass) {
@@ -116,24 +127,6 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
         return hasChanged;
     }
 
-    public boolean isAfk() { return hasFlag(FLAGS.AFK); }
-
-    public String getName() {
-        PlayerBasicData basicData = getComponent(PlayerBasicData.class);
-        return (basicData != null) ? basicData.name : this.playerId.toString();
-    }
-
-    public int getNameColor() {
-        PlayerBasicData basicData = getComponent(PlayerBasicData.class);
-        return (basicData != null) ? basicData.nameColor : PlayerBasicData.DEFAULT_NAME_COLOR.getRGB();
-    }
-
-    @Nullable
-    public RegistryKey<World> getDimension() {
-        PlayerWorldData worldData = getComponent(PlayerWorldData.class);
-        return (worldData != null) ? worldData.dimension : null;
-    }
-
     public void merge(PlayerInfoPayload other) {
         if (this == other || other == null) return;
 
@@ -153,23 +146,12 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
-        buf.writeUuid(playerId);
-        writeFlags(buf, 1);
+    public PayloadRegistry.PayloadType<PlayerInfoPayload> getPayloadType() { return PayloadRegistry.PLAYER_INFO; }
 
-        for (ComponentInfo<?> info : COMPONENT_REGISTRY.values()) {
-            if ((flags & info.flag) != 0) {
-                int index = getComponentIndex(info.flag);
-                PlayerDataComponent component = components[index];
-                if (component != null) component.write(buf);
-            }
-        }
-    }
-
-    public void read(RegistryByteBuf buf) {
+    public PlayerInfoPayload(RegistryByteBuf buf) {
         int beforePayload = buf.readerIndex();
 
-        buf.readUuid(); // playerId already read in constructor
+        this.playerId = buf.readUuid();
         readFlags(buf, 1);
 
         StringBuilder componentLog = PlayerRelay.isDevelopment ? new StringBuilder() : null;
@@ -196,6 +178,20 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
         if (componentLog != null) {
             PlayerRelay.LOGGER.info("PlayerInfoPayload of {} bytes:{}",
                 buf.readerIndex() - beforePayload, componentLog);
+        }
+    }
+
+    @Override
+    public void write(RegistryByteBuf buf) {
+        buf.writeUuid(playerId);
+        writeFlags(buf, 1);
+
+        for (ComponentInfo<?> info : COMPONENT_REGISTRY.values()) {
+            if ((flags & info.flag) != 0) {
+                int index = getComponentIndex(info.flag);
+                PlayerDataComponent component = components[index];
+                if (component != null) component.write(buf);
+            }
         }
     }
 }

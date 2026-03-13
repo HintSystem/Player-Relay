@@ -1,10 +1,9 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;

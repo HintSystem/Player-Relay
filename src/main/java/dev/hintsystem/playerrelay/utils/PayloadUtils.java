@@ -1,11 +1,12 @@
-package dev.hintsystem.playerrelay.payload;
+package dev.hintsystem.playerrelay.utils;
 
-import io.netty.buffer.ByteBuf;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.world.World;
 
-public class Utility {
+import io.netty.buffer.ByteBuf;
+
+public class PayloadUtils {
     public static DynamicRegistryManager getRegistryManager() {
         World world = MinecraftClient.getInstance().world;
         return (world != null) ? world.getRegistryManager() : DynamicRegistryManager.EMPTY;

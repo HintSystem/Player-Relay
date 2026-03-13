@@ -1,16 +1,16 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.network;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.payload.Payload;
 import dev.hintsystem.playerrelay.payload.PayloadRegistry;
-import dev.hintsystem.playerrelay.payload.Utility;
+import dev.hintsystem.playerrelay.utils.PayloadUtils;
 
 import net.minecraft.network.RegistryByteBuf;
-
-import io.netty.buffer.Unpooled;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
+
+import io.netty.buffer.Unpooled;
 
 import java.io.*;
 import java.util.UUID;
@@ -30,9 +30,9 @@ public class PayloadMessage {
 
     public UUID getMessageId() { return messageId; }
 
-    public PayloadRegistry.PayloadType<?> getPayloadType() { return PayloadRegistry.getByClass(payload.getClass()); }
-
     public Payload getPayload() { return payload; }
+
+    public PayloadRegistry.PayloadType<?> getPayloadType() { return payload.getPayloadType(); }
 
     public void writeTo(DataOutputStream out) throws IOException {
         PayloadRegistry.PayloadType<?> payloadType = getPayloadType();
@@ -43,10 +43,10 @@ public class PayloadMessage {
             out.writeLong(this.messageId.getLeastSignificantBits());
         }
 
-        RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), Utility.getRegistryManager());
+        RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), PayloadUtils.getRegistryManager());
         this.payload.write(buf);
 
-        byte[] payloadBytes = Utility.bytesFromByteBuf(buf);
+        byte[] payloadBytes = PayloadUtils.bytesFromByteBuf(buf);
 
         out.writeInt(payloadBytes.length);
         out.write(payloadBytes);
@@ -62,7 +62,7 @@ public class PayloadMessage {
 
         int payloadLen = in.readInt();
         byte[] payloadBytes = in.readNBytes(payloadLen);
-        RegistryByteBuf buf = new RegistryByteBuf(Unpooled.wrappedBuffer(payloadBytes), Utility.getRegistryManager());
+        RegistryByteBuf buf = new RegistryByteBuf(Unpooled.wrappedBuffer(payloadBytes), PayloadUtils.getRegistryManager());
 
         PayloadMessage msg = new PayloadMessage(type.createPayload(buf), receivedVia);
         msg.messageId = messageId;

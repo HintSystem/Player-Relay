@@ -1,9 +1,9 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.config.ServerConfig;
-import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
-import dev.hintsystem.playerrelay.networking.handler.DefaultP2PMessageHandler;
+import dev.hintsystem.playerrelay.network.P2PNetworkManager;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.network.handler.DefaultP2PMessageHandler;
 
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;

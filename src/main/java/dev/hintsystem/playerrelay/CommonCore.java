@@ -3,12 +3,12 @@ package dev.hintsystem.playerrelay;
 import dev.hintsystem.playerrelay.config.CommonConfig;
 import dev.hintsystem.playerrelay.logging.ConsoleLogHandler;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
-import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
-import dev.hintsystem.playerrelay.networking.TrackedPlayerList;
+import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
-import net.minecraft.entity.player.PlayerEntity;
-import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.entity.player.PlayerEntity;
+
+import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 public class CommonCore {

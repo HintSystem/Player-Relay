@@ -13,6 +13,9 @@ public class RelayVersionPayload implements Payload {
 
     public RelayVersionPayload() {}
 
+    @Override
+    public PayloadRegistry.PayloadType<RelayVersionPayload> getPayloadType() { return PayloadRegistry.RELAY_VERSION; }
+
     public RelayVersionPayload(RegistryByteBuf buf) {
         this.networkVersion = buf.readInt();
         this.versionString = buf.readString();

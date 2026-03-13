@@ -13,6 +13,13 @@ public class UdpPingPayload implements Payload {
         this.sequenceNumber = sequenceNumber;
     }
 
+    public boolean isResponse() { return isResponse; }
+    public long getTimestamp() { return timestamp; }
+    public int getSequenceNumber() { return sequenceNumber; }
+
+    @Override
+    public PayloadRegistry.PayloadType<UdpPingPayload> getPayloadType() { return PayloadRegistry.UDP_PING; }
+
     public UdpPingPayload(RegistryByteBuf buf) {
         this.isResponse = buf.readBoolean();
         this.timestamp = buf.readLong();
@@ -25,8 +32,4 @@ public class UdpPingPayload implements Payload {
         buf.writeLong(timestamp);
         buf.writeInt(sequenceNumber);
     }
-
-    public boolean isResponse() { return isResponse; }
-    public long getTimestamp() { return timestamp; }
-    public int getSequenceNumber() { return sequenceNumber; }
 }

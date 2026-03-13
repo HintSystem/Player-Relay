@@ -1,6 +1,6 @@
-package dev.hintsystem.playerrelay.networking.handler;
+package dev.hintsystem.playerrelay.network.handler;
 
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
 import org.jetbrains.annotations.NotNull;
 
 public interface MessageHandler<C> {

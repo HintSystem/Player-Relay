@@ -2,9 +2,9 @@ package dev.hintsystem.playerrelay.mods;
 
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.PlayerRelayClient;
-import dev.hintsystem.playerrelay.networking.handler.ClientMessageHandler;
-
+import dev.hintsystem.playerrelay.network.handler.ClientMessageHandler;
 import dev.hintsystem.playerrelay.payload.GenericPacketPayload;
+
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.packet.CustomPayload;

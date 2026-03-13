@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.network;
 
 public class NetworkConfig {
     public boolean autoHost = false;

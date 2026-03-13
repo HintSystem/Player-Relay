@@ -15,6 +15,7 @@ import java.util.UUID;
 
 public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FLAGS>
     implements Payload {
+
     public enum FLAGS { IS_REQUEST, IS_ENDER_CHEST, PLAYER_HAS_DATA }
 
     public final UUID playerId;
@@ -56,13 +57,23 @@ public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FL
         }
     }
 
+    public boolean isRequest() { return hasFlag(FLAGS.IS_REQUEST); }
+    public boolean isResponse() { return !hasFlag(FLAGS.IS_REQUEST); }
+
+    public boolean hasData() { return hasFlag(FLAGS.PLAYER_HAS_DATA); }
+    public boolean isEnderChest() { return hasFlag(FLAGS.IS_ENDER_CHEST); }
+
     public static PlayerInventoryPayload request(UUID playerId, boolean isEnderChest) {
         PlayerInventoryPayload payload = new PlayerInventoryPayload(playerId);
         payload.setFlag(FLAGS.IS_REQUEST, true);
         payload.setFlag(FLAGS.IS_ENDER_CHEST, isEnderChest);
         return payload;
     }
+
     public static PlayerInventoryPayload respond(PlayerEntity player, boolean isEnderChest) { return new PlayerInventoryPayload(player, isEnderChest); }
+
+    @Override
+    public PayloadRegistry.PayloadType<PlayerInventoryPayload> getPayloadType() { return PayloadRegistry.PLAYER_INVENTORY; }
 
     public PlayerInventoryPayload(RegistryByteBuf buf) {
         this.playerId = buf.readUuid();
@@ -72,12 +83,6 @@ public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FL
             this.inventoryItems = ItemStack.OPTIONAL_LIST_PACKET_CODEC.decode(buf);
         }
     }
-
-    public boolean isRequest() { return hasFlag(FLAGS.IS_REQUEST); }
-    public boolean isResponse() { return !hasFlag(FLAGS.IS_REQUEST); }
-
-    public boolean hasData() { return hasFlag(FLAGS.PLAYER_HAS_DATA); }
-    public boolean isEnderChest() { return hasFlag(FLAGS.IS_ENDER_CHEST); }
 
     @Override
     public void write(RegistryByteBuf buf) {

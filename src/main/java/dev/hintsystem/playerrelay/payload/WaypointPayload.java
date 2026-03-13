@@ -25,6 +25,13 @@ public class WaypointPayload implements Payload {
         this.color = color;
     }
 
+    public String getDimensionIdString() {
+        return (dimension != null) ? dimension.getValue().toString() : "";
+    }
+
+    @Override
+    public PayloadRegistry.PayloadType<WaypointPayload> getPayloadType() { return PayloadRegistry.WAYPOINT; }
+
     public WaypointPayload(RegistryByteBuf buf) {
         this.playerId = buf.readUuid();
         this.name = buf.readString();
@@ -32,10 +39,6 @@ public class WaypointPayload implements Payload {
         this.pos = buf.readBlockPos();
         this.yaw = buf.readInt();
         this.color = buf.readInt();
-    }
-
-    public String getDimensionIdString() {
-        return (dimension != null) ? dimension.getValue().toString() : "";
     }
 
     @Override

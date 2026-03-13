@@ -1,10 +1,9 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
-import dev.hintsystem.playerrelay.networking.NetworkProtocol;
-import dev.hintsystem.playerrelay.networking.PeerConnection;
+import dev.hintsystem.playerrelay.network.NetworkProtocol;
+import dev.hintsystem.playerrelay.network.PeerConnection;
 import dev.hintsystem.playerrelay.payload.*;
-
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 

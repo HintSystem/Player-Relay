@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.networking.handler;
+package dev.hintsystem.playerrelay.network.handler;
 
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.CommonCore;
@@ -58,11 +58,11 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
 
     @Override
     protected void init() {
-        register(PlayerInfoPayload.class, (playerInfo, unused) -> onPlayerInfo(playerInfo));
-        register(PlayerInventoryPayload.class, (inventory, unused) -> onPlayerInventory(inventory));
-        register(PlayerDisconnectPayload.class, (disconnect, unused) -> onPlayerDisconnect(disconnect));
-        register(WaypointPayload.class, (waypoint, unused) -> onWaypointReceived(waypoint));
-        register(GenericPacketPayload.class, (packet, unused) -> onPacket(packet));
+        register(PayloadRegistry.PLAYER_INFO, (playerInfo, unused) -> onPlayerInfo(playerInfo));
+        register(PayloadRegistry.PLAYER_INVENTORY, (inventory, unused) -> onPlayerInventory(inventory));
+        register(PayloadRegistry.PLAYER_DISCONNECT, (disconnect, unused) -> onPlayerDisconnect(disconnect));
+        register(PayloadRegistry.WAYPOINT, (waypoint, unused) -> onWaypointReceived(waypoint));
+        register(PayloadRegistry.GENERIC_PACKET, (packet, unused) -> onPacket(packet));
     }
 
     public void onPlayerInfo(PlayerInfoPayload infoPayload) {
@@ -103,7 +103,7 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
     }
 
     public void onPlayerDisconnect(PlayerDisconnectPayload disconnect) {
-        PlayerInfoPayload lastInfo = CommonCore.playerInfoTracker.getTrackedPlayer(disconnect.playerId);
+        PlayerInfoPayload lastInfo = CommonCore.playerInfoTracker.getTrackedPlayer(disconnect.playerId());
 
         for (PlayerInfoHandler handler : PLAYER_INFO_HANDLERS) {
             handler.onPlayerDisconnect(disconnect, lastInfo);

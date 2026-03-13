@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay;
 
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
@@ -9,7 +9,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 
 import org.jetbrains.annotations.Nullable;
-import java.awt.*;
+
 import java.util.*;
 
 public class ServerCore {

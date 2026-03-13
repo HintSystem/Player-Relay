@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.network;
 
 import dev.hintsystem.playerrelay.logging.LogEvent;
 import dev.hintsystem.playerrelay.logging.LogEventTypes;
@@ -51,6 +51,12 @@ public class PeerConnection implements Runnable {
         healthCheckExecutor.scheduleAtFixedRate(this::performUdpHealthCheck,
             manager.config.udpPingTimeoutMs, manager.config.udpPingIntervalMs, TimeUnit.MILLISECONDS);
     }
+
+    public SocketAddress getRemoteAddress() { return tcpSocket.getRemoteSocketAddress(); }
+    public P2PNetworkManager getP2PManager() { return manager; }
+
+    public boolean isUdpHealthy() { return udpHealthy && peerUdpId != null; }
+    private boolean hasUdpPort() { return peerUdpPort > 0; }
 
     public CompletableFuture<RelayVersionPayload> requireVersionHandshake() {
         if (versionHandshakeRequired) return versionHandshake;
@@ -292,8 +298,4 @@ public class PeerConnection implements Runnable {
         manager.onPeerDisconnected(this);
         connected = false;
     }
-
-    public boolean isUdpHealthy() { return udpHealthy && peerUdpId != null; }
-    public SocketAddress getRemoteAddress() { return tcpSocket.getRemoteSocketAddress(); }
-    private boolean hasUdpPort() { return peerUdpPort > 0; }
 }

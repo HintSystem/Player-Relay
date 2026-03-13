@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay;
 
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
-import dev.hintsystem.playerrelay.networking.handler.C2SMessageHandler;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.network.handler.C2SMessageHandler;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;

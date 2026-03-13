@@ -1,9 +1,8 @@
-package dev.hintsystem.playerrelay.networking;
+package dev.hintsystem.playerrelay.network;
 
 import dev.hintsystem.playerrelay.logging.LogEventTypes;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
-import dev.hintsystem.playerrelay.networking.handler.P2PMessageHandler;
-import dev.hintsystem.playerrelay.payload.PlayerDisconnectPayload;
+import dev.hintsystem.playerrelay.network.handler.P2PMessageHandler;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 
@@ -243,6 +242,7 @@ public class P2PNetworkManager {
 
     private boolean shouldForwardMessage(PayloadMessage message) { return isHost() && message.getPayloadType().shouldForward(); }
 
+    /** Handles the message on the client and forwards it to other peers */
     public void handleMessage(PeerConnection sender, PayloadMessage message) {
         synchronized (recentMessageIds) {
             if (!recentMessageIds.add(message.getMessageId())) return; // Do not process if message id has been seen before, to stop packets from continuously looping through the network
@@ -282,7 +282,7 @@ public class P2PNetworkManager {
                 handleMessage(senderPeer, message);
 
                 logger.debug().message("Received UDP message from {}:{}, type: {}",
-                    packet.getAddress(), packet.getPort(), message.getPayloadType().getPayloadClass().getName()
+                    packet.getAddress(), packet.getPort(), message.getPayloadType()
                 ).build();
             } catch (SocketTimeoutException e) {
                 // Normal timeout, continue loop
@@ -393,7 +393,6 @@ public class P2PNetworkManager {
         };
     }
 
-    public TrackedPlayerList.Sublist getPlayerList() { return messageHandler.getPlayerList(); }
     public Set<PeerConnection> getConnectedPeers() { return connectedPeers; }
     public DatagramSocket getUdpSocket() { return udpSocket; }
 
@@ -432,11 +431,7 @@ public class P2PNetworkManager {
             connectedPeersByUdpId.remove(peer.assignedUdpId);
         }
 
-        for (UUID playerId : peer.announcedPlayers) {
-            if (!getPlayerList().containsKey(playerId)) continue;
-
-            handleMessage(peer, new PlayerDisconnectPayload(playerId).message());
-        }
+        messageHandler.onPeerDisconnected(peer);
         logger.info().message("Peer disconnected. Active connections: {}", connectedPeers.size()).build();
     }
 }

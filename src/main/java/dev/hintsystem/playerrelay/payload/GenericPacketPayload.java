@@ -1,5 +1,6 @@
 package dev.hintsystem.playerrelay.payload;
 
+import dev.hintsystem.playerrelay.utils.PayloadUtils;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.packet.CustomPayload;
@@ -11,14 +12,6 @@ public class GenericPacketPayload implements Payload {
     private final Identifier packetId;
     private final byte[] payload;
 
-    public GenericPacketPayload(RegistryByteBuf buf) {
-        this.packetId = buf.readIdentifier();
-        int length = buf.readVarInt();
-
-        this.payload = new byte[length];
-        buf.readBytes(this.payload);
-    }
-
     public GenericPacketPayload(CustomPayload packet) {
         this.packetId = packet.getId().id();
 
@@ -26,14 +19,13 @@ public class GenericPacketPayload implements Payload {
 
         try {
             packet.getClass().getMethod("write", PacketByteBuf.class).invoke(packet, tempBuf);
-            this.payload = Utility.bytesFromByteBuf(tempBuf);
+            this.payload = PayloadUtils.bytesFromByteBuf(tempBuf);
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize packet " + this.packetId, e);
         }
     }
 
     public Identifier getPacketId() { return packetId; }
-
     public byte[] getPayload() { return payload; }
 
     // Reconstruct packet instance from this message
@@ -44,6 +36,17 @@ public class GenericPacketPayload implements Payload {
         } catch (Exception e) {
             throw new RuntimeException("Failed to reconstruct packet " + packetId, e);
         }
+    }
+
+    @Override
+    public PayloadRegistry.PayloadType<GenericPacketPayload> getPayloadType() { return PayloadRegistry.GENERIC_PACKET; }
+
+    public GenericPacketPayload(RegistryByteBuf buf) {
+        this.packetId = buf.readIdentifier();
+        int length = buf.readVarInt();
+
+        this.payload = new byte[length];
+        buf.readBytes(this.payload);
     }
 
     @Override

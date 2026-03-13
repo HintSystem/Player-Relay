@@ -1,11 +1,10 @@
-package dev.hintsystem.playerrelay.networking.handler;
+package dev.hintsystem.playerrelay.network.handler;
 
-import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.PlayerRelayServer;
 import dev.hintsystem.playerrelay.PlayerUpdateTracker;
 import dev.hintsystem.playerrelay.ServerCore;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 
@@ -26,14 +25,13 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
 
     @Override
     protected void init() {
-        register(RelayVersionPayload.class, this::onPlayerRelayVersion);
+        register(PayloadRegistry.RELAY_VERSION, this::onPlayerRelayVersion);
 
-        register(PlayerInfoPayload.class, this::onPlayerInfo);
-        register(PlayerInventoryPayload.class, this::onPlayerInventory);
+        register(PayloadRegistry.PLAYER_INFO, this::onPlayerInfo);
+        register(PayloadRegistry.PLAYER_INVENTORY, this::onPlayerInventory);
     }
 
     public void onPlayerRelayVersion(RelayVersionPayload version, ServerPlayerEntity player) {
-        PlayerRelay.LOGGER.info(player.getStringifiedName() + " SENT RELAY VERSION");
         PlayerRelayServer.sendToClient(player, new RelayVersionPayload().packet());
         if (version.networkVersion != RelayVersionPayload.NETWORK_VERSION) {
             ServerCore.listeningPlayers.remove(player.getUuid());

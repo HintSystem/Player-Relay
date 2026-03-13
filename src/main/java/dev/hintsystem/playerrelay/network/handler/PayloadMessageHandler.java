@@ -1,7 +1,7 @@
-package dev.hintsystem.playerrelay.networking.handler;
+package dev.hintsystem.playerrelay.network.handler;
 
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
-import dev.hintsystem.playerrelay.networking.TrackedPlayerList;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.TrackedPlayerList;
 import dev.hintsystem.playerrelay.payload.*;
 
 import org.jetbrains.annotations.NotNull;
@@ -11,7 +11,7 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 
 public abstract class PayloadMessageHandler<C> implements MessageHandler<C> {
-    private final Map<Class<? extends Payload>, BiConsumer<? extends Payload, C>> payloadHandlers = new HashMap<>();
+    private final Map<Byte, BiConsumer<? extends Payload, C>> payloadHandlers = new HashMap<>();
 
     public void handleMessage(@NotNull PayloadMessage message, C context) {
         if (!handlePayload(message.getPayload(), context)) {
@@ -22,7 +22,7 @@ public abstract class PayloadMessageHandler<C> implements MessageHandler<C> {
     /** @return true if payload was processed by a payload handler */
     protected boolean handlePayload(@NotNull Payload payload, C context) {
         @SuppressWarnings("unchecked")
-        BiConsumer<Payload, C> payloadHandler = (BiConsumer<Payload, C>) payloadHandlers.get(payload.getClass());
+        BiConsumer<Payload, C> payloadHandler = (BiConsumer<Payload, C>) payloadHandlers.get(payload.getPayloadType().getId());
 
         if (payloadHandler != null) {
             payloadHandler.accept(payload, context);
@@ -33,7 +33,7 @@ public abstract class PayloadMessageHandler<C> implements MessageHandler<C> {
 
     /**
      * Initialize handlers. Called in constructor.
-     * Should register all payload handlers using {@link #register(Class, BiConsumer)}
+     * Should register all payload handlers using {@link #register(PayloadRegistry.PayloadType, BiConsumer)}
      */
     protected abstract void init();
 
@@ -57,13 +57,12 @@ public abstract class PayloadMessageHandler<C> implements MessageHandler<C> {
      * @throws IllegalStateException if a handler is already registered for this payload type
      * @throws IllegalArgumentException if the payload class is not registered in PayloadRegistry
      */
-    public <T extends Payload> void register(@NotNull Class<T> payloadClass, @NotNull BiConsumer<T, C> payloadHandler) {
-        PayloadRegistry.getByClass(payloadClass);
-        if (payloadHandlers.containsKey(payloadClass)) {
-            throw new IllegalStateException("Handler already registered for " + payloadClass.getName());
+    public <T extends Payload> void register(@NotNull PayloadRegistry.PayloadType<T> payloadType, @NotNull BiConsumer<T, C> payloadHandler) {
+        if (payloadHandlers.containsKey(payloadType.getId())) {
+            throw new IllegalStateException("Handler already registered for " + payloadType);
         }
 
-        payloadHandlers.put(payloadClass, payloadHandler);
+        payloadHandlers.put(payloadType.getId(), payloadHandler);
     }
 
     /**
@@ -71,8 +70,8 @@ public abstract class PayloadMessageHandler<C> implements MessageHandler<C> {
      *
      * @return true if a handler was removed, false if none was registered
      */
-    public boolean unregister(Class<? extends Payload> payloadClass) {
-        return payloadHandlers.remove(payloadClass) != null;
+    public boolean unregister(PayloadRegistry.PayloadType<? extends Payload> payloadType) {
+        return payloadHandlers.remove(payloadType.getId()) != null;
     }
 
     public void clearAllHandlers() { payloadHandlers.clear(); }

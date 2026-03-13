@@ -15,6 +15,12 @@ public class UdpHandshakePayload implements Payload {
         this.udpPort = udpPort;
     }
 
+    public short getUdpId() { return udpId; }
+    public int getUdpPort() { return udpPort; }
+
+    @Override
+    public PayloadRegistry.PayloadType<UdpHandshakePayload> getPayloadType() { return PayloadRegistry.UDP_HANDSHAKE; }
+
     public UdpHandshakePayload(RegistryByteBuf buf) {
         this.udpId = buf.readShort();
         this.udpPort = buf.readInt();
@@ -25,7 +31,4 @@ public class UdpHandshakePayload implements Payload {
         buf.writeShort(udpId);
         buf.writeInt(udpPort);
     }
-
-    public short getUdpId() { return udpId; }
-    public int getUdpPort() { return udpPort; }
 }

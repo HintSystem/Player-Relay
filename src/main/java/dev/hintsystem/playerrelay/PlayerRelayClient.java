@@ -5,11 +5,11 @@ import dev.hintsystem.playerrelay.config.ClientConfig;
 import dev.hintsystem.playerrelay.gui.PlayerList;
 import dev.hintsystem.playerrelay.logging.ClientLogHandler;
 import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
-import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
-import dev.hintsystem.playerrelay.networking.handler.ClientMessageHandler;
-import dev.hintsystem.playerrelay.networking.handler.DefaultP2PMessageHandler;
-import dev.hintsystem.playerrelay.networking.handler.S2CMessageHandler;
+import dev.hintsystem.playerrelay.network.P2PNetworkManager;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.network.handler.ClientMessageHandler;
+import dev.hintsystem.playerrelay.network.handler.DefaultP2PMessageHandler;
+import dev.hintsystem.playerrelay.network.handler.S2CMessageHandler;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;

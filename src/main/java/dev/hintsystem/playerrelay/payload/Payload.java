@@ -1,12 +1,14 @@
 package dev.hintsystem.playerrelay.payload;
 
-import dev.hintsystem.playerrelay.networking.NetworkProtocol;
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
+import dev.hintsystem.playerrelay.network.NetworkProtocol;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
 
 import net.minecraft.network.RegistryByteBuf;
 
 public interface Payload {
     void write(RegistryByteBuf buf);
+
+    PayloadRegistry.PayloadType<? extends Payload> getPayloadType();
 
     default PayloadMessage message() {
         return message(NetworkProtocol.TCP);

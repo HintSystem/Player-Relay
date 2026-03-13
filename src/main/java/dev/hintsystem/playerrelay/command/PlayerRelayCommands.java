@@ -6,7 +6,7 @@ import dev.hintsystem.playerrelay.EnderChestTracker;
 import dev.hintsystem.playerrelay.PlayerRelayClient;
 import dev.hintsystem.playerrelay.gui.RemoteEnderChestScreen;
 import dev.hintsystem.playerrelay.gui.RemoteInventoryScreen;
-import dev.hintsystem.playerrelay.networking.P2PNetworkManager;
+import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.PlayerInventoryPayload;
 import dev.hintsystem.playerrelay.payload.WaypointPayload;

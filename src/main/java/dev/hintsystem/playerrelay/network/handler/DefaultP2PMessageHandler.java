@@ -1,16 +1,17 @@
-package dev.hintsystem.playerrelay.networking.handler;
+package dev.hintsystem.playerrelay.network.handler;
 
 import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
-import dev.hintsystem.playerrelay.networking.PeerConnection;
-import dev.hintsystem.playerrelay.networking.PayloadMessage;
-import dev.hintsystem.playerrelay.networking.TrackedPlayerList;
+import dev.hintsystem.playerrelay.network.PeerConnection;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.TrackedPlayerList;
 import dev.hintsystem.playerrelay.payload.*;
 
 import net.minecraft.entity.player.PlayerEntity;
 
 import org.jetbrains.annotations.Nullable;
+import java.util.UUID;
 
 public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnection> implements P2PMessageHandler {
     public final NetworkLogger logger;
@@ -35,28 +36,25 @@ public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnecti
     }
 
     @Override
-    public TrackedPlayerList.Sublist getPlayerList() { return playerList; }
-
-    @Override
     protected void init() {
-        register(RelayVersionPayload.class, (version, sender) -> sender.onVersionHandshake(version));
+        register(PayloadRegistry.RELAY_VERSION, (version, sender) -> sender.onVersionHandshake(version));
 
-        register(UdpHandshakePayload.class, (udpHandshake, sender) -> {
+        register(PayloadRegistry.UDP_HANDSHAKE, (udpHandshake, sender) -> {
             sender.setPeerUdpId(udpHandshake.getUdpId(), udpHandshake.getUdpPort());
 
             logger.info().message("UDP handshake received, id: {}, port: {}", udpHandshake.getUdpId(), udpHandshake.getUdpPort()).build();
         });
 
-        register(UdpPingPayload.class, (udpPing, sender) -> sender.onUdpPingReceived(udpPing));
+        register(PayloadRegistry.UDP_PING, (udpPing, sender) -> sender.onUdpPingReceived(udpPing));
 
 
-        register(PlayerInfoPayload.class, (playerInfo, sender) -> {
+        register(PayloadRegistry.PLAYER_INFO, (playerInfo, sender) -> {
             sender.announcedPlayers.add(playerInfo.playerId);
             addPlayerInfo(playerList, playerInfo, clientInfoProvider != null ? clientInfoProvider.getLocalPlayerId() : null);
             passPayload(playerInfo);
         });
 
-        register(PlayerInventoryPayload.class, (inventory, sender) -> {
+        register(PayloadRegistry.PLAYER_INVENTORY, (inventory, sender) -> {
             if (inventory.isRequest()) {
                 if (clientInfoProvider == null) return;
                 PlayerEntity player = clientInfoProvider.getLocalPlayer();
@@ -69,11 +67,21 @@ public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnecti
             }
         });
 
-        register(PlayerDisconnectPayload.class, (disconnect, sender) -> {
-            sender.announcedPlayers.remove(disconnect.playerId);
+        PartyPayload.ActionListener partyHandler = new PartyHandler();
+        register(PayloadRegistry.PARTY, (party, sender) -> party.handle(partyHandler));
+
+        register(PayloadRegistry.PLAYER_DISCONNECT, (disconnect, sender) -> {
+            sender.announcedPlayers.remove(disconnect.playerId());
             passPayload(disconnect);
-            playerList.remove(disconnect.playerId);
+            playerList.remove(disconnect.playerId());
         });
+    }
+
+    private static class PartyHandler extends PartyPayload.ActionListener {
+        @Override
+        public void onCreate(PartyPayload party, PartyPayload.CreateAction createAction) {
+
+        }
     }
 
     @Override
@@ -103,6 +111,15 @@ public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnecti
         if (clientInfo != null) {
             clientInfo.setFlag(PlayerInfoPayload.FLAGS.NEW_CONNECTION, true);
             peer.sendMessage(clientInfo.message());
+        }
+    }
+
+    @Override
+    public void onPeerDisconnected(PeerConnection peer) {
+        for (UUID playerId : peer.announcedPlayers) {
+            if (!playerList.containsKey(playerId)) continue;
+
+            peer.getP2PManager().handleMessage(peer, new PlayerDisconnectPayload(playerId).message());
         }
     }
 
