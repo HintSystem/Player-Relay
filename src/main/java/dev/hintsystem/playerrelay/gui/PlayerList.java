@@ -26,7 +26,7 @@ public class PlayerList implements HudElement {
     }
 
     public void render(DrawContext context, RenderTickCounter tickCounter) {
-        Map<UUID, PlayerInfoPayload> connectedPlayers = CommonCore.playerInfoTracker.getAllTrackedPlayers();
+        Map<UUID, PlayerInfoPayload> connectedPlayers = CommonCore.connections.getTrackedPlayers();
         if (!PlayerRelayClient.config.showPlayerList || connectedPlayers.isEmpty()) {
             entries.clear();
             return;

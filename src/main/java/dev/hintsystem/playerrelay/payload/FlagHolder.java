@@ -22,9 +22,9 @@ public abstract class FlagHolder<E extends Enum<E>> {
     }
 
     /**
-     * Writes the flags to a ByteBuf.
-     * @param buf The ByteBuf to write to.
-     * @param bytes The number of bytes to write (1, 2, or 4).
+     * Writes the flags to a ByteBuf
+     * @param buf The ByteBuf to write to
+     * @param bytes The number of bytes to write (1, 2, or 4)
      */
     public void writeFlags(ByteBuf buf, int bytes) {
         switch (bytes) {
@@ -36,9 +36,9 @@ public abstract class FlagHolder<E extends Enum<E>> {
     }
 
     /**
-     * Reads the flags from a ByteBuf.
-     * @param buf The ByteBuf to read from.
-     * @param bytes The number of bytes to read (1, 2, or 4).
+     * Reads the flags from a ByteBuf
+     * @param buf The ByteBuf to read from
+     * @param bytes The number of bytes to read (1, 2, or 4)
      */
     public void readFlags(ByteBuf buf, int bytes) {
         switch (bytes) {
@@ -49,7 +49,7 @@ public abstract class FlagHolder<E extends Enum<E>> {
         }
     }
 
-    /** Returns true if both flag sets are identical. */
+    /** Returns true if both flag sets are identical */
     public boolean equalsFlags(FlagHolder<?> other) {
         return other != null && this.flags == other.flags;
     }

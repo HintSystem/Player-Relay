@@ -21,7 +21,7 @@ public class RelayPlayerTracker {
             ? null : getServerPlayerUuids();
 
         return Iterators.filter(
-            CommonCore.playerInfoTracker.getAllTrackedPlayers().values().iterator(),
+            CommonCore.connections.getTrackedPlayers().values().iterator(),
             player -> {
                 if (player == null) return false;
 

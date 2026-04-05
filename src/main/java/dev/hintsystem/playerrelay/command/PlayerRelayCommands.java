@@ -103,7 +103,7 @@ public class PlayerRelayCommands {
                         MutableText playerList = Text.empty().append(Text.literal("=== Connected Players ===")
                             .setStyle(Style.EMPTY.withColor(Formatting.GOLD).withBold(true)));
 
-                        for (PlayerInfoPayload player : CommonCore.playerInfoTracker.getAllTrackedPlayers().values()) {
+                        for (PlayerInfoPayload player : CommonCore.connections.getTrackedPlayers().values()) {
                             MutableText line = Text.empty().append(Text.literal("\n" + player.getName() + " ")
                                 .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true)));
 

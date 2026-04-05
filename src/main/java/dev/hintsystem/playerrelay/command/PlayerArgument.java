@@ -30,7 +30,7 @@ public class PlayerArgument implements ArgumentType<String> {
     public static PlayerInfoPayload getConnectedPlayer(CommandContext<?> context, String name) throws CommandSyntaxException {
         String playerName = context.getArgument(name, String.class);
 
-        Optional<PlayerInfoPayload> found = CommonCore.playerInfoTracker.getAllTrackedPlayers().values().stream()
+        Optional<PlayerInfoPayload> found = CommonCore.connections.getTrackedPlayers().values().stream()
             .filter(p -> p.getName().equalsIgnoreCase(playerName))
             .findAny();
 
@@ -43,7 +43,7 @@ public class PlayerArgument implements ArgumentType<String> {
         int start = reader.getCursor();
         String playerName = reader.readString();
 
-        boolean found = CommonCore.playerInfoTracker.getAllTrackedPlayers().values().stream()
+        boolean found = CommonCore.connections.getTrackedPlayers().values().stream()
             .anyMatch(p -> p.getName().equalsIgnoreCase(playerName));
 
         if (!found) {
@@ -56,7 +56,7 @@ public class PlayerArgument implements ArgumentType<String> {
 
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
-        Collection<String> playerNames = CommonCore.playerInfoTracker.getAllTrackedPlayers().values().stream()
+        Collection<String> playerNames = CommonCore.connections.getTrackedPlayers().values().stream()
             .map(PlayerInfoPayload::getName)
             .toList();
 
@@ -65,7 +65,7 @@ public class PlayerArgument implements ArgumentType<String> {
 
     @Override
     public Collection<String> getExamples() {
-        return CommonCore.playerInfoTracker.getAllTrackedPlayers().values().stream()
+        return CommonCore.connections.getTrackedPlayers().values().stream()
             .map(PlayerInfoPayload::getName)
             .limit(3)
             .toList();

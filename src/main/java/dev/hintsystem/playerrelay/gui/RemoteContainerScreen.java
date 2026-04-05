@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.gui;
 
 import dev.hintsystem.playerrelay.ClientCore;
-import dev.hintsystem.playerrelay.PlayerRelay;
+import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.PlayerInventoryPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerEquipmentData;
@@ -18,12 +18,12 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.jetbrains.annotations.Nullable;
 
+import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public abstract class RemoteContainerScreen extends Screen {
-    private static final Identifier EQUIPMENT_TEXTURE = Identifier.of(PlayerRelay.MOD_ID, "textures/gui/container/remote_player_equipment.png");
+    private static final Identifier EQUIPMENT_TEXTURE = CommonCore.identifier("textures/gui/container/remote_player_equipment.png");
     private static final Identifier SLOT_HIGHLIGHT_BACK_TEXTURE = Identifier.ofVanilla("container/slot_highlight_back");
     private static final Identifier SLOT_HIGHLIGHT_FRONT_TEXTURE = Identifier.ofVanilla("container/slot_highlight_front");
 

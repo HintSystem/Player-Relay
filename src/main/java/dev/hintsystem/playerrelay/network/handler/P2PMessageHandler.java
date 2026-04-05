@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.network.handler;
 
-import dev.hintsystem.playerrelay.network.PeerConnection;
+import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 
 public interface P2PMessageHandler extends MessageHandler<PeerConnection> {
     void onPeerAccepted(PeerConnection peer);

@@ -9,12 +9,12 @@ import xaero.hud.minimap.player.tracker.PlayerTrackerMinimapElementRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.font.TextRenderer;
 
-import org.joml.Matrix4f;
-
 import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
+
+import org.joml.Matrix4f;
 
 @Mixin(PlayerTrackerMinimapElementRenderer.class)
 public class PlayerTrackerMinimapElementRendererMixin {
@@ -42,7 +42,7 @@ public class PlayerTrackerMinimapElementRendererMixin {
         int newColor = color;
         boolean newShadow = shadow;
 
-        PlayerInfoPayload playerInfo = CommonCore.playerInfoTracker.getTrackedPlayer(e.getPlayerId());
+        PlayerInfoPayload playerInfo = CommonCore.connections.getPlayer(e.getPlayerId());
         if (playerInfo != null) {
             newColor = playerInfo.getNameColor();
             newShadow = true;

@@ -103,7 +103,7 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
     }
 
     public void onPlayerDisconnect(PlayerDisconnectPayload disconnect) {
-        PlayerInfoPayload lastInfo = CommonCore.playerInfoTracker.getTrackedPlayer(disconnect.playerId());
+        PlayerInfoPayload lastInfo = CommonCore.connections.getPlayer(disconnect.playerId());
 
         for (PlayerInfoHandler handler : PLAYER_INFO_HANDLERS) {
             handler.onPlayerDisconnect(disconnect, lastInfo);
@@ -113,7 +113,7 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
     }
 
     public void onWaypointReceived(WaypointPayload waypoint) {
-        PlayerInfoPayload author = CommonCore.playerInfoTracker.getTrackedPlayer(waypoint.playerId);
+        PlayerInfoPayload author = CommonCore.connections.getPlayer(waypoint.playerId);
         String playerName = (author != null) ? author.getName() : waypoint.playerId.toString();
 
         int waypointIndex;

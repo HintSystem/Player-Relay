@@ -27,10 +27,8 @@ public class PayloadRegistry {
         private final byte id;
         private final Function<RegistryByteBuf, T> factory;
         private final boolean shouldForward;
-        private Class<T> payloadClass;
 
-        private PayloadType(byte id,
-                            Function<RegistryByteBuf, T> factory, boolean shouldForward) {
+        private PayloadType(byte id, Function<RegistryByteBuf, T> factory, boolean shouldForward) {
             this.id = id;
             this.factory = factory;
             this.shouldForward = shouldForward;
@@ -43,20 +41,9 @@ public class PayloadRegistry {
             return factory.apply(buf);
         }
 
-        @SuppressWarnings("unchecked")
-        private void extractPayloadClass() {
-            if (payloadClass != null) return;
-
-            try {
-                var method = factory.getClass().getMethod("apply", Object.class);
-                payloadClass = (Class<T>) method.getReturnType();
-            } catch (NoSuchMethodException ignored) {}
-        }
-
         @Override
         public String toString() {
-            extractPayloadClass();
-            return "(id=" + id + ", class=" + (payloadClass != null ? payloadClass.getSimpleName() : "null") + ")";
+            return "(PayloadType, id=" + id + ")";
         }
     }
 

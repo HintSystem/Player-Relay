@@ -19,8 +19,14 @@ public class PlayerRelayServer implements DedicatedServerModInitializer {
         CommonCore.initConfig(config);
         CommonCore.initP2PNetwork(
             new P2PNetworkManager(
+                CommonCore.peerConnections,
+                new DefaultP2PMessageHandler(
+                    CommonCore.peerConnections,
+                    null,
+                    null,
+                    CommonCore.networkLogger
+                ),
                 config,
-                new DefaultP2PMessageHandler(CommonCore.networkLogger, CommonCore.p2pPlayers, null, null),
                 CommonCore.networkLogger
             )
         );

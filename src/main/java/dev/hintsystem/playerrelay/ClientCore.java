@@ -2,7 +2,7 @@ package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
 import dev.hintsystem.playerrelay.network.NetworkProtocol;
-import dev.hintsystem.playerrelay.network.PeerConnection;
+import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
@@ -56,7 +56,7 @@ public class ClientCore {
 
     public static void onServerLeave() {
         serverRelayVersion = null;
-        CommonCore.serverPlayers.clear();
+        CommonCore.serverConnection.close();
     }
 
     private static void sendC2SUpdate() {
@@ -160,7 +160,7 @@ public class ClientCore {
             return ClientCore.getUpdatedClientInfo();
         }
 
-        return CommonCore.playerInfoTracker.getTrackedPlayer(playerId);
+        return CommonCore.connections.getPlayer(playerId);
     }
 
     public static void sendClientChatMessage(Text message) {
@@ -214,7 +214,7 @@ public class ClientCore {
         }
 
         // P2P Routing
-        for (PeerConnection peer : CommonCore.getP2PNetworkManager().getConnectedPeers()) {
+        for (PeerConnection peer : CommonCore.peerConnections.getAll()) {
             if (peer.announcedPlayers.contains(playerId)) {
                 peer.sendMessage(inventoryRequest.message());
                 routed = true;

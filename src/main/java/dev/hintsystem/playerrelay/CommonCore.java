@@ -4,9 +4,13 @@ import dev.hintsystem.playerrelay.config.CommonConfig;
 import dev.hintsystem.playerrelay.logging.ConsoleLogHandler;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.network.P2PNetworkManager;
+import dev.hintsystem.playerrelay.network.connection.ConnectionCollectorGroup;
+import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
+import dev.hintsystem.playerrelay.network.connection.ServerConnectionCollector;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Identifier;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
@@ -22,20 +26,28 @@ public class CommonCore {
 
     private static P2PNetworkManager p2pNetworkManager;
 
-    public static final TrackedPlayerList playerInfoTracker = new TrackedPlayerList();
-    public static final TrackedPlayerList.Sublist p2pPlayers = playerInfoTracker.createSublist();
-    /**
-     * Sublist 'serverPlayers' is created after 'p2pPlayers' so it has higher priority when retrieving players via {@link TrackedPlayerList#getAllTrackedPlayers()}
-     * @see TrackedPlayerList#createSublist()
-     */
-    public static final TrackedPlayerList.Sublist serverPlayers = playerInfoTracker.createSublist();
+    public static final ServerConnectionCollector serverConnection = new ServerConnectionCollector();
+    public static final PeerConnectionCollector peerConnections = new PeerConnectionCollector();
+
+    public static final ConnectionCollectorGroup connections = ConnectionCollectorGroup.with(
+        peerConnections,
+        serverConnection // Higher priority, so append last
+    );
+
+    public static Identifier identifier(String path) {
+        return Identifier.of(PlayerRelay.MOD_ID, path);
+    }
+
+    public static CommonConfig getConfig() { return commonConfig; }
+
+    public static P2PNetworkManager getP2PNetworkManager() { return p2pNetworkManager; }
 
     public static void onStopping() {
         ServerCore.listeningPlayers.clear();
         ServerCore.playerUpdateTrackers.clear();
 
-        p2pPlayers.clear();
-        serverPlayers.clear();
+        peerConnections.close();
+        serverConnection.close();
         if (getP2PNetworkManager() != null) {
             getP2PNetworkManager().shutdown();
         }
@@ -56,10 +68,6 @@ public class CommonCore {
     }
 
     public static int ticksToMs(int ticks) { return Math.round((ticks / tickRate) * 1000); }
-
-    public static CommonConfig getConfig() { return commonConfig; }
-
-    public static P2PNetworkManager getP2PNetworkManager() { return p2pNetworkManager; }
 
     public interface LocalInfoProvider {
         @Nullable

@@ -20,8 +20,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
 
-import net.minecraft.util.Identifier;
-
 public class PlayerRelayClient implements ClientModInitializer {
     public static ClientConfig config = new ClientConfig();
 
@@ -38,15 +36,21 @@ public class PlayerRelayClient implements ClientModInitializer {
         CommonCore.initConfig(config);
         CommonCore.initP2PNetwork(
             new P2PNetworkManager(
+                CommonCore.peerConnections,
+                new DefaultP2PMessageHandler(
+                    CommonCore.peerConnections,
+                    new ClientCore.ClientInfoProvider(),
+                    new ClientMessageHandler<>(CommonCore.networkLogger),
+                    CommonCore.networkLogger
+                ),
                 config,
-                new DefaultP2PMessageHandler(CommonCore.networkLogger, CommonCore.p2pPlayers, new ClientCore.ClientInfoProvider(), new ClientMessageHandler<>(CommonCore.networkLogger)),
                 CommonCore.networkLogger
             )
         );
 
         ServerCore.setLocalPlayerId(ClientCore.getClientUuid());
 
-        S2CMessageHandler clientHandler = new S2CMessageHandler(CommonCore.networkLogger, CommonCore.serverPlayers);
+        S2CMessageHandler clientHandler = new S2CMessageHandler(CommonCore.networkLogger, CommonCore.serverConnection);
         ClientPlayNetworking.registerGlobalReceiver(PayloadMessage.Packet.PACKET_TYPE, (payloadMessage, context) -> {
             clientHandler.handleMessage(payloadMessage, null);
         });
@@ -59,7 +63,7 @@ public class PlayerRelayClient implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STOPPING.register(c -> CommonCore.onStopping());
 
         PlayerList playerList = new PlayerList();
-        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(PlayerRelay.MOD_ID, "before_chat"), playerList);
+        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, CommonCore.identifier("player_list_before_chat"), playerList);
         ClientTickEvents.END_CLIENT_TICK.register(playerList::onClientTickEnd);
 
         new PlayerRelayCommands(CommonCore.getP2PNetworkManager()).register();

@@ -3,9 +3,9 @@ package dev.hintsystem.playerrelay.network.handler;
 import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
-import dev.hintsystem.playerrelay.network.PeerConnection;
+import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
-import dev.hintsystem.playerrelay.TrackedPlayerList;
+import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
 import dev.hintsystem.playerrelay.payload.*;
 
 import net.minecraft.entity.player.PlayerEntity;
@@ -16,19 +16,20 @@ import java.util.UUID;
 public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnection> implements P2PMessageHandler {
     public final NetworkLogger logger;
 
-    public final TrackedPlayerList.Sublist playerList;
+    public final PeerConnectionCollector peerConnections;
+
     @Nullable
     private final CommonCore.LocalInfoProvider clientInfoProvider;
     private final PayloadMessageHandler<Void> clientMessageHandler;
 
     public DefaultP2PMessageHandler(
-        NetworkLogger logger,
-        TrackedPlayerList.Sublist playerList,
+        PeerConnectionCollector peerConnections,
         @Nullable CommonCore.LocalInfoProvider clientInfoProvider,
-        @Nullable PayloadMessageHandler<Void> clientMessageHandler
+        @Nullable PayloadMessageHandler<Void> clientMessageHandler,
+        NetworkLogger logger
     ) {
         this.logger = logger.withLocation(LogLocation.P2P_MESSAGE_HANDLER);
-        this.playerList = playerList;
+        this.peerConnections = peerConnections;
         this.clientInfoProvider = clientInfoProvider;
         this.clientMessageHandler = clientMessageHandler;
 
@@ -49,32 +50,18 @@ public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnecti
 
 
         register(PayloadRegistry.PLAYER_INFO, (playerInfo, sender) -> {
-            sender.announcedPlayers.add(playerInfo.playerId);
-            addPlayerInfo(playerList, playerInfo, clientInfoProvider != null ? clientInfoProvider.getLocalPlayerId() : null);
+            UUID clientPlayerId = clientInfoProvider != null ? clientInfoProvider.getLocalPlayerId() : null;
+            peerConnections.updatePlayer(sender, playerInfo, clientPlayerId);
+
             passPayload(playerInfo);
         });
 
-        register(PayloadRegistry.PLAYER_INVENTORY, (inventory, sender) -> {
-            if (inventory.isRequest()) {
-                if (clientInfoProvider == null) return;
-                PlayerEntity player = clientInfoProvider.getLocalPlayer();
-
-                if (player != null && player.getUuid().equals(inventory.playerId)) {
-                    sender.sendMessage(PlayerInventoryPayload.respond(player, inventory.isEnderChest()).message());
-                }
-            } else {
-                passPayload(inventory);
-            }
-        });
+        register(PayloadRegistry.PLAYER_INVENTORY, this::onPlayerInventory);
 
         PartyPayload.ActionListener partyHandler = new PartyHandler();
         register(PayloadRegistry.PARTY, (party, sender) -> party.handle(partyHandler));
 
-        register(PayloadRegistry.PLAYER_DISCONNECT, (disconnect, sender) -> {
-            sender.announcedPlayers.remove(disconnect.playerId());
-            passPayload(disconnect);
-            playerList.remove(disconnect.playerId());
-        });
+        register(PayloadRegistry.PLAYER_DISCONNECT, this::onPlayerDisconnect);
     }
 
     private static class PartyHandler extends PartyPayload.ActionListener {
@@ -82,6 +69,24 @@ public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnecti
         public void onCreate(PartyPayload party, PartyPayload.CreateAction createAction) {
 
         }
+    }
+
+    public void onPlayerInventory(PlayerInventoryPayload inventory, PeerConnection sender) {
+        if (inventory.isRequest()) {
+            if (clientInfoProvider == null) return;
+            PlayerEntity player = clientInfoProvider.getLocalPlayer();
+
+            if (player != null && player.getUuid().equals(inventory.playerId)) {
+                sender.sendMessage(PlayerInventoryPayload.respond(player, inventory.isEnderChest()).message());
+            }
+        } else {
+            passPayload(inventory);
+        }
+    }
+
+    public void onPlayerDisconnect(PlayerDisconnectPayload disconnect, PeerConnection sender) {
+        passPayload(disconnect);
+        peerConnections.removeAnnouncedPlayer(sender, disconnect.playerId()); // Remove after passing, because other handler might rely on tracked player info
     }
 
     @Override
@@ -96,7 +101,7 @@ public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnecti
         }
 
         // Send info about all known players to client peer
-        for (PlayerInfoPayload playerInfo : playerList.tracker.getAllTrackedPlayers().values()) {
+        for (PlayerInfoPayload playerInfo : peerConnections.getTrackedPlayers().values()) {
             playerInfo.setFlag(PlayerInfoPayload.FLAGS.NEW_CONNECTION, false);
             peer.sendMessage(playerInfo.message());
         }
@@ -117,16 +122,15 @@ public class DefaultP2PMessageHandler extends PayloadMessageHandler<PeerConnecti
     @Override
     public void onPeerDisconnected(PeerConnection peer) {
         for (UUID playerId : peer.announcedPlayers) {
-            if (!playerList.containsKey(playerId)) continue;
+            if (!peerConnections.getTrackedPlayers().containsKey(playerId)) continue;
 
+            // Send disconnect message to other peers if client is host and also process onPlayerDisconnect on client
             peer.getP2PManager().handleMessage(peer, new PlayerDisconnectPayload(playerId).message());
         }
     }
 
     @Override
-    public void onClose() {
-        playerList.clear();
-    }
+    public void onClose() {}
 
     private void passPayload(Payload payload) {
         if (clientMessageHandler != null) clientMessageHandler.handlePayload(payload, null);

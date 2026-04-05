@@ -27,7 +27,7 @@ public class PlayerPositionData implements PlayerDataComponent {
         buf.writeFloat((float) coords.y);
         buf.writeFloat((float) coords.z);
         buf.writeFloat(yaw);
-        buf.writeFloat(pitch);
+        buf.writeByte((int)((pitch + 90f) * 255f / 180f)); // [-90, 90]
         buf.writeByte(pose.getIndex());
     }
 
@@ -35,7 +35,7 @@ public class PlayerPositionData implements PlayerDataComponent {
     public void read(RegistryByteBuf buf) {
         this.coords = new Vec3d(buf.readFloat(), buf.readFloat(), buf.readFloat());
         this.yaw = buf.readFloat();
-        this.pitch = buf.readFloat();
+        this.pitch = (buf.readUnsignedByte() * 180f / 255f) - 90f;
         this.pose = EntityPose.INDEX_TO_VALUE.apply(buf.readUnsignedByte());
     }
 
@@ -45,8 +45,8 @@ public class PlayerPositionData implements PlayerDataComponent {
 
         double minPlayerMove = CommonCore.getConfig().minPlayerMove;
         return this.coords.squaredDistanceTo(otherPos.coords) >= minPlayerMove * minPlayerMove
-            || Math.abs(this.yaw - otherPos.yaw) > 5.0F
-            || Math.abs(this.pitch - otherPos.pitch) > 5.0F
+            || Math.abs(this.yaw - otherPos.yaw) > 4.0F
+            || Math.abs(this.pitch - otherPos.pitch) > 4.0F
             || !this.pose.equals(otherPos.pose);
     }
 

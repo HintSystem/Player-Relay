@@ -24,7 +24,7 @@ public class ClientPlayNetworkHandlerMixin {
     )
     private void playerListEntryFallback(UUID uuid, CallbackInfoReturnable<PlayerListEntry> cir) {
         if (cir.getReturnValue() == null && ClientCore.isP2PNetworkActive()) {
-            PlayerInfoPayload fallback = CommonCore.p2pPlayers.get(uuid);
+            PlayerInfoPayload fallback = CommonCore.peerConnections.getPlayer(uuid);
 
             if (fallback != null) { cir.setReturnValue(fallback.toPlayerListEntry()); }
         }
@@ -33,7 +33,7 @@ public class ClientPlayNetworkHandlerMixin {
     @Inject(method = "onPlayerRemove", at = @At("HEAD"))
     private void onPlayerRemove(PlayerRemoveS2CPacket packet, CallbackInfo ci) {
         for (UUID uuid : packet.profileIds()) {
-            CommonCore.serverPlayers.remove(uuid);
+            CommonCore.serverConnection.removeAnnouncedPlayer(uuid);
         }
     }
 }

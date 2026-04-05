@@ -1,9 +1,12 @@
-package dev.hintsystem.playerrelay.network;
+package dev.hintsystem.playerrelay.network.connection;
 
 import dev.hintsystem.playerrelay.logging.LogEvent;
 import dev.hintsystem.playerrelay.logging.LogEventTypes;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.logging.LogLocation;
+import dev.hintsystem.playerrelay.network.NetworkProtocol;
+import dev.hintsystem.playerrelay.network.P2PNetworkManager;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.payload.UdpHandshakePayload;
 import dev.hintsystem.playerrelay.payload.UdpPingPayload;
@@ -13,14 +16,13 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class PeerConnection implements Runnable {
+public class PeerConnection extends Connection implements Runnable {
     private final NetworkLogger logger;
 
     private final Socket tcpSocket;
     private final DataInputStream tcpInput;
     private final DataOutputStream tcpOutput;
     private final P2PNetworkManager manager;
-    private volatile boolean connected = true;
 
     private final CompletableFuture<RelayVersionPayload> versionHandshake = new CompletableFuture<>();
     private ScheduledFuture<?> versionHandshakeTimeout;
@@ -36,8 +38,6 @@ public class PeerConnection implements Runnable {
     private int pingSequence = 0;
     private final ScheduledExecutorService healthCheckExecutor = Executors.newSingleThreadScheduledExecutor();
     private int consecutiveFailedUdpPings = 0;
-
-    public final Set<UUID> announcedPlayers = ConcurrentHashMap.newKeySet();
 
     public PeerConnection(Socket socket, P2PNetworkManager manager) throws IOException {
         this.logger = manager.logger.withLocation(LogLocation.PEER_CONNECTION);
@@ -271,6 +271,8 @@ public class PeerConnection implements Runnable {
     }
 
     public void disconnect() {
+        connected = false;
+
         if (versionHandshakeTimeout != null && !versionHandshakeTimeout.isDone()) {
             versionHandshakeTimeout.cancel(false);
         }
@@ -296,6 +298,5 @@ public class PeerConnection implements Runnable {
         }
 
         manager.onPeerDisconnected(this);
-        connected = false;
     }
 }

@@ -1,13 +1,11 @@
 package dev.hintsystem.playerrelay.network.handler;
 
 import dev.hintsystem.playerrelay.network.PayloadMessage;
-import dev.hintsystem.playerrelay.TrackedPlayerList;
 import dev.hintsystem.playerrelay.payload.*;
 
 import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.BiConsumer;
 
 public abstract class PayloadMessageHandler<C> implements MessageHandler<C> {
@@ -42,14 +40,6 @@ public abstract class PayloadMessageHandler<C> implements MessageHandler<C> {
      * Override to implement custom handling of unhandled messages.
      */
     protected void onMessagePass(PayloadMessage message, C context) {}
-
-    /** Updates the player list by adding or merging a new player info payload */
-    protected void addPlayerInfo(TrackedPlayerList.Sublist playerList, PlayerInfoPayload playerInfo, UUID clientUuid) {
-        if (playerInfo.playerId.equals(clientUuid)) return;
-
-        PlayerInfoPayload existingPlayerInfo = playerList.putIfAbsent(playerInfo.playerId, playerInfo);
-        if (existingPlayerInfo != null) existingPlayerInfo.merge(playerInfo);
-    }
 
     /**
      * Registers a handler for a specific payload type.

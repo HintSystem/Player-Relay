@@ -37,7 +37,7 @@ public class PlayerTrackerMapElementRendererMixin {
 
         int newRgbColor = 0xFFFFFF;
         boolean newShadow = false;
-        PlayerInfoPayload playerInfo = CommonCore.playerInfoTracker.getTrackedPlayer(e.getPlayerId());
+        PlayerInfoPayload playerInfo = CommonCore.connections.getPlayer(e.getPlayerId());
         if (playerInfo != null) {
             newRgbColor = playerInfo.getNameColor() & 0xFFFFFF; // Strip any alpha from custom color
             newShadow = true;

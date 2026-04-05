@@ -9,7 +9,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 
 import org.jetbrains.annotations.Nullable;
-
 import java.util.*;
 
 public class ServerCore {
@@ -40,7 +39,7 @@ public class ServerCore {
     public static void onPlayerLeave(ServerPlayerEntity player) {
         listeningPlayers.remove(player.getUuid());
         playerUpdateTrackers.remove(player.getUuid());
-        CommonCore.serverPlayers.remove(player.getUuid());
+        CommonCore.serverConnection.removeAnnouncedPlayer(player.getUuid());
     }
 
     @Nullable
