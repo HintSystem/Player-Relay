@@ -27,23 +27,24 @@ import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2fStack;
-
 import java.util.HashMap;
 import java.util.Map;
 
 public class PlayerListEntry {
-    private static final Identifier ARMOR_FULL_TEXTURE = Identifier.ofVanilla("hud/armor_full");
-    private static final Identifier ARMOR_HALF_TEXTURE = Identifier.ofVanilla("hud/armor_half");
-    private static final Identifier ARMOR_EMPTY_TEXTURE = Identifier.ofVanilla("hud/armor_empty");
-    private static final Identifier XP_BACKGROUND = Identifier.ofVanilla("hud/experience_bar_background");
-    private static final Identifier XP_PROGRESS = Identifier.ofVanilla("hud/experience_bar_progress");
+    private final Identifier ARMOR_FULL_TEXTURE;
+    private final Identifier ARMOR_HALF_TEXTURE;
+    private final Identifier ARMOR_EMPTY_TEXTURE;
+    private final Identifier XP_BACKGROUND;
+    private final Identifier XP_PROGRESS;
 
     public static final float PLAYER_MODEL_ASPECT_RATIO = 1.58f;
 
-    public Config config = new Config.Builder().build();
     public PlayerInfoPayload playerInfo;
+    public final Config config;
+
     private OtherClientPlayerEntity playerEntity;
     private final PaperDollRenderer paperDollRenderer;
 
@@ -52,48 +53,41 @@ public class PlayerListEntry {
 
     public enum PlayerIconType { NONE, PLAYER_MODEL, PLAYER_HEAD }
 
-    public record Config(
-        int iconWidth,
-        int maxEffectInfoWidth,
-        int infoWidth,
-        int padding,
-        boolean showDimensionIcon,
-        PlayerIconType playerIconType,
-        AnchorPoint anchorPoint
-    ) {
+    public static class Config {
+        int iconWidth = 24;
+        int maxEffectInfoWidth = 40;
+        int infoWidth = 86;
+        int padding = 4;
+        boolean showDimensionIcon = false;
+        boolean useResourcePackIcons = false;
+        PlayerIconType playerIconType = PlayerIconType.PLAYER_MODEL;
+        AnchorPoint anchorPoint = AnchorPoint.TOP_RIGHT;
+
         public int getWidth() { return infoWidth + ((playerIconType != PlayerIconType.NONE) ? iconWidth + padding : 0); }
 
-        public int getIconHeight() {
+        public int getPlayerIconHeight() {
             return (playerIconType == PlayerIconType.PLAYER_MODEL) ? (int)Math.ceil(iconWidth * PLAYER_MODEL_ASPECT_RATIO)
                 : iconWidth;
         }
-        public int getHeight() { return Math.max(getIconHeight(), 28); }
-
-        public static class Builder {
-            private int iconWidth = 24;
-            private int maxEffectInfoWidth = 40;
-            private int infoWidth = 86;
-            private int padding = 4;
-            private boolean showDimensionIcon;
-            private PlayerIconType playerIconType = PlayerIconType.PLAYER_MODEL;
-            private AnchorPoint anchorPoint = AnchorPoint.TOP_RIGHT;
-
-            public Builder iconWidth(int v) { iconWidth = v; return this; }
-            public Builder maxEffectInfoWidth(int v) { maxEffectInfoWidth = v; return this; }
-            public Builder infoWidth(int v) { infoWidth = v; return this; }
-            public Builder padding(int v) { padding = v; return this; }
-            public Builder showDimensionIcon(boolean v) { showDimensionIcon = v; return this; }
-            public Builder playerIconType(PlayerIconType v) { playerIconType = v; return this; }
-            public Builder anchorPoint(AnchorPoint v) { anchorPoint = v; return this; }
-
-            public Config build() {
-                return new Config(iconWidth, maxEffectInfoWidth, infoWidth, padding, showDimensionIcon, playerIconType, anchorPoint);
-            }
-        }
+        public int getHeight() { return Math.max(getPlayerIconHeight(), 28); }
     }
-    public PlayerListEntry(PlayerInfoPayload playerInfo) {
+
+    public PlayerListEntry(PlayerInfoPayload playerInfo, @NotNull Config config) {
         this.playerInfo = playerInfo;
+        this.config = config;
         this.paperDollRenderer = new PaperDollRenderer();
+
+        this.ARMOR_FULL_TEXTURE = iconIdentifier("hud/armor_full");
+        this.ARMOR_HALF_TEXTURE = iconIdentifier("hud/armor_half");
+        this.ARMOR_EMPTY_TEXTURE = iconIdentifier("hud/armor_empty");
+        this.XP_BACKGROUND = iconIdentifier("hud/experience_bar_background");
+        this.XP_PROGRESS = iconIdentifier("hud/experience_bar_progress");
+    }
+
+    public Identifier iconIdentifier(String path) {
+        if (config.useResourcePackIcons) return Identifier.ofVanilla(path);
+
+        return CommonCore.identifier(path);
     }
 
     public void tick() {
@@ -148,6 +142,50 @@ public class PlayerListEntry {
             .getTextures();
     }
 
+    private Identifier getHeartTypeTexture(InGameHud.HeartType heartType, boolean half, boolean blinking) {
+        PlayerWorldData world = playerInfo.getComponent(PlayerWorldData.class);
+        return iconIdentifier(
+            heartType.getTexture(
+                world != null && world.isHardcore(),
+                half,
+                blinking
+            ).getPath()
+        );
+    }
+
+    private Identifier getHeartTexture(boolean half, boolean blinking) {
+        PlayerStatusEffectsData effects = playerInfo.getComponent(PlayerStatusEffectsData.class);
+
+        InGameHud.HeartType heartType = InGameHud.HeartType.NORMAL;
+        if (effects != null) {
+            if (effects.hasStatusEffect(StatusEffects.POISON)) {
+                heartType = InGameHud.HeartType.POISONED;
+            } else if (effects.hasStatusEffect(StatusEffects.WITHER)) {
+                heartType = InGameHud.HeartType.WITHERED;
+            } else if (effects.isFrozen()) {
+                heartType = InGameHud.HeartType.FROZEN;
+            } else if (effects.hasStatusEffect(StatusEffects.ABSORPTION)) {
+                heartType = InGameHud.HeartType.ABSORBING;
+            }
+        }
+
+        return getHeartTypeTexture(heartType, half, blinking);
+    }
+
+    private Identifier getFoodTexture(int value) {
+        PlayerStatusEffectsData effects = playerInfo.getComponent(PlayerStatusEffectsData.class);
+
+        if (effects != null && effects.hasStatusEffect(StatusEffects.HUNGER)) {
+            if (value == 0) return iconIdentifier("hud/food_empty_hunger");
+            if (value == 1) return iconIdentifier("hud/food_half_hunger");
+            return iconIdentifier("hud/food_full_hunger");
+        }
+
+        if (value == 0) return iconIdentifier("hud/food_empty");
+        if (value == 1) return iconIdentifier("hud/food_half");
+        return iconIdentifier("hud/food_full");
+    }
+
     public void render(DrawContext context, int x, int y, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
 
@@ -157,24 +195,24 @@ public class PlayerListEntry {
 
         // Render player icon
         int dimensionIconX = x;
-        int dimensionIconY = y + config.getIconHeight();
+        int dimensionIconY = y + config.getPlayerIconHeight();
         if (config.playerIconType != PlayerIconType.NONE) {
-            int x2 = x + config.iconWidth, y2 = y + config.getIconHeight();
+            int x2 = x + config.iconWidth, y2 = y + config.getPlayerIconHeight();
 
             if (config.playerIconType == PlayerIconType.PLAYER_MODEL && getRenderPlayerEntity() != null) {
                 paperDollRenderer.anchorPoint = config.anchorPoint;
-                renderIconUnderlay(context, x, y, x2, y2, null);
+                drawPlayerUnderlay(context, x, y, x2, y2);
                 paperDollRenderer.renderPaperDoll(context, x, y, x2, y2, 22, playerEntity, tickCounter);
             } else {
                 PlayerSkinDrawer.draw(context, getPlayerSkinTextures(), x, y, config.iconWidth);
             }
 
-            renderIconOverlay(context, x, y, x2, y2, null);
+            drawPlayerOverlay(context, x, y, x2, y2);
             x += config.iconWidth + config.padding;
         }
 
         // Render player name
-        int maxNameX = (playerStatusEffects != null) ? renderStatusEffects(context, playerStatusEffects, x + config.infoWidth, y)
+        int maxNameX = (playerStatusEffects != null) ? drawStatusEffects(context, playerStatusEffects, x + config.infoWidth, y)
             : x + config.infoWidth;
         context.enableScissor(x, y, maxNameX, y + 9);
         context.drawTextWithShadow(client.textRenderer, playerInfo.getName(), x, y, playerInfo.getNameColor());
@@ -212,12 +250,12 @@ public class PlayerListEntry {
         y += 12;
 
         // Render XP bar
-        renderXpBar(context, playerStats.xp, config.infoWidth, x, y);
+        drawXpBar(context, playerStats.xp, config.infoWidth, x, y);
 
-        if (config.showDimensionIcon) renderDimensionIcon(context, playerWorld.dimension, dimensionIconX, dimensionIconY);
+        if (config.showDimensionIcon) drawDimensionIcon(context, playerWorld.dimension, dimensionIconX, dimensionIconY);
     }
 
-    enum IconOverlayState {
+    enum PlayerOverlayState {
         NONE,
         AFK("AFK", Colors.WHITE, ColorHelper.withAlpha(0.6f, Colors.DARK_GRAY), 0),
         DEAD("DEAD", Colors.RED, ColorHelper.withAlpha(0.2f, Colors.RED), ColorHelper.withAlpha(0.2f, Colors.RED));
@@ -227,18 +265,18 @@ public class PlayerListEntry {
         public final int overlayColor;
         public final int underlayColor;
 
-        IconOverlayState() { this(null, 0); }
+        PlayerOverlayState() { this(null, 0); }
 
-        IconOverlayState(String statusText, int textColor) { this(statusText, textColor, 0, 0); }
+        PlayerOverlayState(String statusText, int textColor) { this(statusText, textColor, 0, 0); }
 
-        IconOverlayState(String statusText, int textColor, int overlayColor, int underlayColor) {
+        PlayerOverlayState(String statusText, int textColor, int overlayColor, int underlayColor) {
             this.statusText = statusText;
             this.textColor = textColor;
             this.overlayColor = overlayColor;
             this.underlayColor = underlayColor;
         }
 
-        public static IconOverlayState getState(PlayerInfoPayload infoPayload) {
+        public static PlayerOverlayState getState(PlayerInfoPayload infoPayload) {
             if (infoPayload.isAfk()) return AFK;
 
             PlayerStatsData statsData = infoPayload.getComponent(PlayerStatsData.class);
@@ -247,13 +285,13 @@ public class PlayerListEntry {
         }
     }
 
-    private void renderIconUnderlay(DrawContext context, int x1, int y1, int x2, int y2, @Nullable IconOverlayState state) {
-        if (state == null) state = IconOverlayState.getState(playerInfo);
+    private void drawPlayerUnderlay(DrawContext context, int x1, int y1, int x2, int y2) {
+        PlayerOverlayState state = PlayerOverlayState.getState(playerInfo);
         if (state.underlayColor != 0) context.fill(x1, y1, x2, y2, state.underlayColor);
     }
 
-    private void renderIconOverlay(DrawContext context, int x1, int y1, int x2, int y2, @Nullable IconOverlayState state) {
-        if (state == null) state = IconOverlayState.getState(playerInfo);
+    private void drawPlayerOverlay(DrawContext context, int x1, int y1, int x2, int y2) {
+        PlayerOverlayState state = PlayerOverlayState.getState(playerInfo);
 
         MinecraftClient client = MinecraftClient.getInstance();
         int textHeight = client.textRenderer.fontHeight;
@@ -291,7 +329,7 @@ public class PlayerListEntry {
         public static DimensionIcon getIcon(RegistryKey<World> dimension) { return BY_DIMENSION.get(dimension); }
     }
 
-    private void renderDimensionIcon(DrawContext context, RegistryKey<World> dimension, int centerX, int centerY) {
+    private void drawDimensionIcon(DrawContext context, RegistryKey<World> dimension, int centerX, int centerY) {
         DimensionIcon dimensionIcon = DimensionIcon.getIcon(dimension);
         if (dimensionIcon == null) return;
 
@@ -308,7 +346,7 @@ public class PlayerListEntry {
         matrices.popMatrix();
     }
 
-    private int renderStatusEffects(DrawContext context, PlayerStatusEffectsData statusEffects, int x, int y) {
+    private int drawStatusEffects(DrawContext context, PlayerStatusEffectsData statusEffects, int x, int y) {
         int startX = x;
         int endX = startX;
         int effectIconSize = 9;
@@ -363,7 +401,6 @@ public class PlayerListEntry {
         context.drawTextWithShadow(client.textRenderer, text, drawX + 9 + 2, y + 1, color);
     }
 
-
     private boolean updateBlinkState(PlayerStatsData stats) {
         float currentHealth = stats.health;
         long now = Util.getMeasuringTimeMs();
@@ -387,49 +424,7 @@ public class PlayerListEntry {
         return false;
     }
 
-    private Identifier getHeartTypeTexture(InGameHud.HeartType heartType, boolean half, boolean blinking) {
-        PlayerWorldData world = playerInfo.getComponent(PlayerWorldData.class);
-        return heartType.getTexture(
-            world != null && world.isHardcore(),
-            half,
-            blinking
-        );
-    }
-
-    private Identifier getHeartTexture(boolean half, boolean blinking) {
-        PlayerStatusEffectsData effects = playerInfo.getComponent(PlayerStatusEffectsData.class);
-
-        InGameHud.HeartType heartType = InGameHud.HeartType.NORMAL;
-        if (effects != null) {
-            if (effects.hasStatusEffect(StatusEffects.POISON)) {
-                heartType = InGameHud.HeartType.POISONED;
-            } else if (effects.hasStatusEffect(StatusEffects.WITHER)) {
-                heartType = InGameHud.HeartType.WITHERED;
-            } else if (effects.isFrozen()) {
-                heartType = InGameHud.HeartType.FROZEN;
-            } else if (effects.hasStatusEffect(StatusEffects.ABSORPTION)) {
-                heartType = InGameHud.HeartType.ABSORBING;
-            }
-        }
-
-        return getHeartTypeTexture(heartType, half, blinking);
-    }
-
-    private Identifier getFoodTexture(int value) {
-        PlayerStatusEffectsData effects = playerInfo.getComponent(PlayerStatusEffectsData.class);
-
-        if (effects != null && effects.hasStatusEffect(StatusEffects.HUNGER)) {
-            if (value == 0) return Identifier.ofVanilla("hud/food_empty_hunger");
-            if (value == 1) return Identifier.ofVanilla("hud/food_half_hunger");
-            return Identifier.ofVanilla("hud/food_full_hunger");
-        }
-
-        if (value == 0) return Identifier.ofVanilla("hud/food_empty");
-        if (value == 1) return Identifier.ofVanilla("hud/food_half");
-        return Identifier.ofVanilla("hud/food_full");
-    }
-
-    private void renderXpBar(DrawContext context, float xp, int barWidth, int x, int y) {
+    private void drawXpBar(DrawContext context, float xp, int barWidth, int x, int y) {
         int capWidth = 5;
         int fillableWidth = barWidth - (capWidth * 2);
         int progress = (int)((xp % 1) * (float)barWidth);

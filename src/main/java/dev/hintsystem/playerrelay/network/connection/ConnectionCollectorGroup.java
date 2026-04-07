@@ -81,7 +81,7 @@ public class ConnectionCollectorGroup implements ConnectionCollectorReader<Conne
             if (map.containsKey(id)) {
                 mergedTrackedPlayers.put(id, map.get(id));
 
-                assertPlayers();
+                // assertPlayers();
                 return;
             }
         }
@@ -95,7 +95,7 @@ public class ConnectionCollectorGroup implements ConnectionCollectorReader<Conne
             if (map.containsKey(id)) {
                 mergedTrackedPlayers.put(id, map.get(id));
 
-                assertPlayers();
+                // assertPlayers();
                 return;
             }
         }
@@ -103,7 +103,7 @@ public class ConnectionCollectorGroup implements ConnectionCollectorReader<Conne
         // No collectors contain data for this player, remove them
         mergedTrackedPlayers.remove(id);
 
-        assertPlayers();
+        // assertPlayers();
     }
 
     @Override

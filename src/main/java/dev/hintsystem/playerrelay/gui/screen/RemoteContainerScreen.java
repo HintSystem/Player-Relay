@@ -1,4 +1,4 @@
-package dev.hintsystem.playerrelay.gui;
+package dev.hintsystem.playerrelay.gui.screen;
 
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.CommonCore;

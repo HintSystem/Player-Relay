@@ -26,6 +26,7 @@ public class ClientConfig extends CommonConfig {
     public int afkTimeout = 2 * 60 * 1000;
 
     public boolean showPlayerList = true;
+    public boolean useResourcePackIcons = false;
     public int playerListMaxPlayers = 8;
     public boolean showPlayerListDimensionIcon = true;
     public PlayerListEntry.PlayerIconType playerListIconType = PlayerListEntry.PlayerIconType.PLAYER_MODEL;
@@ -159,6 +160,12 @@ public class ClientConfig extends CommonConfig {
                     .option(Option.<Boolean>createBuilder()
                         .name(Text.literal("Show"))
                         .binding(DEFAULTS.showPlayerList, () -> showPlayerList, val -> showPlayerList = val)
+                        .controller(TickBoxControllerBuilder::create)
+                        .build())
+                    .option(Option.<Boolean>createBuilder()
+                        .name(Text.literal("Use Resource Pack Icons"))
+                        .description(OptionDescription.of(Text.literal("If enabled, then instead of using vanilla icons and textures the current resource pack icons will be used")))
+                        .binding(DEFAULTS.useResourcePackIcons, () -> useResourcePackIcons, val -> useResourcePackIcons = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Integer>createBuilder()

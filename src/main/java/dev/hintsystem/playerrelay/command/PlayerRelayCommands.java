@@ -4,20 +4,21 @@ import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.EnderChestTracker;
 import dev.hintsystem.playerrelay.PlayerRelayClient;
-import dev.hintsystem.playerrelay.gui.RemoteEnderChestScreen;
-import dev.hintsystem.playerrelay.gui.RemoteInventoryScreen;
+import dev.hintsystem.playerrelay.gui.screen.RemoteEnderChestScreen;
+import dev.hintsystem.playerrelay.gui.screen.RemoteInventoryScreen;
 import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.PlayerInventoryPayload;
 import dev.hintsystem.playerrelay.payload.WaypointPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
 
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.*;
