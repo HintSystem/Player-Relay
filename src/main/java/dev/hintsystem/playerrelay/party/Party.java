@@ -5,17 +5,27 @@ import java.util.Set;
 import java.util.UUID;
 
 public class Party {
-    private final UUID partyId;
+    public static final int MAX_PARTY_NAME_LENGTH = 40;
+
+    public final UUID partyId;
     public String partyName;
     public UUID leaderId;
     public final Set<UUID> members;
 
-    public Party(UUID partyId, UUID leaderId) {
+    public Party(UUID partyId, UUID leaderId, String partyName) {
         this.partyId = partyId;
         this.leaderId = leaderId;
+        this.partyName = partyName.trim().substring(0, Math.min(partyName.length(), MAX_PARTY_NAME_LENGTH));
         this.members = new HashSet<>();
 
         members.add(leaderId);
+    }
+
+    public static Party copyOf(Party party) {
+        Party copiedParty = new Party(party.partyId, party.leaderId, party.partyName);
+        copiedParty.members.addAll(party.members);
+
+        return copiedParty;
     }
 
     public boolean isMember(UUID playerId) {
@@ -26,12 +36,5 @@ public class Party {
         return leaderId.equals(playerId);
     }
 
-    public void setLeader(UUID newLeaderId) {
-        if (members.contains(newLeaderId)) {
-            this.leaderId = newLeaderId;
-        }
-    }
-
-    public UUID getPartyId() { return partyId; }
     public int getMemberCount() { return members.size(); }
 }

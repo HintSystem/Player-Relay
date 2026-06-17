@@ -2,27 +2,37 @@ package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
 import dev.hintsystem.playerrelay.network.NetworkProtocol;
+import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.network.connection.Connection;
 import dev.hintsystem.playerrelay.network.connection.PeerConnection;
+import dev.hintsystem.playerrelay.network.handler.S2CMessageHandler;
+import dev.hintsystem.playerrelay.party.ClientPartyService;
+import dev.hintsystem.playerrelay.party.Party;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 
 import org.jetbrains.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class ClientCore {
+    public static final S2CMessageHandler messageHandler = new S2CMessageHandler(CommonCore.networkLogger, CommonCore.serverConnection);
+    public static final ClientPartyService partyService = new ClientPartyService(CommonCore.partyManager);
+
     private static final PlayerUpdateTracker c2sTracker = new PlayerUpdateTracker(getClientUuid());
     private static final PlayerUpdateTracker p2pTracker = new PlayerUpdateTracker(getClientUuid());
 
@@ -36,27 +46,23 @@ public class ClientCore {
 
     public static long lastInputTime = Util.getMeasuringTimeMs();
 
-    @Nullable
-    public static RelayVersionPayload serverRelayVersion;
+    public static void onServerJoin(MinecraftClient client) {
+        CommonCore.partyManager.reset();
+        c2sTracker.reset();
+
+        EnderChestTracker.updateCurrentWorldId(client); // Update world id to accept gratuitous ender chest inventory packet from server
+        CommonCore.serverConnection.get().onConnect();
+    }
+
+    public static void onServerLeave() {
+        CommonCore.serverConnection.close();
+    }
 
     public static void onTickEnd(MinecraftClient client) {
         EnderChestTracker.tick();
 
         if (isNetworkActive()) sendC2SUpdate();
         if (isP2PNetworkActive()) sendP2PUpdate(client);
-    }
-
-    public static void onServerJoin(MinecraftClient client) {
-        serverRelayVersion = null;
-        c2sTracker.reset();
-
-        EnderChestTracker.updateCurrentWorldId(client); // Update world id to accept gratuitous ender chest inventory packet
-        PlayerRelayClient.sendToServer(new RelayVersionPayload().packet());
-    }
-
-    public static void onServerLeave() {
-        serverRelayVersion = null;
-        CommonCore.serverConnection.close();
     }
 
     private static void sendC2SUpdate() {
@@ -103,12 +109,6 @@ public class ClientCore {
         }
     }
 
-    public static PlayerUpdateTracker.DeltaBuilder deltaWithClientInfo(PlayerUpdateTracker.DeltaBuilder deltaBuilder) {
-        return deltaBuilder
-            .with(new PlayerBasicData(getClientPlayerName(), PlayerRelayClient.config.displayNameColor))
-            .withFlag(PlayerInfoPayload.FLAGS.AFK, isClientAfk());
-    }
-
     public static boolean isNetworkActive() {
         return isServerNetworkActive() || isP2PNetworkActive();
     }
@@ -118,16 +118,20 @@ public class ClientCore {
     }
 
     public static boolean isServerNetworkActive() {
-        return serverRelayVersion != null && serverRelayVersion.networkVersion == RelayVersionPayload.NETWORK_VERSION;
+        return CommonCore.serverConnection.get().isVersionValid();
     }
 
-    public static void updateInputActivity() { lastInputTime = Util.getMeasuringTimeMs(); }
+    public static void updateInputActivity() {
+        lastInputTime = Util.getMeasuringTimeMs();
+    }
 
-    public static boolean isClientAfk() { return Util.getMeasuringTimeMs() - lastInputTime > PlayerRelayClient.config.afkTimeout; }
+    public static boolean isClientAfk() {
+        return Util.getMeasuringTimeMs() - lastInputTime > PlayerRelayClient.config.afkTimeout;
+    }
 
     public static String getClientPlayerName() {
         MinecraftClient client = MinecraftClient.getInstance();
-        return (client.player != null) ? client.player.getName().getString() : client.getSession().getUsername();
+        return (client.player != null) ? client.player.getGameProfile().name() : client.getSession().getUsername();
     }
 
     public static UUID getClientUuid() {
@@ -135,12 +139,19 @@ public class ClientCore {
         return client.getSession().getUuidOrNull();
     }
 
+    public static PlayerUpdateTracker.DeltaBuilder deltaWithClientInfo(PlayerUpdateTracker.DeltaBuilder deltaBuilder) {
+        return deltaBuilder
+            .with(new PlayerBasicData(getClientPlayerName(), PlayerRelayClient.config.displayNameColor))
+            .withFlag(PlayerInfoPayload.FLAGS.AFK, isClientAfk());
+    }
+
     public static PlayerInfoPayload getUpdatedClientInfo() {
         MinecraftClient client = MinecraftClient.getInstance();
 
-        PlayerUpdateTracker.DeltaBuilder builder = new PlayerUpdateTracker(getClientUuid()).beginSnapshot()
-            .with(new PlayerBasicData(getClientPlayerName(), PlayerRelayClient.config.displayNameColor))
-            .withFlag(PlayerInfoPayload.FLAGS.AFK, isClientAfk())
+        PlayerUpdateTracker.DeltaBuilder builder = new PlayerUpdateTracker(getClientUuid())
+            .beginSnapshot();
+
+        deltaWithClientInfo(builder)
             .withCommon(client.player);
 
         if (client.player != null) {
@@ -148,6 +159,51 @@ public class ClientCore {
         }
 
         return builder.build();
+    }
+
+    /** Returns a map of tracked players, which should be displayed, based on the current context */
+    public static Map<UUID, PlayerInfoPayload> getListedPlayers() {
+        Party clientParty = CommonCore.partyManager.getPlayerParty(getClientUuid());
+        if (clientParty == null) return CommonCore.connections.getTrackedPlayers();
+
+        Map<UUID, PlayerInfoPayload> listed = new HashMap<>(CommonCore.peerConnections.getTrackedPlayers());
+        for (Map.Entry<UUID, PlayerInfoPayload> entry : CommonCore.serverConnection.getTrackedPlayers().entrySet()) {
+            if (clientParty.isMember(entry.getKey())) listed.put(entry.getKey(), entry.getValue());
+        }
+
+        return listed;
+    }
+
+    public record PlayerLookup(String name, @Nullable Text displayName) {}
+
+    private static PlayerLookup resolvePlayer(UUID playerId) {
+        ClientPlayNetworkHandler networkHandler = MinecraftClient.getInstance().getNetworkHandler();
+
+        if (networkHandler != null) {
+            // This also falls back to a peer connection because of ClientPlayNetworkHandlerMixin#playerListEntryFallback
+            PlayerListEntry entry = networkHandler.getPlayerListEntry(playerId);
+            if (entry != null) {
+                return new PlayerLookup(entry.getProfile().name(), entry.getDisplayName());
+            }
+        } else {
+            PlayerInfoPayload payload = getTrackedPlayer(playerId);
+            if (payload != null) {
+                return new PlayerLookup(payload.getName(), null);
+            }
+        }
+
+        return null;
+    }
+
+    public static MutableText getPlayerDisplayName(UUID playerId) {
+        PlayerLookup player = resolvePlayer(playerId);
+        if (player == null) return Text.literal(playerId.toString());
+        return player.displayName() != null ? player.displayName().copy() : Text.literal(player.name());
+    }
+
+    public static String getPlayerName(UUID playerId) {
+        PlayerLookup player = resolvePlayer(playerId);
+        return player != null ? player.name() : playerId.toString();
     }
 
     /**
@@ -163,17 +219,19 @@ public class ClientCore {
         return CommonCore.connections.getPlayer(playerId);
     }
 
-    public static void sendClientChatMessage(Text message) {
+    public static void addHudMessage(Text message) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) { return; }
 
-        client.execute(() -> client.player.sendMessage(message, false));
+        client.execute(() -> client.inGameHud.getChatHud().addMessage(message));
     }
 
     /** Broadcast a payload on the P2P network and the server */
     public static void broadcastPayload(Payload payload) {
-        CommonCore.getP2PNetworkManager().broadcastMessage(payload.message());
-        PlayerRelayClient.sendToServer(payload.packet());
+        PayloadMessage message = payload.message();
+        for (Connection connection : CommonCore.connections.getAll()) {
+            connection.sendMessage(message);
+        }
     }
 
     @Nullable
@@ -231,7 +289,7 @@ public class ClientCore {
     }
 
     public static void onPlayerConnected(PlayerInfoPayload playerInfo) {
-        sendClientChatMessage(Text.literal("✔ ")
+        addHudMessage(Text.literal("✔ ")
             .setStyle(Style.EMPTY.withColor(Formatting.GREEN).withBold(true))
             .append(playerInfo.getName())
             .append(Text.literal(" connected to Player Relay")
@@ -239,7 +297,7 @@ public class ClientCore {
     }
 
     public static void onPlayerDisconnected(PlayerInfoPayload playerInfo) {
-        sendClientChatMessage(Text.literal("❌ ")
+        addHudMessage(Text.literal("❌ ")
             .setStyle(Style.EMPTY.withColor(Formatting.RED).withBold(true))
             .append(playerInfo.getName())
             .append(Text.literal(" disconnected from Player Relay")
@@ -247,7 +305,7 @@ public class ClientCore {
     }
 
     public static void onConnect(String address) {
-        sendClientChatMessage(Text.literal("✔ Connected to peer: ")
+        addHudMessage(Text.literal("✔ Connected to peer: ")
                 .setStyle(Style.EMPTY.withColor(Formatting.GREEN).withBold(true))
                 .append(Text.literal(address)
                     .setStyle(Style.EMPTY.withColor(Formatting.YELLOW).withBold(false))));
@@ -264,6 +322,6 @@ public class ClientCore {
 
         @Override
         @Nullable
-        public UUID getLocalPlayerId() {return ClientCore.getClientUuid(); }
+        public UUID getLocalPlayerId() { return ClientCore.getClientUuid(); }
     }
 }

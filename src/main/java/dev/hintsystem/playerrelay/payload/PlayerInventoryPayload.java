@@ -70,7 +70,9 @@ public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FL
         return payload;
     }
 
-    public static PlayerInventoryPayload respond(PlayerEntity player, boolean isEnderChest) { return new PlayerInventoryPayload(player, isEnderChest); }
+    public static PlayerInventoryPayload respond(PlayerEntity player, boolean isEnderChest) {
+        return new PlayerInventoryPayload(player, isEnderChest);
+    }
 
     @Override
     public PayloadRegistry.PayloadType<PlayerInventoryPayload> getPayloadType() { return PayloadRegistry.PLAYER_INVENTORY; }

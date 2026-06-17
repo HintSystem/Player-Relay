@@ -1,11 +1,10 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.network.PayloadMessage;
-import dev.hintsystem.playerrelay.network.handler.C2SMessageHandler;
 
-import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -35,14 +34,26 @@ public class PlayerRelay implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(PayloadMessage.Packet.PACKET_TYPE, PayloadMessage.Packet.PACKET_CODEC);
         PayloadTypeRegistry.playC2S().register(PayloadMessage.Packet.PACKET_TYPE, PayloadMessage.Packet.PACKET_CODEC);
 
-        C2SMessageHandler serverHandler = new C2SMessageHandler(CommonCore.networkLogger);
         ServerPlayNetworking.registerGlobalReceiver(PayloadMessage.Packet.PACKET_TYPE, (payloadMessage, context) -> {
-            serverHandler.handleMessage(payloadMessage, context.player());
+            ServerCore server = ServerCore.getInstance(context.server());
+            if (server != null) server.messageHandler.handleMessage(payloadMessage, context.player());
         });
 
-        ServerPlayerEvents.LEAVE.register(ServerCore::onPlayerLeave);
-        ServerTickEvents.END_WORLD_TICK.register(ServerCore::onTickEnd);
-    }
+        ServerLifecycleEvents.SERVER_STARTING.register((mcServer) -> new ServerCore(mcServer).onStarting());
 
-    public static EnvType getEnvironmentType() { return FabricLoader.getInstance().getEnvironmentType(); }
+        ServerLifecycleEvents.SERVER_STOPPED.register((mcServer) -> {
+            ServerCore server = ServerCore.getInstance(mcServer);
+            if (server != null) server.onStopped();
+        });
+
+        ServerPlayerEvents.LEAVE.register((player) -> {
+            ServerCore server = ServerCore.getInstance(player.getEntityWorld().getServer());
+            if (server != null) server.onPlayerLeave(player);
+        });
+
+        ServerTickEvents.END_WORLD_TICK.register((world) -> {
+            ServerCore server = ServerCore.getInstance(world.getServer());
+            if (server != null) server.onTickEnd(world);
+        });
+    }
 }

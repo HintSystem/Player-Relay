@@ -97,6 +97,10 @@ public class PayloadMessage {
             super(payload, preferredProtocol);
         }
 
+        public Packet(PayloadMessage message) {
+            this(message.payload, message.messageId, message.preferredProtocol);
+        }
+
         protected Packet(Payload payload, UUID messageId, NetworkProtocol preferredProtocol) {
             super(payload, messageId, preferredProtocol);
         }

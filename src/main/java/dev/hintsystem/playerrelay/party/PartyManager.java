@@ -4,143 +4,146 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class PartyManager {
-    private final Map<UUID, Party> parties = new ConcurrentHashMap<>();
-    private final Map<UUID, UUID> playerToParty = new ConcurrentHashMap<>();
-    private final Map<UUID, List<PartyInvite>> pendingInvites = new ConcurrentHashMap<>();
+public class PartyManager implements PartyMethods {
+    final Map<UUID, Party> parties = new ConcurrentHashMap<>();
+    final Map<UUID, UUID> playerToParty = new ConcurrentHashMap<>();
+    final Map<UUID, List<PartyInvite>> pendingInvites = new ConcurrentHashMap<>();
 
-    private static final long INVITE_TIMEOUT_MS = 60000;
+    /** How long it takes before a player can be invited to the same party again */
+    public static final long INVITE_TIMEOUT_MS = 60000;
 
-    public Party createParty(UUID leaderId) {
-        // Leave existing party if in one
-        leaveParty(leaderId);
-
-        UUID partyId = UUID.randomUUID();
-        Party party = new Party(partyId, leaderId);
-
-        parties.put(partyId, party);
-        playerToParty.put(leaderId, partyId);
-
-        return party;
+    public void reset() {
+        parties.clear();
+        playerToParty.clear();
+        pendingInvites.clear();
     }
 
-    public PartyInvite invitePlayer(UUID inviterId, UUID inviteeId) {
-        UUID partyId = playerToParty.get(inviterId);
-        if (partyId == null) {
-            throw new IllegalStateException("Inviter is not in a party");
-        }
-
-        Party party = parties.get(partyId);
-        if (party == null) {
-            throw new IllegalStateException("Party not found");
-        }
-
-        // Check if invitee is already in a party
-        if (playerToParty.containsKey(inviteeId)) {
-            throw new IllegalStateException("Invitee is already in a party");
-        }
-
-        PartyInvite invite = new PartyInvite(partyId, inviterId, inviteeId, INVITE_TIMEOUT_MS);
-        pendingInvites.computeIfAbsent(inviteeId, k -> new ArrayList<>()).add(invite);
-
-        return invite;
-    }
-
-    public Party acceptInvite(UUID inviteeId, UUID partyId) {
-        List<PartyInvite> invites = pendingInvites.get(inviteeId);
-        if (invites == null) {
-            throw new IllegalStateException("No pending invites");
-        }
-
-        PartyInvite invite = invites.stream()
-            .filter(i -> i.partyId.equals(partyId) && !i.isExpired())
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("Invite not found or expired"));
-
-        Party party = parties.get(partyId);
-        if (party == null) {
-            throw new IllegalStateException("Party no longer exists");
-        }
-
-        // Leave current party if in one
-        leaveParty(inviteeId);
-
-        // Join the party
-        party.members.add(inviteeId);
-        playerToParty.put(inviteeId, partyId);
-
-        // Clear all invites for this player
-        pendingInvites.remove(inviteeId);
-
-        return party;
-    }
-
-    public void declineInvite(UUID inviteeId, UUID partyId) {
-        List<PartyInvite> invites = pendingInvites.get(inviteeId);
-        if (invites != null) {
-            invites.removeIf(i -> i.partyId.equals(partyId));
-            if (invites.isEmpty()) {
-                pendingInvites.remove(inviteeId);
+    public void addMember(Party party, UUID memberId) {
+        Party currentParty = getPlayerParty(memberId);
+        // Ideally shouldn't happen, but remove member from previous party if it wasn't handled by the manager
+        if (currentParty != null) {
+            currentParty.members.remove(memberId);
+            if (currentParty.members.isEmpty()) {
+                parties.remove(memberId);
             }
         }
+
+        party.members.add(memberId);
+        playerToParty.put(memberId, party.partyId);
     }
 
-    public void leaveParty(UUID playerId) {
-        UUID partyId = playerToParty.remove(playerId);
-        if (partyId == null) return;
+    public void removeMember(Party party, UUID memberId) {
+        UUID currentPartyId = getPlayerPartyId(memberId);
+        // Ideally shouldn't happen, but don't remove party association if this member somehow belonged to multiple parties
+        if (party.partyId.equals(currentPartyId))
+            playerToParty.remove(memberId);
 
-        Party party = parties.get(partyId);
-        if (party == null) return;
+        party.members.remove(memberId);
+    }
 
-        party.members.remove(playerId);
+    private void internalSyncPartySettings(Party currentParty, Party syncParty) {
+        currentParty.leaderId = syncParty.leaderId;
+        currentParty.partyName = syncParty.partyName;
+    }
 
-        // Disband empty party
-        if (party.getMemberCount() == 0) {
-            parties.remove(partyId);
+    public Party syncPartySettings(Party syncParty) {
+        Party currentParty = parties.get(syncParty.partyId);
+        if (currentParty != null) internalSyncPartySettings(currentParty, syncParty);
+
+        return currentParty;
+    }
+
+    public void syncParty(UUID leaderId, Party syncParty) {
+        Party currentParty = parties.get(syncParty.partyId);
+        if (currentParty == null) {
+            parties.put(syncParty.partyId, syncParty);
+            for (UUID memberId : syncParty.members) {
+                addMember(syncParty, memberId);
+            }
+
             return;
         }
 
-        // If leader left, transfer leadership or disband
-        if (party.isLeader(playerId)) {
-            // Transfer to next member
-            UUID newLeader = party.members.iterator().next();
-            party.setLeader(newLeader);
+        internalSyncPartySettings(currentParty, syncParty);
+
+        Set<UUID> currentMembers = new HashSet<>(currentParty.members);
+        for (UUID member : currentMembers) {
+            removeMember(currentParty, member);
         }
+        for (UUID member : syncParty.members) {
+            addMember(currentParty, member);
+        }
+    }
+
+    public void createParty(Party createdParty) {
+        Party existingParty = parties.get(createdParty.partyId);
+        if (existingParty != null) {
+            disbandParty(existingParty);
+        }
+
+        parties.put(createdParty.partyId, createdParty);
+        addMember(createdParty, createdParty.leaderId);
+    }
+
+    public void disbandParty(Party party) {
+        // Remove all members
+        for (UUID memberId : party.members) {
+            removeMember(party, memberId);
+        }
+        parties.remove(party.partyId);
     }
 
     public void disbandParty(UUID leaderId) {
-        UUID partyId = playerToParty.get(leaderId);
-        if (partyId == null) return;
-
-        Party party = parties.get(partyId);
-        if (party == null || !party.isLeader(leaderId)) {
-            throw new IllegalStateException("Only party leader can disband");
-        }
-
-        // Remove all members
-        for (UUID memberId : party.members) {
-            playerToParty.remove(memberId);
-        }
-
-        parties.remove(partyId);
+        Party party = getPlayerParty(leaderId);
+        if (party != null) disbandParty(party);
     }
 
-    public void kickMember(UUID leaderId, UUID memberId) {
-        UUID partyId = playerToParty.get(leaderId);
-        if (partyId == null) return;
-
-        Party party = parties.get(partyId);
-        if (party == null || !party.isLeader(leaderId)) {
-            throw new IllegalStateException("Only party leader can kick members");
-        }
-
-        if (memberId.equals(leaderId)) {
-            throw new IllegalStateException("Leader cannot kick themselves");
-        }
-
-        party.members.remove(memberId);
-        playerToParty.remove(memberId);
+    public void leaveParty(UUID memberId) {
+        Party party = getPlayerParty(memberId);
+        if (party != null) removeMember(party, memberId);
     }
+
+    public void kickMember(UUID leaderId, UUID memberId) { leaveParty(memberId); }
+
+    public void invitePlayer(PartyInvite invite) {
+        List<PartyInvite> invites = pendingInvites.computeIfAbsent(invite.inviteeId, k -> new ArrayList<>());
+
+        // Remove all existing invites for this party, no duplicates allowed
+        invites.removeIf(inv -> inv.partyId.equals(invite.partyId));
+
+        invites.add(invite);
+    }
+
+    public void acceptInvite(UUID inviteeId, UUID partyId) {
+        Party party = parties.get(partyId);
+        if (party == null) return;
+
+        addMember(party, inviteeId);
+
+        // Clear all invites for this player
+        pendingInvites.remove(inviteeId);
+    }
+
+    @Nullable
+    public PartyInvite declineInvite(UUID inviteeId, UUID partyId) {
+        List<PartyInvite> invites = getPendingInvites(inviteeId);
+
+        // Set invite as declined, but do not remove so invites can be checked for timeout
+        for (PartyInvite invite : invites) {
+            if (invite.partyId.equals(partyId) && !invite.declined) {
+                invite.decline();
+                return invite;
+            }
+        }
+
+        return null;
+    }
+
+    @Nullable
+    public Party getParty(UUID partyId) { return parties.get(partyId); }
+
+    @Nullable
+    public UUID getPlayerPartyId(UUID playerId) { return playerToParty.get(playerId); }
 
     @Nullable
     public Party getPlayerParty(UUID playerId) {
@@ -148,20 +151,16 @@ public class PartyManager {
         return partyId != null ? parties.get(partyId) : null;
     }
 
-    @Nullable
-    public Party getParty(UUID partyId) {
-        return parties.get(partyId);
-    }
-
     public List<PartyInvite> getPendingInvites(UUID playerId) {
         List<PartyInvite> invites = pendingInvites.get(playerId);
         if (invites == null) return Collections.emptyList();
 
         // Clean up expired invites
-        invites.removeIf(PartyInvite::isExpired);
-        if (invites.isEmpty()) {
+        invites.removeIf((invite) ->
+            invite.isExpired() && invite.isReceivedFor(INVITE_TIMEOUT_MS));
+
+        if (invites.isEmpty())
             pendingInvites.remove(playerId);
-        }
 
         return new ArrayList<>(invites);
     }
@@ -170,15 +169,5 @@ public class PartyManager {
         UUID party1 = playerToParty.get(player1);
         UUID party2 = playerToParty.get(player2);
         return party1 != null && party1.equals(party2);
-    }
-
-    public Set<UUID> getPartyMembers(UUID playerId) {
-        Party party = getPlayerParty(playerId);
-        return party != null ? party.members : Collections.singleton(playerId);
-    }
-
-    public void cleanupExpiredInvites() {
-        pendingInvites.values().forEach(invites -> invites.removeIf(PartyInvite::isExpired));
-        pendingInvites.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     }
 }

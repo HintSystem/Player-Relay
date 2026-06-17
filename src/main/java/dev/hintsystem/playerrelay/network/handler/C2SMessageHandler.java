@@ -5,6 +5,8 @@ import dev.hintsystem.playerrelay.PlayerUpdateTracker;
 import dev.hintsystem.playerrelay.ServerCore;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.party.PartyMethods;
+import dev.hintsystem.playerrelay.party.PartyPayloadHandler;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 
@@ -16,10 +18,14 @@ import java.util.UUID;
 /** Handles messages received from the client on the server */
 public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity> {
     public final NetworkLogger logger;
+    private final ServerCore server;
 
-    public C2SMessageHandler(NetworkLogger logger) {
+    private final PartyPayloadHandler partyPayloadHandler;
+
+    public C2SMessageHandler(NetworkLogger logger, ServerCore server, PartyMethods partyService) {
         this.logger = logger;
-
+        this.server = server;
+        this.partyPayloadHandler = new PartyPayloadHandler(partyService);
         init();
     }
 
@@ -27,6 +33,7 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
     protected void init() {
         register(PayloadRegistry.RELAY_VERSION, this::onPlayerRelayVersion);
 
+        register(PayloadRegistry.PARTY, this::onPartyPayload);
         register(PayloadRegistry.PLAYER_INFO, this::onPlayerInfo);
         register(PayloadRegistry.PLAYER_INVENTORY, this::onPlayerInventory);
     }
@@ -34,22 +41,28 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
     public void onPlayerRelayVersion(RelayVersionPayload version, ServerPlayerEntity player) {
         PlayerRelayServer.sendToClient(player, new RelayVersionPayload().packet());
         if (version.networkVersion != RelayVersionPayload.NETWORK_VERSION) {
-            ServerCore.listeningPlayers.remove(player.getUuid());
+            server.listeningPlayers.remove(player.getUuid());
             return;
         }
 
-        boolean added = ServerCore.listeningPlayers.add(player.getUuid());
-        if (added) {
-            PlayerRelayServer.sendToClient(player, PlayerInventoryPayload.respond(player, true).packet()); // Gratuitous ender chest inventory packet
-            for (PlayerUpdateTracker playerTracker : ServerCore.playerUpdateTrackers.values()) {
-                PlayerRelayServer.sendToClient(player, playerTracker.getCurrentState().packet());
-            }
+        boolean added = server.listeningPlayers.add(player.getUuid());
+        if (added) server.onPlayerSync(player);
+    }
+
+    public void onPartyPayload(PartyPayload party, ServerPlayerEntity player) {
+        try {
+            PartyPayload authoritativeParty = party.withActorId(player.getUuid());
+            authoritativeParty.handleAction(partyPayloadHandler);
+        } catch (Exception e) {
+            String message = e.getMessage();
+            if (message == null || message.isEmpty()) message = e.toString();
+            PlayerRelayServer.sendToClient(player, party.fail(message).packet());
         }
     }
 
     public void onPlayerInfo(PlayerInfoPayload playerInfo, ServerPlayerEntity player) {
         UUID playerId = player.getUuid();
-        PlayerUpdateTracker updateTracker = ServerCore.playerUpdateTrackers.get(playerId);
+        PlayerUpdateTracker updateTracker = server.playerUpdateTrackers.get(playerId);
         if (updateTracker == null) { return; }
 
         // Build delta with client-only data that's unavailable on the server
@@ -67,8 +80,7 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
         if (infoDelta != null) {
             updateTracker.commitDelta(infoDelta);
 
-            ServerCore.broadcastPayload(
-                player.getEntityWorld().getServer(),
+            server.broadcastPayload(
                 infoDelta.packet(),
                 player.getUuid()
             );
@@ -93,8 +105,7 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
 
         Payload payload = message.getPayload();
         if (payload instanceof WaypointPayload || payload instanceof GenericPacketPayload) {
-            ServerCore.broadcastPayload(
-                player.getEntityWorld().getServer(),
+            server.broadcastPayload(
                 payload.packet(),
                 player.getUuid()
             );

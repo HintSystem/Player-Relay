@@ -76,14 +76,18 @@ public class PeerConnection extends Connection implements Runnable {
         return versionHandshake;
     }
 
+    @Override
     public void onVersionHandshake(RelayVersionPayload versionPayload) {
         if (versionHandshake.isDone()) return;
 
-        if (versionPayload.networkVersion != RelayVersionPayload.NETWORK_VERSION) {
+        if (isVersionValid(versionPayload)) {
+            this.versionPayload = versionPayload;
+            versionHandshake.complete(versionPayload);
+        } else {
             LogEvent logMessage = logger.versionMismatch(versionPayload).build();
 
             versionHandshake.completeExceptionally(new IllegalStateException(logMessage.getTitle()));
-        } else { versionHandshake.complete(versionPayload); }
+        }
     }
 
     private void onVersionHandshakeTimeout() {
@@ -110,8 +114,6 @@ public class PeerConnection extends Connection implements Runnable {
             }
         }
     }
-
-    private boolean isVersionHandshake(PayloadMessage message) { return message.getPayload() instanceof RelayVersionPayload; }
 
     private boolean shouldProcessMessage(PayloadMessage message) {
         if (isVersionHandshake(message)) return true;
@@ -201,6 +203,7 @@ public class PeerConnection extends Connection implements Runnable {
         }
     }
 
+    @Override
     public void sendMessage(PayloadMessage message) {
         if (!connected || tcpSocket.isClosed()) return;
         if ((versionHandshakeRequired && !versionHandshake.isDone()) || versionHandshake.isCompletedExceptionally()) return;
@@ -270,6 +273,7 @@ public class PeerConnection extends Connection implements Runnable {
         this.peerUdpPort = udpPort;
     }
 
+    @Override
     public void disconnect() {
         connected = false;
 

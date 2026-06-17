@@ -8,10 +8,10 @@ import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
 import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.network.handler.ClientMessageHandler;
-import dev.hintsystem.playerrelay.network.handler.DefaultP2PMessageHandler;
-import dev.hintsystem.playerrelay.network.handler.S2CMessageHandler;
+import dev.hintsystem.playerrelay.network.handler.P2PMessageHandler;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -37,7 +37,7 @@ public class PlayerRelayClient implements ClientModInitializer {
         CommonCore.initP2PNetwork(
             new P2PNetworkManager(
                 CommonCore.peerConnections,
-                new DefaultP2PMessageHandler(
+                new P2PMessageHandler(
                     CommonCore.peerConnections,
                     new ClientCore.ClientInfoProvider(),
                     new ClientMessageHandler<>(CommonCore.networkLogger),
@@ -50,9 +50,8 @@ public class PlayerRelayClient implements ClientModInitializer {
 
         ServerCore.setLocalPlayerId(ClientCore.getClientUuid());
 
-        S2CMessageHandler clientHandler = new S2CMessageHandler(CommonCore.networkLogger, CommonCore.serverConnection);
         ClientPlayNetworking.registerGlobalReceiver(PayloadMessage.Packet.PACKET_TYPE, (payloadMessage, context) -> {
-            clientHandler.handleMessage(payloadMessage, null);
+            ClientCore.messageHandler.handleMessage(payloadMessage, null);
         });
 
         ClientPlayConnectionEvents.JOIN.register((h, s, c) -> ClientCore.onServerJoin(c));
@@ -66,7 +65,8 @@ public class PlayerRelayClient implements ClientModInitializer {
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, CommonCore.identifier("player_list_before_chat"), playerList);
         ClientTickEvents.END_CLIENT_TICK.register(playerList::onClientTickEnd);
 
-        new PlayerRelayCommands(CommonCore.getP2PNetworkManager()).register();
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+            PlayerRelayCommands.register(dispatcher, CommonCore.getP2PNetworkManager()));
     }
 
     public static void sendToServer(PayloadMessage.Packet payload) {

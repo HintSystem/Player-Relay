@@ -7,6 +7,7 @@ import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.network.connection.ConnectionCollectorGroup;
 import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
 import dev.hintsystem.playerrelay.network.connection.ServerConnectionCollector;
+import dev.hintsystem.playerrelay.party.PartyManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import net.minecraft.entity.player.PlayerEntity;
@@ -34,6 +35,8 @@ public class CommonCore {
         serverConnection // Higher priority, so append last
     );
 
+    public static final PartyManager partyManager = new PartyManager();
+
     public static Identifier identifier(String path) {
         return Identifier.of(PlayerRelay.MOD_ID, path);
     }
@@ -43,9 +46,6 @@ public class CommonCore {
     public static P2PNetworkManager getP2PNetworkManager() { return p2pNetworkManager; }
 
     public static void onStopping() {
-        ServerCore.listeningPlayers.clear();
-        ServerCore.playerUpdateTrackers.clear();
-
         peerConnections.close();
         serverConnection.close();
         if (getP2PNetworkManager() != null) {

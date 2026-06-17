@@ -122,7 +122,7 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
             ClientCore.pendingWaypoints.add(waypoint);
         }
 
-        ClientCore.sendClientChatMessage(
+        ClientCore.addHudMessage(
             Text.literal(String.format("%s shared waypoint \"%s\" from dimension \"%s\" with Player Relay ", playerName, waypoint.name, waypoint.getDimensionIdString()))
                 .append(Text.literal("[Add]").formatted(Formatting.DARK_GREEN).formatted(Formatting.UNDERLINE))
                 .setStyle(Style.EMPTY
@@ -130,7 +130,9 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
                     .withHoverEvent(new HoverEvent.ShowText(Text.literal(
                         waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ()
                     )))
-                    .withClickEvent(new ClickEvent.RunCommand("/" + PlayerRelayCommands.WAYPOINT_COMMAND + " accept " + waypointIndex))
+                    .withClickEvent(new ClickEvent.RunCommand(
+                        PlayerRelayCommands.acceptWaypointCommand(waypointIndex)
+                    ))
                 )
         );
     }

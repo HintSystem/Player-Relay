@@ -4,7 +4,7 @@ import dev.hintsystem.playerrelay.logging.LogEventTypes;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
-import dev.hintsystem.playerrelay.network.handler.P2PMessageHandler;
+import dev.hintsystem.playerrelay.network.handler.IP2PMessageHandler;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.logging.LogLocation;
 
@@ -22,7 +22,7 @@ public class P2PNetworkManager {
     public static final int MAX_MESSAGE_ID_HISTORY = 1024;
 
     private final PeerConnectionCollector connections;
-    private final P2PMessageHandler messageHandler;
+    private final IP2PMessageHandler messageHandler;
 
     public final NetworkConfig config;
     public final NetworkLogger logger;
@@ -43,7 +43,7 @@ public class P2PNetworkManager {
 
     public P2PNetworkManager(
         PeerConnectionCollector connectionCollector,
-        P2PMessageHandler p2pMessageHandler,
+        IP2PMessageHandler p2pMessageHandler,
         NetworkConfig config,
         NetworkLogger logger
     ) {

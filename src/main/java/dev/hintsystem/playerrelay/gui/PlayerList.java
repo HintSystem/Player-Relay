@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.gui;
 
-import dev.hintsystem.playerrelay.CommonCore;
+import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.PlayerRelayClient;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
@@ -23,18 +23,18 @@ public class PlayerList implements HudElement {
     public final PlayerListEntry.Config entryConfig = new PlayerListEntry.Config();
 
     public void onClientTickEnd(MinecraftClient client) {
-        for (PlayerListEntry entry : entries.values()) entry.tick();
-    }
-
-    public void render(DrawContext context, RenderTickCounter tickCounter) {
-        Map<UUID, PlayerInfoPayload> connectedPlayers = CommonCore.connections.getTrackedPlayers();
-        if (!PlayerRelayClient.config.showPlayerList || connectedPlayers.isEmpty()) {
+        if (!PlayerRelayClient.config.showPlayerList) {
             entries.clear();
             return;
         }
 
+        Map<UUID, PlayerInfoPayload> connectedPlayers = ClientCore.getListedPlayers();
         updateEntries(connectedPlayers);
 
+        for (PlayerListEntry entry : entries.values()) entry.tick();
+    }
+
+    public void render(DrawContext context, RenderTickCounter tickCounter) {
         AnchorPoint anchor = PlayerRelayClient.config.playerListAnchorPoint;
         Vector2i offset = PlayerRelayClient.config.playerListOffset;
 

@@ -3,7 +3,7 @@ package dev.hintsystem.playerrelay;
 import dev.hintsystem.playerrelay.config.ServerConfig;
 import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
-import dev.hintsystem.playerrelay.network.handler.DefaultP2PMessageHandler;
+import dev.hintsystem.playerrelay.network.handler.P2PMessageHandler;
 
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -20,7 +20,7 @@ public class PlayerRelayServer implements DedicatedServerModInitializer {
         CommonCore.initP2PNetwork(
             new P2PNetworkManager(
                 CommonCore.peerConnections,
-                new DefaultP2PMessageHandler(
+                new P2PMessageHandler(
                     CommonCore.peerConnections,
                     null,
                     null,

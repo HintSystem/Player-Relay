@@ -79,7 +79,6 @@ public class PlayerUpdateTracker {
         }
 
         /**
-         * Returns the delta payload if there are changes or baseline is null
          * @return The delta payload, or null if no changes detected
          */
         @Nullable

@@ -21,7 +21,7 @@ public class ClientLogHandler implements LogHandler {
         if (event.getType() == null) return;
 
         switch (event.getType()) {
-            case UPNP_FAIL -> ClientCore.sendClientChatMessage(formatMessage(event, Text.empty()
+            case UPNP_FAIL -> ClientCore.addHudMessage(formatMessage(event, Text.empty()
                     .append(Text.literal("Could not discover a UPnP gateway.\n")
                         .setStyle(Style.EMPTY.withColor(Formatting.RED)))
                     .append(Text.literal("The server will continue running, however you will have:\n"))
@@ -30,7 +30,7 @@ public class ClientLogHandler implements LogHandler {
                     .append(Text.literal("• No detection of your local/external IP")
                         .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
             ));
-            case PORT_MAP_FAIL -> ClientCore.sendClientChatMessage(formatMessage(event, Text.empty()
+            case PORT_MAP_FAIL -> ClientCore.addHudMessage(formatMessage(event, Text.empty()
                     .append(Text.literal("UPnP port mapping failed.\n")
                         .setStyle(Style.EMPTY.withColor(Formatting.RED)))
                     .append(Text.literal("Clients outside your network will not be able to connect.\n"))
@@ -41,7 +41,7 @@ public class ClientLogHandler implements LogHandler {
                 Object version = event.getContext().get("version");
 
                 if (version instanceof RelayVersionPayload versionPayload) {
-                    ClientCore.sendClientChatMessage(Text.empty()
+                    ClientCore.addHudMessage(Text.empty()
                         .append(formatTitle("Version mismatch detected", LevelFormat.ERROR))
                         .append(Text.literal("\n\n"))
                         .append(Text.literal("Host requires: ")
@@ -58,7 +58,7 @@ public class ClientLogHandler implements LogHandler {
                             .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
                     );
                 } else {
-                    ClientCore.sendClientChatMessage(formatMessage(event, Text.empty()
+                    ClientCore.addHudMessage(formatMessage(event, Text.empty()
                         .append(Text.literal("No relay version received.\n")
                             .setStyle(Style.EMPTY.withColor(Formatting.RED)))
                         .append(Text.literal("This could mean either the relay you are connecting to, or your client is outdated.\n"))

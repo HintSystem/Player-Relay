@@ -1,6 +1,7 @@
 package dev.hintsystem.playerrelay.network.connection;
 
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -8,6 +9,10 @@ import java.util.UUID;
 public class ServerConnectionCollector extends ConnectionCollector<ServerConnection> {
     // Should only be connected to one game server at a time, so store only 1 connection
     private final ServerConnection serverConnection = new ServerConnection();
+
+    /** Always returns one server connection, use {@link Connection#isVersionValid()} to check if connection is usable */
+    @NotNull
+    public ServerConnection get() { return serverConnection; }
 
     @Override
     public Iterable<ServerConnection> getAll() { return Collections.singleton(serverConnection); }
@@ -25,4 +30,10 @@ public class ServerConnectionCollector extends ConnectionCollector<ServerConnect
     public void addAnnouncedPlayer(PlayerInfoPayload playerInfo) { addAnnouncedPlayer(serverConnection, playerInfo); }
 
     public void removeAnnouncedPlayer(UUID playerId) { removeAnnouncedPlayer(serverConnection, playerId); }
+
+    @Override
+    public void close() {
+        serverConnection.disconnect();
+        super.close();
+    }
 }
