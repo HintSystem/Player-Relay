@@ -36,12 +36,16 @@ public class PlayerRelayCommands {
         dispatcher.register(WaypointCommands.argumentBuilder());
     }
 
-    private static String commandString(String literal, Object... args) {
+    public static String commandString(String literal, Object... args) {
         StringBuilder sb = new StringBuilder("/").append(literal);
         for (Object arg : args) {
             sb.append(' ').append(arg);
         }
         return sb.toString();
+    }
+
+    public static String connectCommand(String address) {
+        return commandString(BASE_COMMAND, "connect", address);
     }
 
     public static String acceptWaypointCommand(int waypointIndex) {

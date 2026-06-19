@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.command;
 
-import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.CommonCore;
+import dev.hintsystem.playerrelay.network.NetworkService;
 import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
@@ -14,7 +14,40 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 
+import org.jetbrains.annotations.Nullable;
+
 public class ConnectionCommands extends ClientCommand {
+    @Nullable
+    private static Text tryCreateCopyConnectButton(String buttonText) {
+        try {
+            String connectCommand = PlayerRelayCommands.connectCommand(
+                NetworkService.getConnectAddress()
+            );
+
+            return Text.literal("[" + buttonText + "]").setStyle(Style.EMPTY
+                .withFormatting(Formatting.GREEN)
+                .withUnderline(true)
+                .withClickEvent(new ClickEvent.CopyToClipboard(connectCommand))
+                .withHoverEvent(new HoverEvent.ShowText(
+                    Text.literal("Click to copy\n")
+                        .append(Text.literal(connectCommand)
+                            .formatted(Formatting.GRAY, Formatting.ITALIC))
+                )));
+        } catch (Exception e) {
+            sendError(Text.empty()
+                .append(Text.literal("Failed to create connect command:\n")
+                    .formatted(Formatting.BOLD))
+                .append(e.getMessage() != null ? e.getMessage() : e.toString())
+                .append(Text.literal("\n[Retry]").setStyle(Style.EMPTY
+                    .withFormatting(Formatting.DARK_RED)
+                    .withUnderline(true)
+                    .withClickEvent(new ClickEvent.RunCommand(
+                        PlayerRelayCommands.commandString(PlayerRelayCommands.BASE_COMMAND, "host", "connect-cmd")
+                    )))));
+            return null;
+        }
+    }
+
     public static <S extends CommandSource> LiteralArgumentBuilder<S> registerLiterals(LiteralArgumentBuilder<S> argument, P2PNetworkManager networkManager) {
         MinecraftClient client = MinecraftClient.getInstance();
 
@@ -27,27 +60,28 @@ public class ConnectionCommands extends ClientCommand {
                             if (throwable != null) {
                                 sendError(Text.literal(throwable.getMessage()));
                             } else {
-                                int port = networkManager.getPort();
-                                String connectionAddress = networkManager.getConnectionAddress();
+                                MutableText feedback = Text.literal("Player Relay server started on port " + networkManager.getPort());
 
-                                MutableText feedback = Text.literal("Player Relay server started on port " + port);
-
-                                if (connectionAddress != null) {
-                                    String connectCmd = String.format("/prelay connect %s", connectionAddress);
-                                    feedback.append(Text.literal("\n[Copy connect command]")
-                                        .styled(style -> style
-                                            .withClickEvent(new ClickEvent.CopyToClipboard(connectCmd))
-                                            .withHoverEvent(new HoverEvent.ShowText(Text.literal("Click to copy (" + connectCmd + ")")))
-                                            .withColor(0x55FF55)
-                                            .withUnderline(true)
-                                        ));
-                                }
+                                Text copyConnect = tryCreateCopyConnectButton("Copy connect command");
+                                if (copyConnect != null) feedback.append("\n").append(copyConnect);
 
                                 sendFeedback(feedback);
                             }
                         }));
                     return 1;
-                }))
+                })
+                .then(LiteralArgumentBuilder.<S>literal("connect-cmd")
+                    .executes(context -> {
+                        Text copyConnect = tryCreateCopyConnectButton("Copy");
+                        if (copyConnect != null) {
+                            sendFeedback(Text.literal("Connect command created ")
+                                .formatted(Formatting.GRAY)
+                                .append(copyConnect));
+                            return 1;
+                        }
+                        return 0;
+                    }))
+            )
 
             .then(LiteralArgumentBuilder.<S>literal("stop")
                 .executes(context -> {
@@ -62,16 +96,16 @@ public class ConnectionCommands extends ClientCommand {
                         String address = StringArgumentType.getString(context, "address");
 
                         sendFeedback(Text.literal("Connecting to peer..."));
-                        networkManager.connectToPeerAsync(address)
-                            .whenComplete((peer, throwable) -> client.execute(() -> {
-                                if (throwable != null) {
-                                    sendError(Text.literal(throwable.getCause().getMessage()));
-                                } else {
-                                    peer.requireVersionHandshake().whenComplete((versionPayload, err) -> {
-                                        if (err == null) ClientCore.onConnect(address);
-                                    });
-                                }
-                            }));
+
+                        tryOrSendError(() -> {
+                            NetworkService.connect(address)
+                                .whenComplete((peer, throwable) -> client.execute(() -> {
+                                    if (throwable != null) {
+                                        sendError(Text.literal(throwable.getCause().getMessage()));
+                                    }
+                                }));
+                        });
+
                         return 1;
                     })))
 

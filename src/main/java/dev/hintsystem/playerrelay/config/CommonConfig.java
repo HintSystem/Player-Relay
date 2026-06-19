@@ -24,6 +24,9 @@ public class CommonConfig extends NetworkConfig {
 
     public static final CommonConfig DEFAULTS = new CommonConfig();
 
+    public String connectionAddress = "external";
+    public boolean useJoinCodes = true;
+
     public double minPlayerMove = 0.2;
 
     /** @return false if only changed fields are saved to file */

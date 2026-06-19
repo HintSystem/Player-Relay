@@ -52,6 +52,11 @@ public class PeerConnection extends Connection implements Runnable {
             manager.config.udpPingTimeoutMs, manager.config.udpPingIntervalMs, TimeUnit.MILLISECONDS);
     }
 
+    /** Fingerprint to identify a peer without displaying ip address */
+    public String getAddressFingerprint() {
+        return "Peer<" + addressFingerprint(tcpSocket.getInetAddress()) + ">";
+    }
+
     public SocketAddress getRemoteAddress() { return tcpSocket.getRemoteSocketAddress(); }
     public P2PNetworkManager getP2PManager() { return manager; }
 
@@ -163,7 +168,7 @@ public class PeerConnection extends Connection implements Runnable {
             if (udpHealthy) {
                 udpHealthy = false;
                 logger.warn().message("UDP connection to {} marked as unhealthy after {} failed pings",
-                    getRemoteAddress(), consecutiveFailedUdpPings).build();
+                    getAddressFingerprint(), consecutiveFailedUdpPings).build();
             }
         }
     }
@@ -182,7 +187,7 @@ public class PeerConnection extends Connection implements Runnable {
                 if (!udpHealthy) {
                     udpHealthy = true;
                     logger.info().message("UDP connection to {} restored (RTT: {}ms)",
-                        getRemoteAddress(), roundTripTime).build();
+                        getAddressFingerprint(), roundTripTime).build();
                 }
             }
         }

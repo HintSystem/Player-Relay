@@ -2,6 +2,7 @@ package dev.hintsystem.playerrelay.network;
 
 import dev.hintsystem.playerrelay.logging.LogEventTypes;
 import dev.hintsystem.playerrelay.logging.NetworkLogger;
+import dev.hintsystem.playerrelay.network.connection.Connection;
 import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
 import dev.hintsystem.playerrelay.network.handler.IP2PMessageHandler;
@@ -135,44 +136,16 @@ public class P2PNetworkManager {
         logger.info().message("Player Relay server stopped").build();
     }
 
-    /** Connect to a peer using address that can be IP, domain, or IP:port format */
-    public PeerConnection connectToPeer(String address) throws Exception {
+    public PeerConnection connectToPeer(InetSocketAddress socketAddress) throws Exception {
         running.set(true);
 
-        String host;
-        int port = DEFAULT_PORT;
-
-        if (address.contains(":")) {
-            String[] parts = address.split(":", 2);
-            host = parts[0];
-            try {
-                port = Integer.parseInt(parts[1]);
-                if (port < 1 || port > 65535) {
-                    throw new IllegalArgumentException("Port must be between 1 and 65535");
-                }
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid port number: " + parts[1]);
-            }
-        } else {
-            host = address;
-        }
-
-        InetAddress resolvedAddress;
-        InetSocketAddress socketAddress;
-        try {
-            resolvedAddress = InetAddress.getByName(host);
-            socketAddress = new InetSocketAddress(resolvedAddress, port);
-            logger.info().message("Resolved {} to {}", host, resolvedAddress.getHostAddress()).build();
-        } catch (UnknownHostException e) {
-            throw new Exception("Could not resolve host: " + host, e);
-        }
-
+        InetAddress address = socketAddress.getAddress();
         if (serverSocket != null) {
             int localPort = serverSocket.getLocalPort();
 
-            if (localPort == port) {
+            if (localPort == socketAddress.getPort()) {
                 for (InetAddress localAddr : InetAddress.getAllByName(InetAddress.getLocalHost().getHostName())) {
-                    if (localAddr.equals(resolvedAddress) || resolvedAddress.isLoopbackAddress()) {
+                    if (localAddr.equals(address) || address.isLoopbackAddress()) {
                         throw new IllegalStateException("Cannot connect to self (" + socketAddress + ")");
                     }
                 }
@@ -181,7 +154,7 @@ public class P2PNetworkManager {
 
         for (PeerConnection p : connections.getAll()) {
             if (p.getRemoteAddress().equals(socketAddress)) {
-                throw new IllegalStateException("Already connected to peer (" + p.getRemoteAddress() + ")");
+                throw new IllegalStateException("Already connected to " + p.getAddressFingerprint());
             }
         }
 
@@ -207,14 +180,14 @@ public class P2PNetworkManager {
             onConnectedToPeer(peer);
             executor.submit(peer);
 
-            logger.info().message("Connected to peer: {}:{} ({})", host, port, resolvedAddress.getHostAddress()).build();
+            logger.info().message("Connected to peer: " + peer.getAddressFingerprint()).build();
             return peer;
         } catch (SocketTimeoutException e) {
             cancelPeerConnection(peer, socket);
-            throw new Exception("Connection timeout to " + host + ":" + port, e);
+            throw new Exception("Connection timeout to [" + Connection.addressFingerprint(socketAddress.getAddress()) + "]", e);
         } catch (IOException e) {
             cancelPeerConnection(peer, socket);
-            throw new Exception("Failed to connect to " + host + ":" + port, e);
+            throw new Exception("Failed to connect to [" + Connection.addressFingerprint(socketAddress.getAddress()) + "]", e);
         }
     }
 
@@ -224,9 +197,9 @@ public class P2PNetworkManager {
         }, executor);
     }
 
-    public CompletableFuture<PeerConnection> connectToPeerAsync(String address) {
+    public CompletableFuture<PeerConnection> connectToPeerAsync(InetSocketAddress socketAddress) {
         return CompletableFuture.supplyAsync(() -> {
-            try { return connectToPeer(address); } catch (Exception e) { throw new CompletionException(e); }
+            try { return connectToPeer(socketAddress); } catch (Exception e) { throw new CompletionException(e); }
         }, executor);
     }
 
@@ -300,7 +273,7 @@ public class P2PNetworkManager {
     private void assignUdpId(PeerConnection peer) {
         short udpId = connections.assignUdpId(peer);
 
-        logger.info().message("Assigned UDP ID {} to peer {}", udpId, peer.getRemoteAddress()).build();
+        logger.info().message("Assigned UDP ID {} to peer {}", udpId, peer.getAddressFingerprint()).build();
     }
 
     private void acceptTcpConnections() {
@@ -359,7 +332,7 @@ public class P2PNetworkManager {
         if (running.get()) {
             status.append("Port: ").append(serverPort).append("\n");
             if (upnpManager != null) {
-                status.append("Local IP: ").append(upnpManager.getLocalIp()).append("\n");
+                status.append("Local IP: ").append(getLocalIp()).append("\n");
                 status.append("External IP: ").append(getExternalIp()).append("\n");
             }
         }
@@ -367,30 +340,19 @@ public class P2PNetworkManager {
         return status.toString();
     }
 
-    @Nullable
-    public String getConnectionAddress() {
-        String portString = (getPort() > 0) ? ":" + getPort() : "";
-
-        return switch (config.connectionAddress) {
-            case "external" -> {
-                String externalIp = getExternalIp();
-                yield (externalIp != null) ? externalIp + portString : null;
-            }
-            case "local" -> {
-                String localIp = getLocalIp();
-                yield (localIp != null) ? localIp + portString : null;
-            }
-            default -> config.connectionAddress;
-        };
-    }
-
     public DatagramSocket getUdpSocket() { return udpSocket; }
 
     @Nullable
-    public String getLocalIp() { return (upnpManager != null) ? upnpManager.getLocalIp() : null; }
+    public String getExternalIp() { return (upnpManager != null) ? upnpManager.getExternalIp() : null; }
 
     @Nullable
-    public String getExternalIp() { return (upnpManager != null) ? upnpManager.getExternalIp() : null; }
+    public String getLocalIp() {
+        if (upnpManager != null) return upnpManager.getLocalIp();
+
+        try {
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (Exception e) { return null; }
+    }
 
     public int getPeerCount() { return connections.count(); }
     public int getPort() { return serverPort; }

@@ -70,6 +70,10 @@ processResources {
 	filesMatching("fabric.mod.json") {
 		expand "version": inputs.properties.version
 	}
+
+    from("./secrets") {
+        include "joincode.secret"
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

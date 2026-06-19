@@ -3,7 +3,6 @@ package dev.hintsystem.playerrelay.network;
 public class NetworkConfig {
     public boolean autoHost = false;
     public boolean UPnPEnabled = true;
-    public String connectionAddress = "external";
     public int defaultHostingPort = P2PNetworkManager.DEFAULT_PORT;
 
     public int peerConnectionTimeout = 6000;
