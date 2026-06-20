@@ -52,7 +52,7 @@ public class PeerConnection extends Connection implements Runnable {
             manager.config.udpPingTimeoutMs, manager.config.udpPingIntervalMs, TimeUnit.MILLISECONDS);
     }
 
-    /** Fingerprint to identify a peer without displaying ip address */
+    /** Fingerprint to identify a peer without displaying IP address */
     public String getAddressFingerprint() {
         return "Peer<" + addressFingerprint(tcpSocket.getInetAddress()) + ">";
     }

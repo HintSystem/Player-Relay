@@ -60,7 +60,12 @@ public class NetworkService {
 
         CommonConfig config = CommonCore.getConfig();
         return switch (config.connectionAddress) {
-            case "external" -> manager.getExternalIp();
+            case "external" -> {
+                String externalIp = manager.getExternalIp();
+                if (externalIp != null) yield externalIp;
+
+                throw new RuntimeException("Could not retrieve external IP address");
+            }
             case "local" -> manager.getLocalIp();
             default -> config.connectionAddress;
         };

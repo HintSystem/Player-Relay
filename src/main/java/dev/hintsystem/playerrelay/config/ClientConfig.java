@@ -111,7 +111,7 @@ public class ClientConfig extends CommonConfig {
                                 .append(Component.literal("⚠ Warning!\n").withStyle(ChatFormatting.BOLD))
                                 .append(Component.literal(
                                 """
-                                This will not hide your ip address from people connecting to your relay.
+                                This will not hide your IP address from people connecting to your relay.
                                 If you want to stay hidden you need to use a proxy or VPN.
                                 """
                                 )).withStyle(ChatFormatting.RED))
@@ -146,7 +146,7 @@ public class ClientConfig extends CommonConfig {
                         .name(Component.literal("Display Name Color"))
                         .binding(DEFAULTS.displayNameColor, () -> displayNameColor, val -> displayNameColor = val)
                         .controller(opt -> ColorControllerBuilder.create(opt)
-                            .allowAlpha(true)) // TODO: set allowAlpha to false when YACL fixes the crash caused by ColorPickerWidget
+                            .allowAlpha(false))
                         .build())
                     .option(Option.<Integer>createBuilder()
                         .name(Component.literal("AFK Timeout"))

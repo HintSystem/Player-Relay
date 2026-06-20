@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public class PlayerRelay implements ModInitializer {
     public static final String MOD_ID = "player-relay";
-    public static final int NETWORK_VERSION = 4;
+    public static final int NETWORK_VERSION = 5;
     public static final String VERSION;
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
