@@ -8,6 +8,7 @@ import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 
 import java.net.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 public class NetworkService {
     public static InetSocketAddress parseAddress(String input, int defaultPort) throws URISyntaxException {
@@ -53,9 +54,9 @@ public class NetworkService {
             });
     }
 
-    public static String getHostAddress() throws Exception {
+    public static String getHostAddress() throws RuntimeException {
         P2PNetworkManager manager = CommonCore.getP2PNetworkManager();
-        if (!manager.isHost()) throw new Exception("Cannot get host address when not hosting");
+        if (!manager.isHost()) throw new RuntimeException("Cannot get host address when not hosting");
 
         CommonConfig config = CommonCore.getConfig();
         return switch (config.connectionAddress) {
@@ -65,20 +66,31 @@ public class NetworkService {
         };
     }
 
-    public static String getConnectAddress() throws Exception {
-        P2PNetworkManager manager = CommonCore.getP2PNetworkManager();
-        if (!manager.isHost()) throw new Exception("Cannot get connect address when not hosting");
+    public static CompletableFuture<String> getConnectAddressAsync() {
+        return CompletableFuture.supplyAsync(() -> {
+            P2PNetworkManager manager = CommonCore.getP2PNetworkManager();
+            if (!manager.isHost()) throw new RuntimeException("Cannot get connect address when not hosting");
 
-        InetAddress address = InetAddress.getByName(getHostAddress());
-        if (CommonCore.getConfig().useJoinCodes) {
-            return JoinCode.create(PlayerRelay.NETWORK_VERSION, address, manager.getPort(), "");
-        }
+            String hostAddress = NetworkService.getHostAddress();
 
-        String host = address.getHostAddress();
-        if (address instanceof Inet6Address) {
-            host = "[" + host + "]";
-        }
+            try {
+                // Get by name will hang while resolving host name, that's why this function is async
+                InetAddress address = InetAddress.getByName(hostAddress);
+                if (CommonCore.getConfig().useJoinCodes) {
+                    return JoinCode.create(PlayerRelay.NETWORK_VERSION, address, manager.getPort(), "");
+                }
 
-        return host + ":" + manager.getPort();
+                String host = address.getHostAddress();
+                if (address instanceof Inet6Address) {
+                    host = "[" + host + "]";
+                }
+
+                return host + ":" + manager.getPort();
+            } catch (UnknownHostException e) {
+                throw new RuntimeException("Could not resolve host name: " + hostAddress);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        });
     }
 }

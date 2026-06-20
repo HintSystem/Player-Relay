@@ -18,38 +18,41 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 
-import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.CompletableFuture;
 
 public class ConnectionCommands extends ClientCommand {
-    @Nullable
-    private static Component tryCreateCopyConnectButton(String buttonText) {
-        try {
-            String connectCommand = PlayerRelayCommands.connectCommand(
-                NetworkService.getConnectAddress()
-            );
+    private static CompletableFuture<MutableComponent> tryCreateCopyConnectButton(String buttonText) {
+        return NetworkService.getConnectAddressAsync()
+            .thenApply(address -> {
+                String connectCommand = PlayerRelayCommands.connectCommand(address);
 
-            return Component.literal("[" + buttonText + "]").setStyle(Style.EMPTY
-                .applyFormat(ChatFormatting.GREEN)
-                .withUnderlined(true)
-                .withClickEvent(new ClickEvent.CopyToClipboard(connectCommand))
-                .withHoverEvent(new HoverEvent.ShowText(
-                    Component.literal("Click to copy\n")
-                        .append(Component.literal(connectCommand)
-                            .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC))
-                )));
-        } catch (Exception e) {
-            sendError(Component.empty()
-                .append(Component.literal("Failed to create connect command:\n")
-                    .withStyle(ChatFormatting.BOLD))
-                .append(e.getMessage() != null ? e.getMessage() : e.toString())
-                .append(Component.literal("\n[Retry]").setStyle(Style.EMPTY
-                    .applyFormat(ChatFormatting.DARK_RED)
+                return Component.literal("[" + buttonText + "]").setStyle(Style.EMPTY
+                    .applyFormat(ChatFormatting.GREEN)
                     .withUnderlined(true)
-                    .withClickEvent(new ClickEvent.RunCommand(
-                        PlayerRelayCommands.commandString(PlayerRelayCommands.BASE_COMMAND, "host", "connect-cmd")
-                    )))));
-            return null;
-        }
+                    .withClickEvent(new ClickEvent.CopyToClipboard(connectCommand))
+                    .withHoverEvent(new HoverEvent.ShowText(
+                        Component.literal("Click to copy\n")
+                            .append(Component.literal(connectCommand)
+                                .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC))
+                    )));
+            })
+            .exceptionally(throwable -> {
+                Throwable cause = throwable.getCause() != null
+                    ? throwable.getCause() : throwable;
+
+                Minecraft.getInstance().execute(() -> sendError(Component.empty()
+                    .append(Component.literal("Failed to create connect command:\n")
+                        .withStyle(ChatFormatting.BOLD))
+                    .append(cause.getMessage() != null ? cause.getMessage() : cause.toString())
+                    .append(Component.literal("\n[Retry]").setStyle(Style.EMPTY
+                        .applyFormat(ChatFormatting.DARK_RED)
+                        .withUnderlined(true)
+                        .withClickEvent(new ClickEvent.RunCommand(
+                            PlayerRelayCommands.commandString(PlayerRelayCommands.BASE_COMMAND, "host", "connect-cmd")
+                        ))))));
+
+                return null;
+            });
     }
 
     public static <S extends SharedSuggestionProvider> LiteralArgumentBuilder<S> registerLiterals(LiteralArgumentBuilder<S> argument, P2PNetworkManager networkManager) {
@@ -66,24 +69,29 @@ public class ConnectionCommands extends ClientCommand {
                             } else {
                                 MutableComponent feedback = Component.literal("Player Relay server started on port " + networkManager.getPort());
 
-                                Component copyConnect = tryCreateCopyConnectButton("Copy connect command");
-                                if (copyConnect != null) feedback.append("\n").append(copyConnect);
+                                tryCreateCopyConnectButton("Copy connect command")
+                                    .thenAccept(copyConnect -> {
+                                        if (copyConnect == null) return;
 
-                                sendFeedback(feedback);
+                                        client.execute(() -> sendFeedback(feedback.append("\n").append(copyConnect)));
+                                    });
                             }
                         }));
                     return 1;
                 })
                 .then(LiteralArgumentBuilder.<S>literal("connect-cmd")
                     .executes(context -> {
-                        Component copyConnect = tryCreateCopyConnectButton("Copy");
-                        if (copyConnect != null) {
-                            sendFeedback(Component.literal("Connect command created ")
-                                .withStyle(ChatFormatting.GRAY)
-                                .append(copyConnect));
-                            return 1;
-                        }
-                        return 0;
+
+                        tryCreateCopyConnectButton("Copy")
+                            .thenAccept(copyConnect -> {
+                                if (copyConnect == null) return;
+
+                                client.execute(() -> sendFeedback(Component.literal("Connect command created ")
+                                    .withStyle(ChatFormatting.GRAY)
+                                    .append(copyConnect)));
+                            });
+
+                        return 1;
                     }))
             )
 
