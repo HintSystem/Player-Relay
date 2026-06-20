@@ -2,12 +2,12 @@ package dev.hintsystem.playerrelay.payload;
 
 import dev.hintsystem.playerrelay.EnderChestTracker;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.EnderChestInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.PlayerEnderChestContainer;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,16 +25,16 @@ public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FL
         this.playerId = playerId;
     }
 
-    public PlayerInventoryPayload(PlayerEntity player, boolean isEnderChest) {
-        this.playerId = player.getUuid();
+    public PlayerInventoryPayload(Player player, boolean isEnderChest) {
+        this.playerId = player.getUUID();
         this.setFlag(FLAGS.IS_ENDER_CHEST, isEnderChest);
 
         if (isEnderChest) {
-            if (player instanceof ServerPlayerEntity serverPlayer) {
+            if (player instanceof ServerPlayer serverPlayer) {
                 this.setFlag(FLAGS.PLAYER_HAS_DATA, true);
-                EnderChestInventory enderChest = serverPlayer.getEnderChestInventory();
+                PlayerEnderChestContainer enderChest = serverPlayer.getEnderChestInventory();
 
-                for (ItemStack stack : enderChest.getHeldStacks()) {
+                for (ItemStack stack : enderChest.getItems()) {
                     this.inventoryItems.add(stack.copy());
                 }
             } else {
@@ -48,10 +48,10 @@ public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FL
         }
 
         this.setFlag(FLAGS.PLAYER_HAS_DATA, true);
-        PlayerInventory inventory = player.getInventory();
+        Inventory inventory = player.getInventory();
 
-        for (int i = 0; i < inventory.size(); i++) {
-            ItemStack stack = inventory.getStack(i);
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
 
             this.inventoryItems.add(stack.copy());
         }
@@ -70,29 +70,29 @@ public class PlayerInventoryPayload extends FlagHolder<PlayerInventoryPayload.FL
         return payload;
     }
 
-    public static PlayerInventoryPayload respond(PlayerEntity player, boolean isEnderChest) {
+    public static PlayerInventoryPayload respond(Player player, boolean isEnderChest) {
         return new PlayerInventoryPayload(player, isEnderChest);
     }
 
     @Override
     public PayloadRegistry.PayloadType<PlayerInventoryPayload> getPayloadType() { return PayloadRegistry.PLAYER_INVENTORY; }
 
-    public PlayerInventoryPayload(RegistryByteBuf buf) {
-        this.playerId = buf.readUuid();
+    public PlayerInventoryPayload(RegistryFriendlyByteBuf buf) {
+        this.playerId = buf.readUUID();
         readFlags(buf, 1);
 
         if (isResponse() && hasData()) {
-            this.inventoryItems = ItemStack.OPTIONAL_LIST_PACKET_CODEC.decode(buf);
+            this.inventoryItems = ItemStack.OPTIONAL_LIST_STREAM_CODEC.decode(buf);
         }
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
-        buf.writeUuid(this.playerId);
+    public void write(RegistryFriendlyByteBuf buf) {
+        buf.writeUUID(this.playerId);
         writeFlags(buf, 1);
 
         if (isResponse() && hasData()) {
-            ItemStack.OPTIONAL_LIST_PACKET_CODEC.encode(buf, inventoryItems);
+            ItemStack.OPTIONAL_LIST_STREAM_CODEC.encode(buf, inventoryItems);
         }
     }
 }

@@ -47,7 +47,7 @@ public class PlayerRelay implements ModInitializer {
         });
 
         ServerPlayerEvents.LEAVE.register((player) -> {
-            ServerCore server = ServerCore.getInstance(player.getEntityWorld().getServer());
+            ServerCore server = ServerCore.getInstance(player.level().getServer());
             if (server != null) server.onPlayerLeave(player);
         });
 

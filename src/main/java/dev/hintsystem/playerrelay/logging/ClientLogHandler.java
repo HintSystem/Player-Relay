@@ -3,14 +3,13 @@ package dev.hintsystem.playerrelay.logging;
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 
 import org.slf4j.event.Level;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,49 +20,49 @@ public class ClientLogHandler implements LogHandler {
         if (event.getType() == null) return;
 
         switch (event.getType()) {
-            case UPNP_FAIL -> ClientCore.addHudMessage(formatMessage(event, Text.empty()
-                    .append(Text.literal("Could not discover a UPnP gateway.\n")
-                        .setStyle(Style.EMPTY.withColor(Formatting.RED)))
-                    .append(Text.literal("The server will continue running, however you will have:\n"))
-                    .append(Text.literal("• No automatic port forwarding\n")
-                        .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
-                    .append(Text.literal("• No detection of your local/external IP")
-                        .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
+            case UPNP_FAIL -> ClientCore.addHudMessage(formatMessage(event, Component.empty()
+                    .append(Component.literal("Could not discover a UPnP gateway.\n")
+                        .setStyle(Style.EMPTY.withColor(ChatFormatting.RED)))
+                    .append(Component.literal("The server will continue running, however you will have:\n"))
+                    .append(Component.literal("• No automatic port forwarding\n")
+                        .setStyle(Style.EMPTY.withColor(ChatFormatting.GOLD)))
+                    .append(Component.literal("• No detection of your local/external IP")
+                        .setStyle(Style.EMPTY.withColor(ChatFormatting.GOLD)))
             ));
-            case PORT_MAP_FAIL -> ClientCore.addHudMessage(formatMessage(event, Text.empty()
-                    .append(Text.literal("UPnP port mapping failed.\n")
-                        .setStyle(Style.EMPTY.withColor(Formatting.RED)))
-                    .append(Text.literal("Clients outside your network will not be able to connect.\n"))
-                    .append(Text.literal("Try hosting again. If it continues to fail, you may need to manually forward this port in your router settings.\n")
-                        .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
+            case PORT_MAP_FAIL -> ClientCore.addHudMessage(formatMessage(event, Component.empty()
+                    .append(Component.literal("UPnP port mapping failed.\n")
+                        .setStyle(Style.EMPTY.withColor(ChatFormatting.RED)))
+                    .append(Component.literal("Clients outside your network will not be able to connect.\n"))
+                    .append(Component.literal("Try hosting again. If it continues to fail, you may need to manually forward this port in your router settings.\n")
+                        .setStyle(Style.EMPTY.withColor(ChatFormatting.GOLD)))
             ));
             case VERSION_FAIL -> {
                 Object version = event.getContext().get("version");
 
                 if (version instanceof RelayVersionPayload versionPayload) {
-                    ClientCore.addHudMessage(Text.empty()
+                    ClientCore.addHudMessage(Component.empty()
                         .append(formatTitle("Version mismatch detected", LevelFormat.ERROR))
-                        .append(Text.literal("\n\n"))
-                        .append(Text.literal("Host requires: ")
-                            .setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
-                        .append(Text.literal("mod version " + versionPayload.versionString + ", network v" + versionPayload.networkVersion)
-                            .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
-                        .append(Text.literal("\n"))
-                        .append(Text.literal("Your client: ")
-                            .setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
-                        .append(Text.literal("mod version " + RelayVersionPayload.VERSION_STRING + ", network v" + RelayVersionPayload.NETWORK_VERSION)
-                            .setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
-                        .append(Text.literal("\n\n"))
-                        .append(Text.literal("⚠ Please install the matching mod version.")
-                            .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
+                        .append(Component.literal("\n\n"))
+                        .append(Component.literal("Host requires: ")
+                            .setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)))
+                        .append(Component.literal("mod version " + versionPayload.versionString + ", network v" + versionPayload.networkVersion)
+                            .setStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)))
+                        .append(Component.literal("\n"))
+                        .append(Component.literal("Your client: ")
+                            .setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)))
+                        .append(Component.literal("mod version " + RelayVersionPayload.VERSION_STRING + ", network v" + RelayVersionPayload.NETWORK_VERSION)
+                            .setStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)))
+                        .append(Component.literal("\n\n"))
+                        .append(Component.literal("⚠ Please install the matching mod version.")
+                            .setStyle(Style.EMPTY.withColor(ChatFormatting.GOLD)))
                     );
                 } else {
-                    ClientCore.addHudMessage(formatMessage(event, Text.empty()
-                        .append(Text.literal("No relay version received.\n")
-                            .setStyle(Style.EMPTY.withColor(Formatting.RED)))
-                        .append(Text.literal("This could mean either the relay you are connecting to, or your client is outdated.\n"))
-                        .append(Text.literal("Consider updating the mod.")
-                            .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
+                    ClientCore.addHudMessage(formatMessage(event, Component.empty()
+                        .append(Component.literal("No relay version received.\n")
+                            .setStyle(Style.EMPTY.withColor(ChatFormatting.RED)))
+                        .append(Component.literal("This could mean either the relay you are connecting to, or your client is outdated.\n"))
+                        .append(Component.literal("Consider updating the mod.")
+                            .setStyle(Style.EMPTY.withColor(ChatFormatting.GOLD)))
                     ));
                 }
             }
@@ -71,15 +70,15 @@ public class ClientLogHandler implements LogHandler {
     }
 
     private enum LevelFormat {
-        DEFAULT(null, "", Formatting.GRAY),
-        WARN(Level.WARN, "⚠", Formatting.GOLD),
-        ERROR(Level.ERROR, "❌", Formatting.RED);
+        DEFAULT(null, "", ChatFormatting.GRAY),
+        WARN(Level.WARN, "⚠", ChatFormatting.GOLD),
+        ERROR(Level.ERROR, "❌", ChatFormatting.RED);
 
         private final Level level;
         public final String icon;
-        public final Formatting color;
+        public final ChatFormatting color;
 
-        LevelFormat(Level level, String icon, Formatting color) {
+        LevelFormat(Level level, String icon, ChatFormatting color) {
             this.level = level;
             this.icon = icon;
             this.color = color;
@@ -94,18 +93,18 @@ public class ClientLogHandler implements LogHandler {
         }
     }
 
-    private MutableText formatTitle(String title, LevelFormat format) {
-        return Text.literal(format.icon + " " + title)
+    private MutableComponent formatTitle(String title, LevelFormat format) {
+        return Component.literal(format.icon + " " + title)
             .setStyle(Style.EMPTY.withColor(format.color).withBold(true));
     }
 
-    private MutableText formatMessage(LogEvent event) { return formatMessage(event, event.getLevel(), null); }
+    private MutableComponent formatMessage(LogEvent event) { return formatMessage(event, event.getLevel(), null); }
 
-    private MutableText formatMessage(LogEvent event, Text overrideDescription) { return formatMessage(event, event.getLevel(), overrideDescription); }
+    private MutableComponent formatMessage(LogEvent event, Component overrideDescription) { return formatMessage(event, event.getLevel(), overrideDescription); }
 
-    private MutableText formatMessage(LogEvent event, Level level, Text overrideDescription) {
+    private MutableComponent formatMessage(LogEvent event, Level level, Component overrideDescription) {
         LevelFormat format = LevelFormat.fromLevel(level);
-        MutableText msg = Text.empty();
+        MutableComponent msg = Component.empty();
 
         String message = event.getMessage();
         if (message == null && event.getException() != null) {
@@ -118,13 +117,13 @@ public class ClientLogHandler implements LogHandler {
 
         msg.append(formatTitle(title, format));
         if (message != null) {
-            msg.append(Text.literal(message)
+            msg.append(Component.literal(message)
                 .setStyle(Style.EMPTY.withColor(format.color)));
         }
 
-        Text description = (event.getDescription() != null) ? Text.literal(event.getDescription()) : overrideDescription;
+        Component description = (event.getDescription() != null) ? Component.literal(event.getDescription()) : overrideDescription;
         if (description != null) {
-            msg.styled(style -> style.withHoverEvent(
+            msg.withStyle(style -> style.withHoverEvent(
                 new HoverEvent.ShowText(description)
             ));
         }

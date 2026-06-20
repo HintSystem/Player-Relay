@@ -9,8 +9,8 @@ import dev.hintsystem.playerrelay.payload.PlayerInventoryPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.*;
@@ -50,9 +50,9 @@ public class ServerCore {
         instances.remove(minecraftServer);
     }
 
-    public void onTickEnd(ServerWorld world) {
-        for (ServerPlayerEntity player : world.getPlayers()) {
-            UUID playerId = player.getUuid();
+    public void onTickEnd(ServerLevel world) {
+        for (ServerPlayer player : world.players()) {
+            UUID playerId = player.getUUID();
 
             PlayerUpdateTracker playerUpdate = playerUpdateTrackers.getOrDefault(playerId, new PlayerUpdateTracker(playerId));
             playerUpdateTrackers.putIfAbsent(playerId, playerUpdate);
@@ -64,21 +64,21 @@ public class ServerCore {
         }
     }
 
-    public void onPlayerSync(ServerPlayerEntity player) {
+    public void onPlayerSync(ServerPlayer player) {
         PlayerRelayServer.sendToClient(player, PlayerInventoryPayload.respond(player, true).packet()); // Gratuitous ender chest inventory packet
         for (PlayerUpdateTracker playerTracker : playerUpdateTrackers.values()) {
             PlayerRelayServer.sendToClient(player, playerTracker.getCurrentState().packet());
         }
     }
 
-    public void onPlayerLeave(ServerPlayerEntity player) {
-        listeningPlayers.remove(player.getUuid());
-        playerUpdateTrackers.remove(player.getUuid());
-        CommonCore.serverConnection.removeAnnouncedPlayer(player.getUuid());
+    public void onPlayerLeave(ServerPlayer player) {
+        listeningPlayers.remove(player.getUUID());
+        playerUpdateTrackers.remove(player.getUUID());
+        CommonCore.serverConnection.removeAnnouncedPlayer(player.getUUID());
     }
 
     @Nullable
-    private PlayerInfoPayload updateServerPlayerDelta(PlayerUpdateTracker updateTracker, ServerPlayerEntity player) {
+    private PlayerInfoPayload updateServerPlayerDelta(PlayerUpdateTracker updateTracker, ServerPlayer player) {
         PlayerInfoPayload infoDelta = updateTracker.beginDelta()
             .with(new PlayerPositionData(player))
             .withCommon(player)
@@ -104,7 +104,7 @@ public class ServerCore {
     }
 
     public void sendToClient(PayloadMessage.Packet payloadMessage, UUID playerId) {
-        ServerPlayerEntity player = minecraftServer.getPlayerManager().getPlayer(playerId);
+        ServerPlayer player = minecraftServer.getPlayerList().getPlayer(playerId);
         if (player != null) PlayerRelayServer.sendToClient(player, payloadMessage);
     }
 
@@ -122,7 +122,7 @@ public class ServerCore {
         for (UUID playerId : listeningPlayers) {
             if (playerId.equals(excludedUuid) || (excludeClient && playerId.equals(localPlayerId))) continue;
 
-            ServerPlayerEntity player = minecraftServer.getPlayerManager().getPlayer(playerId);
+            ServerPlayer player = minecraftServer.getPlayerList().getPlayer(playerId);
             if (player != null) PlayerRelayServer.sendToClient(player, payloadMessage);
         }
     }
@@ -131,7 +131,7 @@ public class ServerCore {
         for (UUID playerId : playerIds) {
             if (!listeningPlayers.contains(playerId)) continue;
 
-            ServerPlayerEntity player = minecraftServer.getPlayerManager().getPlayer(playerId);
+            ServerPlayer player = minecraftServer.getPlayerList().getPlayer(playerId);
             if (player != null) PlayerRelayServer.sendToClient(player, payloadMessage);
         }
     }

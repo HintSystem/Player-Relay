@@ -2,16 +2,15 @@ package dev.hintsystem.playerrelay.payload.player;
 
 import dev.hintsystem.playerrelay.payload.FlagHolder;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldProperties;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.LevelData;
 
 import org.jetbrains.annotations.Nullable;
-
 import java.util.Objects;
 
 public class PlayerWorldData extends FlagHolder<PlayerWorldData.FLAGS>
@@ -19,20 +18,20 @@ public class PlayerWorldData extends FlagHolder<PlayerWorldData.FLAGS>
     public enum FLAGS { IN_WORLD, HARDCORE }
 
     @Nullable
-    public RegistryKey<World> dimension = null;
+    public ResourceKey<Level> dimension = null;
     @Nullable
     public Difficulty difficulty = null;
 
     public PlayerWorldData() {}
 
-    public PlayerWorldData(@Nullable PlayerEntity player) {
+    public PlayerWorldData(@Nullable Player player) {
         if (player == null) { return; }
 
         setFlag(FLAGS.IN_WORLD, true);
-        WorldProperties worldProperties = player.getEntityWorld().getLevelProperties();
+        LevelData worldProperties = player.level().getLevelData();
 
         setFlag(FLAGS.HARDCORE, worldProperties.isHardcore());
-        this.dimension = player.getEntityWorld().getRegistryKey();
+        this.dimension = player.level().dimension();
         this.difficulty = worldProperties.getDifficulty();
     }
 
@@ -41,23 +40,23 @@ public class PlayerWorldData extends FlagHolder<PlayerWorldData.FLAGS>
     public boolean isHardcore() { return hasFlag(FLAGS.HARDCORE); }
 
     @Override
-    public void write(RegistryByteBuf buf) {
+    public void write(RegistryFriendlyByteBuf buf) {
         writeFlags(buf, 1);
 
         if (hasFlag(FLAGS.IN_WORLD)) {
             assert dimension != null && difficulty != null : "dimension and difficulty must be set when IN_WORLD is true";
-            buf.writeIdentifier(dimension.getValue());
-            Difficulty.PACKET_CODEC.encode(buf, difficulty);
+            buf.writeResourceLocation(dimension.location());
+            Difficulty.STREAM_CODEC.encode(buf, difficulty);
         }
     }
 
     @Override
-    public void read(RegistryByteBuf buf) {
+    public void read(RegistryFriendlyByteBuf buf) {
         readFlags(buf, 1);
 
         if (hasFlag(FLAGS.IN_WORLD)) {
-            this.dimension = RegistryKey.of(RegistryKeys.WORLD, buf.readIdentifier());
-            this.difficulty = Difficulty.PACKET_CODEC.decode(buf);
+            this.dimension = ResourceKey.create(Registries.DIMENSION, buf.readResourceLocation());
+            this.difficulty = Difficulty.STREAM_CODEC.decode(buf);
         }
     }
 

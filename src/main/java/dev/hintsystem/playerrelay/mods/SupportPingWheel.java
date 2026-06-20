@@ -5,19 +5,19 @@ import dev.hintsystem.playerrelay.PlayerRelayClient;
 import dev.hintsystem.playerrelay.network.handler.ClientMessageHandler;
 import dev.hintsystem.playerrelay.payload.GenericPacketPayload;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.UUID;
 
 public class SupportPingWheel implements ClientMessageHandler.PacketHandler {
-    private static final Identifier PING_LOCATION_ID = Identifier.of("ping-wheel-s2c", "ping-location");
+    private static final ResourceLocation PING_LOCATION_ID = ResourceLocation.fromNamespaceAndPath("ping-wheel-s2c", "ping-location");
     private static final String PING_WHEEL_CLASS = "nx.pingwheel.common.network.PingLocationS2CPacket";
 
-    private static Class<? extends CustomPayload> pingLocationPacketClass;
+    private static Class<? extends CustomPacketPayload> pingLocationPacketClass;
     private static boolean pingWheelAvailable;
 
     static {
@@ -25,7 +25,7 @@ public class SupportPingWheel implements ClientMessageHandler.PacketHandler {
             Class<?> packetClass = Class.forName(PING_WHEEL_CLASS);
 
             try {
-                pingLocationPacketClass = packetClass.asSubclass(CustomPayload.class);
+                pingLocationPacketClass = packetClass.asSubclass(CustomPacketPayload.class);
                 pingWheelAvailable = true;
                 PlayerRelay.LOGGER.info("PingWheel support enabled - compatible class found");
             } catch (ClassCastException e) {
@@ -37,16 +37,16 @@ public class SupportPingWheel implements ClientMessageHandler.PacketHandler {
     }
 
     @Override
-    public boolean canHandle(Identifier id) {
+    public boolean canHandle(ResourceLocation id) {
         return PING_LOCATION_ID.equals(id);
     }
 
     @Override
-    public void handlePacket(GenericPacketPayload packetPayload, ClientPlayNetworkHandler handler, MinecraftClient client) {
+    public void handlePacket(GenericPacketPayload packetPayload, ClientPacketListener handler, Minecraft client) {
         if (!pingWheelAvailable) return;
 
         try {
-            CustomPayload packet = packetPayload.toPacket(pingLocationPacketClass);
+            CustomPacketPayload packet = packetPayload.toPacket(pingLocationPacketClass);
 
             if (!PlayerRelayClient.config.showPingsFromOtherServers) {
                 UUID author = null;
@@ -54,12 +54,12 @@ public class SupportPingWheel implements ClientMessageHandler.PacketHandler {
                     author = pingPacket.author();
                 }
 
-                if (!handler.getPlayerUuids().contains(author)) return;
+                if (!handler.getOnlinePlayerIds().contains(author)) return;
             }
 
             client.execute(() -> {
                 try {
-                    handler.onCustomPayload(new CustomPayloadS2CPacket(packet));
+                    handler.handleCustomPayload(new ClientboundCustomPayloadPacket(packet));
                 } catch (Exception e) {
                     PlayerRelay.LOGGER.error("Error processing Ping Wheel payload: {}", e.getMessage(), e);
                 }

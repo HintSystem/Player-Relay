@@ -1,10 +1,10 @@
 package dev.hintsystem.playerrelay;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.TextContent;
-import net.minecraft.text.TranslatableTextContent;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.network.chat.ComponentContents;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.*;
 
@@ -17,34 +17,34 @@ public class EnderChestTracker {
     /**
      * Updates the ender chest inventory cache when the player has an ender chest screen open.
      * <p>
-     * This method should be called every client tick. It detects when a {@link GenericContainerScreen}
+     * This method should be called every client tick. It detects when a {@link ContainerScreen}
      * is open with the ender chest title, then copies all slots into a cache mapped by world ID.
      * The cached inventory persists after the screen is closed and can be retrieved later.
      *
      * @see #getEnderChestInventory()
      * @see #hasEnderChestInventory()
-     * @see net.minecraft.block.EnderChestBlock#CONTAINER_NAME
+     * @see net.minecraft.world.level.block.EnderChestBlock#CONTAINER_TITLE
      */
     public static void tick() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         updateCurrentWorldId(client);
         updateViaScreenReading(client);
     }
 
-    private static void updateViaScreenReading(MinecraftClient client) {
+    private static void updateViaScreenReading(Minecraft client) {
         if (currentWorldId == null) return;
-        if (!(client.currentScreen instanceof GenericContainerScreen containerScreen)) return;
+        if (!(client.screen instanceof ContainerScreen containerScreen)) return;
 
-        TextContent titleContent = containerScreen.getTitle().getContent();
-        if (!(titleContent instanceof TranslatableTextContent translatableText)) return;
+        ComponentContents titleContent = containerScreen.getTitle().getContents();
+        if (!(titleContent instanceof TranslatableContents translatableText)) return;
 
         if (!translatableText.getKey().equals(ENDER_CHEST_NAME_KEY)) return;
 
-        int slots = containerScreen.getScreenHandler().getRows() * 9;
+        int slots = containerScreen.getMenu().getRowCount() * 9;
 
         List<ItemStack> items = new ArrayList<>();
         for (int i = 0; i < slots; i++) {
-            ItemStack stack = containerScreen.getScreenHandler().slots.get(i).getStack();
+            ItemStack stack = containerScreen.getMenu().slots.get(i).getItem();
             items.add(stack.copy());
         }
 
@@ -58,27 +58,27 @@ public class EnderChestTracker {
         enderChestCache.put(currentWorldId, copy);
     }
 
-    public static void updateCurrentWorldId(MinecraftClient client) {
-        if (client.player == null || client.world == null) {
+    public static void updateCurrentWorldId(Minecraft client) {
+        if (client.player == null || client.level == null) {
             currentWorldId = null;
             return;
         }
 
         StringBuilder worldId = new StringBuilder();
 
-        if (client.getCurrentServerEntry() != null) {
+        if (client.getCurrentServer() != null) {
             worldId.append("server:");
-            worldId.append(client.getCurrentServerEntry().address);
+            worldId.append(client.getCurrentServer().ip);
             worldId.append(":");
         } else {
             worldId.append("world:");
-            if (client.getServer() != null && client.getServer().getSaveProperties() != null) {
-                worldId.append(client.getServer().getSaveProperties().getLevelName());
+            if (client.getSingleplayerServer() != null) {
+                worldId.append(client.getSingleplayerServer().getWorldData().getLevelName());
                 worldId.append(":");
             }
         }
 
-        worldId.append(client.player.getUuidAsString());
+        worldId.append(client.player.getStringUUID());
         currentWorldId = worldId.toString();
     }
 

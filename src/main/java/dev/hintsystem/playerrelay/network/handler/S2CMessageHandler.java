@@ -9,10 +9,10 @@ import dev.hintsystem.playerrelay.party.Party;
 import dev.hintsystem.playerrelay.party.PartyPayloadHandler;
 import dev.hintsystem.playerrelay.payload.*;
 
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 
 /** Handles messages received from the server on the client */
 public class S2CMessageHandler extends ClientMessageHandler<Void> {
@@ -23,9 +23,9 @@ public class S2CMessageHandler extends ClientMessageHandler<Void> {
         public void onCreate(PartyPayload party, PartyPayload.CreateAction createAction) {
             super.onCreate(party, createAction);
             ClientCore.addHudMessage(
-                Text.empty()
-                    .append(Text.literal("Sucessfully created party \"%s\"".formatted(createAction.partyName())))
-                    .formatted(Formatting.GREEN)
+                Component.empty()
+                    .append(Component.literal("Sucessfully created party \"%s\"".formatted(createAction.partyName())))
+                    .withStyle(ChatFormatting.GREEN)
             );
         }
 
@@ -37,9 +37,9 @@ public class S2CMessageHandler extends ClientMessageHandler<Void> {
             if (disbandedParty == null) return;
 
             ClientCore.addHudMessage(
-                Text.empty()
-                    .append(Text.literal("Party \"%s\" was disbanded".formatted(disbandedParty.partyName)))
-                    .formatted(Formatting.RED)
+                Component.empty()
+                    .append(Component.literal("Party \"%s\" was disbanded".formatted(disbandedParty.partyName)))
+                    .withStyle(ChatFormatting.RED)
             );
         }
 
@@ -49,19 +49,19 @@ public class S2CMessageHandler extends ClientMessageHandler<Void> {
 
             if (!party.actorId.equals(ClientCore.getClientUuid())) {
                 ClientCore.addHudMessage(
-                    Text.empty()
+                    Component.empty()
                         .append(ClientCore.getPlayerDisplayName(party.actorId)
-                            .formatted(Formatting.BOLD))
-                        .append(Text.literal(" left the party"))
-                        .formatted(Formatting.RED)
+                            .withStyle(ChatFormatting.BOLD))
+                        .append(Component.literal(" left the party"))
+                        .withStyle(ChatFormatting.RED)
                 );
                 return;
             }
 
             ClientCore.addHudMessage(
-                Text.empty()
-                    .append(Text.literal("You left the party"))
-                    .formatted(Formatting.RED)
+                Component.empty()
+                    .append(Component.literal("You left the party"))
+                    .withStyle(ChatFormatting.RED)
             );
         }
 
@@ -71,35 +71,35 @@ public class S2CMessageHandler extends ClientMessageHandler<Void> {
 
             if (inviteAction.inviteeId().equals(ClientCore.getClientUuid())) {
                 ClientCore.addHudMessage(
-                    Text.empty()
+                    Component.empty()
                         .append(ClientCore.getPlayerDisplayName(party.actorId)
-                            .formatted(Formatting.BOLD))
-                        .append(Text.literal(" invited you to their party\n"))
-                        .append(Text.literal("[Accept]").setStyle(Style.EMPTY
-                            .withFormatting(Formatting.DARK_GREEN, Formatting.UNDERLINE)
+                            .withStyle(ChatFormatting.BOLD))
+                        .append(Component.literal(" invited you to their party\n"))
+                        .append(Component.literal("[Accept]").setStyle(Style.EMPTY
+                            .applyFormats(ChatFormatting.DARK_GREEN, ChatFormatting.UNDERLINE)
                             .withClickEvent(new ClickEvent.RunCommand(
                                 PlayerRelayCommands.acceptInviteCommand(party.partyId)
                             ))
                         ))
                         .append("   ")
-                        .append(Text.literal("[Decline]").setStyle(Style.EMPTY
-                            .withFormatting(Formatting.RED, Formatting.UNDERLINE)
+                        .append(Component.literal("[Decline]").setStyle(Style.EMPTY
+                            .applyFormats(ChatFormatting.RED, ChatFormatting.UNDERLINE)
                             .withClickEvent(new ClickEvent.RunCommand(
                                 PlayerRelayCommands.declineInviteCommand(party.partyId)
                             ))
                         ))
-                        .formatted(Formatting.GREEN)
+                        .withStyle(ChatFormatting.GREEN)
                 );
                 return;
             }
 
             ClientCore.addHudMessage(
-                Text.empty().append(ClientCore.getPlayerDisplayName(party.actorId))
-                    .append(Text.literal(" invited "))
+                Component.empty().append(ClientCore.getPlayerDisplayName(party.actorId))
+                    .append(Component.literal(" invited "))
                     .append(ClientCore.getPlayerDisplayName(inviteAction.inviteeId())
-                        .formatted(Formatting.BOLD))
-                    .append(Text.literal(" to this party"))
-                    .formatted(Formatting.GRAY)
+                        .withStyle(ChatFormatting.BOLD))
+                    .append(Component.literal(" to this party"))
+                    .withStyle(ChatFormatting.GRAY)
             );
         }
 
@@ -109,11 +109,11 @@ public class S2CMessageHandler extends ClientMessageHandler<Void> {
 
             if (!party.actorId.equals(ClientCore.getClientUuid())) {
                 ClientCore.addHudMessage(
-                    Text.empty()
+                    Component.empty()
                         .append(ClientCore.getPlayerDisplayName(party.actorId)
-                            .formatted(Formatting.BOLD))
-                        .append(Text.literal(" joined this party"))
-                        .formatted(Formatting.GREEN)
+                            .withStyle(ChatFormatting.BOLD))
+                        .append(Component.literal(" joined this party"))
+                        .withStyle(ChatFormatting.GREEN)
                 );
             }
         }
@@ -124,30 +124,30 @@ public class S2CMessageHandler extends ClientMessageHandler<Void> {
 
             if (!party.actorId.equals(ClientCore.getClientUuid())) {
                 ClientCore.addHudMessage(
-                    Text.empty()
+                    Component.empty()
                         .append(ClientCore.getPlayerDisplayName(party.actorId)
-                            .formatted(Formatting.BOLD))
-                        .append(Text.literal(" declined the invite to this party"))
-                        .formatted(Formatting.RED)
+                            .withStyle(ChatFormatting.BOLD))
+                        .append(Component.literal(" declined the invite to this party"))
+                        .withStyle(ChatFormatting.RED)
                 );
                 return;
             }
 
             ClientCore.addHudMessage(
-                Text.empty()
-                    .append(Text.literal("Declined invite to party"))
-                    .formatted(Formatting.RED)
+                Component.empty()
+                    .append(Component.literal("Declined invite to party"))
+                    .withStyle(ChatFormatting.RED)
             );
         }
 
         @Override
         public void onFail(PartyPayload party, PartyPayload.FailAction failAction) {
             ClientCore.addHudMessage(
-                Text.empty()
-                    .append(Text.literal(failAction.getTitle() + ":\n")
-                            .formatted(Formatting.BOLD))
-                    .append(Text.literal(failAction.message()))
-                    .formatted(Formatting.RED)
+                Component.empty()
+                    .append(Component.literal(failAction.getTitle() + ":\n")
+                            .withStyle(ChatFormatting.BOLD))
+                    .append(Component.literal(failAction.message()))
+                    .withStyle(ChatFormatting.RED)
             );
         }
     };

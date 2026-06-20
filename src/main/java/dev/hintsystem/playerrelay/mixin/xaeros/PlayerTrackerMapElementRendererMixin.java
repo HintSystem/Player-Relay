@@ -7,7 +7,7 @@ import xaero.map.element.MapElementGraphics;
 import xaero.map.radar.tracker.PlayerTrackerMapElement;
 import xaero.map.radar.tracker.PlayerTrackerMapElementRenderer;
 
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.Font;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,15 +17,15 @@ import org.spongepowered.asm.mixin.Mixin;
 @Mixin(PlayerTrackerMapElementRenderer.class)
 public class PlayerTrackerMapElementRendererMixin {
     @Redirect(
-        method = "renderElement(Lxaero/map/radar/tracker/PlayerTrackerMapElement;ZDFDDLxaero/map/element/render/ElementRenderInfo;Lxaero/map/element/MapElementGraphics;Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;Lxaero/map/graphics/renderer/multitexture/MultiTextureRenderTypeRendererProvider;)Z",
+        method = "renderElement(Lxaero/map/radar/tracker/PlayerTrackerMapElement;ZDFDDLxaero/map/element/render/ElementRenderInfo;Lxaero/map/element/MapElementGraphics;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lxaero/map/graphics/renderer/multitexture/MultiTextureRenderTypeRendererProvider;)Z",
         at = @At(
             value = "INVOKE",
-            target = "Lxaero/map/element/MapElementGraphics;drawString(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)V"
+            target = "Lxaero/map/element/MapElementGraphics;drawString(Lnet/minecraft/client/gui/Font;Ljava/lang/String;III)V"
         )
     )
     private void modifyColorValue(
         MapElementGraphics instance,
-        TextRenderer font,
+        Font font,
         String text,
         int x,
         int y,

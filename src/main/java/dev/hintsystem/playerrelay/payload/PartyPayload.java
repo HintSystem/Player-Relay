@@ -3,8 +3,8 @@ package dev.hintsystem.playerrelay.payload;
 import dev.hintsystem.playerrelay.party.Party;
 import dev.hintsystem.playerrelay.party.PartyInvite;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
@@ -30,7 +30,7 @@ public class PartyPayload implements Payload {
     }
 
     public interface ActionData {
-        void write(PacketByteBuf buf);
+        void write(FriendlyByteBuf buf);
         void handle(ActionListener listener, PartyPayload payload);
     }
 
@@ -50,7 +50,7 @@ public class PartyPayload implements Payload {
         FAIL(FailAction::read);
 
         interface ActionReader {
-            ActionData read(PacketByteBuf buf);
+            ActionData read(FriendlyByteBuf buf);
         }
 
         private final ActionReader reader;
@@ -60,7 +60,7 @@ public class PartyPayload implements Payload {
         }
 
         @Nullable
-        public ActionData readData(PacketByteBuf buf) {
+        public ActionData readData(FriendlyByteBuf buf) {
             if (reader == null) return null;
             return reader.read(buf);
         }
@@ -119,24 +119,24 @@ public class PartyPayload implements Payload {
             return syncedParty;
         }
 
-        public void write(PacketByteBuf buf) {
-            buf.writeUuid(this.leaderId);
-            buf.writeString(this.partyName, Party.MAX_PARTY_NAME_LENGTH + 1);
+        public void write(FriendlyByteBuf buf) {
+            buf.writeUUID(this.leaderId);
+            buf.writeUtf(this.partyName, Party.MAX_PARTY_NAME_LENGTH + 1);
 
             buf.writeInt(this.members.size());
             for (UUID member : this.members) {
-                buf.writeUuid(member);
+                buf.writeUUID(member);
             }
         }
 
-        public static SyncAction read(PacketByteBuf buf) {
-            UUID leaderId = buf.readUuid();
-            String partyName = buf.readString(Party.MAX_PARTY_NAME_LENGTH + 1);
+        public static SyncAction read(FriendlyByteBuf buf) {
+            UUID leaderId = buf.readUUID();
+            String partyName = buf.readUtf(Party.MAX_PARTY_NAME_LENGTH + 1);
 
             int memberCount = buf.readInt();
             Set<UUID> members = new HashSet<>(memberCount);
             for (int i = 0; i < memberCount; i++) {
-                members.add(buf.readUuid());
+                members.add(buf.readUUID());
             }
 
             return new SyncAction(leaderId, members, partyName);
@@ -152,12 +152,12 @@ public class PartyPayload implements Payload {
             return new Party(partyPayload.partyId, partyPayload.actorId, partyName);
         }
 
-        public void write(PacketByteBuf buf) {
-            buf.writeString(this.partyName);
+        public void write(FriendlyByteBuf buf) {
+            buf.writeUtf(this.partyName);
         }
 
-        public static CreateAction read(PacketByteBuf buf) {
-            return new CreateAction(buf.readString());
+        public static CreateAction read(FriendlyByteBuf buf) {
+            return new CreateAction(buf.readUtf());
         }
     }
 
@@ -172,13 +172,13 @@ public class PartyPayload implements Payload {
             return invite;
         }
 
-        public void write(PacketByteBuf buf) {
-            buf.writeUuid(inviteeId);
+        public void write(FriendlyByteBuf buf) {
+            buf.writeUUID(inviteeId);
             buf.writeLong(expiresAt.toEpochMilli());
         }
 
-        public static InviteAction read(PacketByteBuf buf) {
-            return new InviteAction(buf.readUuid(), Instant.ofEpochMilli(buf.readLong()));
+        public static InviteAction read(FriendlyByteBuf buf) {
+            return new InviteAction(buf.readUUID(), Instant.ofEpochMilli(buf.readLong()));
         }
     }
 
@@ -187,10 +187,10 @@ public class PartyPayload implements Payload {
             listener.onKick(payload, this);
         }
 
-        public void write(PacketByteBuf buf) { buf.writeUuid(memberId); }
+        public void write(FriendlyByteBuf buf) { buf.writeUUID(memberId); }
 
-        public static KickAction read(PacketByteBuf buf) {
-            return new KickAction(buf.readUuid());
+        public static KickAction read(FriendlyByteBuf buf) {
+            return new KickAction(buf.readUUID());
         }
     }
 
@@ -213,13 +213,13 @@ public class PartyPayload implements Payload {
             };
         }
 
-        public void write(PacketByteBuf buf) {
+        public void write(FriendlyByteBuf buf) {
             buf.writeByte(failedAction.ordinal());
-            buf.writeString(message);
+            buf.writeUtf(message);
         }
 
-        public static FailAction read(PacketByteBuf buf) {
-            return new FailAction(Action.values()[buf.readByte()], buf.readString());
+        public static FailAction read(FriendlyByteBuf buf) {
+            return new FailAction(Action.values()[buf.readByte()], buf.readUtf());
         }
     }
 
@@ -237,21 +237,21 @@ public class PartyPayload implements Payload {
             public void handle(ActionListener l, PartyPayload p) { l.onDeclineInvite(p); }
         };
 
-        public void write(PacketByteBuf buf) {}
+        public void write(FriendlyByteBuf buf) {}
     }
 
-    public PartyPayload(PacketByteBuf buf) {
+    public PartyPayload(FriendlyByteBuf buf) {
         this.action = Action.values()[buf.readByte()];
-        this.partyId = buf.readUuid();
-        this.actorId = buf.readUuid();
+        this.partyId = buf.readUUID();
+        this.actorId = buf.readUUID();
         this.data = action.readData(buf);
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
+    public void write(RegistryFriendlyByteBuf buf) {
         buf.writeByte(action.ordinal());
-        buf.writeUuid(partyId);
-        buf.writeUuid(actorId);
+        buf.writeUUID(partyId);
+        buf.writeUUID(actorId);
 
         if (data != null) data.write(buf);
     }

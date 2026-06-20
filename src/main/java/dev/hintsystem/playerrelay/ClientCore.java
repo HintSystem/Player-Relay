@@ -12,18 +12,17 @@ import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Util;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.world.entity.player.Player;
 
 import org.jetbrains.annotations.Nullable;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,9 +43,9 @@ public class ClientCore {
     public static final ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingInventoryRequests = new ConcurrentHashMap<>();
     public static final ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingEnderChestRequests = new ConcurrentHashMap<>();
 
-    public static long lastInputTime = Util.getMeasuringTimeMs();
+    public static long lastInputTime = Util.getMillis();
 
-    public static void onServerJoin(MinecraftClient client) {
+    public static void onServerJoin(Minecraft client) {
         CommonCore.partyManager.reset();
         c2sTracker.reset();
 
@@ -58,7 +57,7 @@ public class ClientCore {
         CommonCore.serverConnection.close();
     }
 
-    public static void onTickEnd(MinecraftClient client) {
+    public static void onTickEnd(Minecraft client) {
         EnderChestTracker.tick();
 
         if (isNetworkActive()) sendC2SUpdate();
@@ -76,7 +75,7 @@ public class ClientCore {
         }
     }
 
-    private static void sendP2PUpdate(MinecraftClient client) {
+    private static void sendP2PUpdate(Minecraft client) {
         long now = System.currentTimeMillis();
 
         boolean udpReady = now - lastSentUdpTime > PlayerRelayClient.config.udpSendIntervalMs;
@@ -122,21 +121,21 @@ public class ClientCore {
     }
 
     public static void updateInputActivity() {
-        lastInputTime = Util.getMeasuringTimeMs();
+        lastInputTime = Util.getMillis();
     }
 
     public static boolean isClientAfk() {
-        return Util.getMeasuringTimeMs() - lastInputTime > PlayerRelayClient.config.afkTimeout;
+        return Util.getMillis() - lastInputTime > PlayerRelayClient.config.afkTimeout;
     }
 
     public static String getClientPlayerName() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        return (client.player != null) ? client.player.getGameProfile().name() : client.getSession().getUsername();
+        Minecraft client = Minecraft.getInstance();
+        return (client.player != null) ? client.player.getGameProfile().name() : client.getUser().getName();
     }
 
     public static UUID getClientUuid() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        return client.getSession().getUuidOrNull();
+        Minecraft client = Minecraft.getInstance();
+        return client.getUser().getProfileId();
     }
 
     public static PlayerUpdateTracker.DeltaBuilder deltaWithClientInfo(PlayerUpdateTracker.DeltaBuilder deltaBuilder) {
@@ -146,7 +145,7 @@ public class ClientCore {
     }
 
     public static PlayerInfoPayload getUpdatedClientInfo() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
 
         PlayerUpdateTracker.DeltaBuilder builder = new PlayerUpdateTracker(getClientUuid())
             .beginSnapshot();
@@ -174,16 +173,16 @@ public class ClientCore {
         return listed;
     }
 
-    public record PlayerLookup(String name, @Nullable Text displayName) {}
+    public record PlayerLookup(String name, @Nullable Component displayName) {}
 
     private static PlayerLookup resolvePlayer(UUID playerId) {
-        ClientPlayNetworkHandler networkHandler = MinecraftClient.getInstance().getNetworkHandler();
+        ClientPacketListener networkHandler = Minecraft.getInstance().getConnection();
 
         if (networkHandler != null) {
             // This also falls back to a peer connection because of ClientPlayNetworkHandlerMixin#playerListEntryFallback
-            PlayerListEntry entry = networkHandler.getPlayerListEntry(playerId);
+            PlayerInfo entry = networkHandler.getPlayerInfo(playerId);
             if (entry != null) {
-                return new PlayerLookup(entry.getProfile().name(), entry.getDisplayName());
+                return new PlayerLookup(entry.getProfile().name(), entry.getTabListDisplayName());
             }
         } else {
             PlayerInfoPayload payload = getTrackedPlayer(playerId);
@@ -195,10 +194,10 @@ public class ClientCore {
         return null;
     }
 
-    public static MutableText getPlayerDisplayName(UUID playerId) {
+    public static MutableComponent getPlayerDisplayName(UUID playerId) {
         PlayerLookup player = resolvePlayer(playerId);
-        if (player == null) return Text.literal(playerId.toString());
-        return player.displayName() != null ? player.displayName().copy() : Text.literal(player.name());
+        if (player == null) return Component.literal(playerId.toString());
+        return player.displayName() != null ? player.displayName().copy() : Component.literal(player.name());
     }
 
     public static String getPlayerName(UUID playerId) {
@@ -219,11 +218,11 @@ public class ClientCore {
         return CommonCore.connections.getPlayer(playerId);
     }
 
-    public static void addHudMessage(Text message) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    public static void addHudMessage(Component message) {
+        Minecraft client = Minecraft.getInstance();
         if (client.player == null) { return; }
 
-        client.execute(() -> client.inGameHud.getChatHud().addMessage(message));
+        client.execute(() -> client.gui.getChat().addMessage(message));
     }
 
     /** Broadcast a payload on the P2P network and the server */
@@ -289,26 +288,26 @@ public class ClientCore {
     }
 
     public static void onPlayerConnected(PlayerInfoPayload playerInfo) {
-        addHudMessage(Text.literal("✔ ")
-            .setStyle(Style.EMPTY.withColor(Formatting.GREEN).withBold(true))
+        addHudMessage(Component.literal("✔ ")
+            .setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withBold(true))
             .append(playerInfo.getName())
-            .append(Text.literal(" connected to Player Relay")
-                .setStyle(Style.EMPTY.withColor(Formatting.GRAY).withBold(false))));
+            .append(Component.literal(" connected to Player Relay")
+                .setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withBold(false))));
     }
 
     public static void onPlayerDisconnected(PlayerInfoPayload playerInfo) {
-        addHudMessage(Text.literal("❌ ")
-            .setStyle(Style.EMPTY.withColor(Formatting.RED).withBold(true))
+        addHudMessage(Component.literal("❌ ")
+            .setStyle(Style.EMPTY.withColor(ChatFormatting.RED).withBold(true))
             .append(playerInfo.getName())
-            .append(Text.literal(" disconnected from Player Relay")
-                .setStyle(Style.EMPTY.withColor(Formatting.GRAY).withBold(false))));
+            .append(Component.literal(" disconnected from Player Relay")
+                .setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withBold(false))));
     }
 
     public static void onConnect(String address) {
-        addHudMessage(Text.literal("✔ Connected to peer: ")
-                .setStyle(Style.EMPTY.withColor(Formatting.GREEN).withBold(true))
-                .append(Text.literal(address)
-                    .setStyle(Style.EMPTY.withColor(Formatting.YELLOW).withBold(false))));
+        addHudMessage(Component.literal("✔ Connected to peer: ")
+                .setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withBold(true))
+                .append(Component.literal(address)
+                    .setStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW).withBold(false))));
     }
 
     public static class ClientInfoProvider implements CommonCore.LocalInfoProvider {
@@ -318,7 +317,7 @@ public class ClientCore {
 
         @Override
         @Nullable
-        public PlayerEntity getLocalPlayer() { return MinecraftClient.getInstance().player; }
+        public Player getLocalPlayer() { return Minecraft.getInstance().player; }
 
         @Override
         @Nullable

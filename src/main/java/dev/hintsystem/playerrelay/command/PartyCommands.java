@@ -7,12 +7,12 @@ import dev.hintsystem.playerrelay.party.ClientPartyService;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import net.minecraft.command.CommandSource;
+import net.minecraft.commands.SharedSuggestionProvider;
 
 import java.util.UUID;
 
 public class PartyCommands extends ClientCommand {
-    public static <S extends CommandSource> LiteralArgumentBuilder<S> argumentBuilder() {
+    public static <S extends SharedSuggestionProvider> LiteralArgumentBuilder<S> argumentBuilder() {
         ClientPartyService partyService = ClientCore.partyService;
 
         return LiteralArgumentBuilder.<S>literal("party")

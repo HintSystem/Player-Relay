@@ -3,23 +3,23 @@ package dev.hintsystem.playerrelay.gui;
 import dev.hintsystem.playerrelay.mixin.minecraft.EntityAccessor;
 import dev.hintsystem.playerrelay.mixin.minecraft.LivingEntityInvoker;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.entity.EntityRenderManager;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
-import net.minecraft.util.math.RotationAxis;
+import com.mojang.math.Axis;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
@@ -30,7 +30,7 @@ public class PaperDollRenderer {
     public final float MAX_HEAD_YAW_DEG;
     public final float HEAD_YAW_RETURN_SPEED;
 
-    private EntityPose lastPose = EntityPose.STANDING;
+    private Pose lastPose = Pose.STANDING;
     private Entity fakeVehicle;
     private float centerYaw;
     private float headYawOffset;
@@ -48,28 +48,28 @@ public class PaperDollRenderer {
         this.HEAD_YAW_RETURN_SPEED = headYawReturnSpeed;
     }
 
-    public void applyPoseToPlayer(PlayerEntity player, EntityPose newPose) {
+    public void applyPoseToPlayer(Player player, Pose newPose) {
         if (newPose == lastPose) return;
 
         // Clean up previous pose
         switch (lastPose) {
-            case EntityPose.GLIDING -> {
-                player.setVelocity(0, 0, 0);
-                player.stopGliding();
+            case Pose.FALL_FLYING -> {
+                player.setDeltaMovement(0, 0, 0);
+                player.stopFallFlying();
             }
-            case EntityPose.SITTING -> removeVehicle(player);
-            case EntityPose.SPIN_ATTACK -> ((LivingEntityInvoker) player)
+            case Pose.SITTING -> removeVehicle(player);
+            case Pose.SPIN_ATTACK -> ((LivingEntityInvoker) player)
                 .invokeSetLivingFlag(LivingEntityInvoker.getRiptideFlag(), false);
         }
 
         // Apply new pose
         switch (newPose) {
-            case EntityPose.GLIDING -> {
-                player.setVelocity(0, 5, 0);
-                player.startGliding();
+            case Pose.FALL_FLYING -> {
+                player.setDeltaMovement(0, 5, 0);
+                player.startFallFlying();
             }
-            case EntityPose.SITTING -> setFakeVehicle(player);
-            case EntityPose.SPIN_ATTACK -> ((LivingEntityInvoker)player)
+            case Pose.SITTING -> setFakeVehicle(player);
+            case Pose.SPIN_ATTACK -> ((LivingEntityInvoker)player)
                 .invokeSetLivingFlag(LivingEntityInvoker.getRiptideFlag(), true);
         }
 
@@ -81,22 +81,22 @@ public class PaperDollRenderer {
         if (health == livingEntity.getHealth()) return;
 
         float healthDif = health - livingEntity.getHealth();
-        if (healthDif < 0.0f) { livingEntity.animateDamage(10); }
+        if (healthDif < 0.0f) { livingEntity.animateHurt(10); }
 
         livingEntity.setHealth(health);
     }
 
     public void setFakeVehicle(LivingEntity livingEntity) {
         if (fakeVehicle == null) {
-            fakeVehicle = new Entity(EntityType.ARMOR_STAND, livingEntity.getEntityWorld()) {
+            fakeVehicle = new Entity(EntityType.ARMOR_STAND, livingEntity.level()) {
                 @Override
-                protected void initDataTracker(DataTracker.Builder builder) {}
+                protected void defineSynchedData(SynchedEntityData.Builder builder) {}
                 @Override
-                public boolean damage(ServerWorld world, DamageSource source, float amount) { return false; }
+                public boolean hurtServer(ServerLevel world, DamageSource source, float amount) { return false; }
                 @Override
-                protected void readCustomData(ReadView view) {}
+                protected void readAdditionalSaveData(ValueInput view) {}
                 @Override
-                protected void writeCustomData(WriteView view) {}
+                protected void addAdditionalSaveData(ValueOutput view) {}
             };
             fakeVehicle.setInvisible(true);
         }
@@ -110,7 +110,7 @@ public class PaperDollRenderer {
         if (headYawEnabled) {
             headYawOffsetO = headYawOffset;
 
-            float currentYaw = livingEntity.getYaw();
+            float currentYaw = livingEntity.getYRot();
             if (currentYaw > centerYaw + MAX_HEAD_YAW_DEG) {
                 centerYaw = currentYaw - MAX_HEAD_YAW_DEG;
             } else if (currentYaw < centerYaw - MAX_HEAD_YAW_DEG) {
@@ -128,11 +128,11 @@ public class PaperDollRenderer {
 
         if (livingEntity.isAlive()) {
             livingEntity.tick();
-            livingEntity.age++;
+            livingEntity.tickCount++;
         }
     }
 
-    public void renderPaperDoll(DrawContext context, int x1, int y1, int x2, int y2, int scale, LivingEntity livingEntity, RenderTickCounter tickCounter) {
+    public void renderPaperDoll(GuiGraphics context, int x1, int y1, int x2, int y2, int scale, LivingEntity livingEntity, DeltaTracker tickCounter) {
         renderPaperDoll(context,
             x1, y1,
             x2, y2,
@@ -140,71 +140,71 @@ public class PaperDollRenderer {
             0.0F, livingEntity, tickCounter);
     }
 
-    public void renderPaperDoll(DrawContext context, int x1, int y1, int x2, int y2, int scale, float yOffset, LivingEntity livingEntity, RenderTickCounter tickCounter) {
+    public void renderPaperDoll(GuiGraphics context, int x1, int y1, int x2, int y2, int scale, float yOffset, LivingEntity livingEntity, DeltaTracker tickCounter) {
         Quaternionf rotation = new Quaternionf().rotateZ((float) Math.PI);
         Quaternionf overrideCameraAngle = new Quaternionf().rotateX((float) Math.toRadians(15.0F));
         rotation.mul(overrideCameraAngle);
 
-        float xRot = livingEntity.getPitch();
-        float xRotO = livingEntity.lastPitch;
-        float yRot = livingEntity.getYaw();
-        float yRotO = livingEntity.lastYaw;
-        float yBodyRot = livingEntity.getBodyYaw();
-        float yBodyRotO = livingEntity.lastBodyYaw;
-        float yHeadRot = livingEntity.getHeadYaw();
-        float yHeadRotO = livingEntity.lastHeadYaw;
+        float xRot = livingEntity.getXRot();
+        float xRotO = livingEntity.xRotO;
+        float yRot = livingEntity.getYRot();
+        float yRotO = livingEntity.yRotO;
+        float yBodyRot = livingEntity.getVisualRotationYInDegrees();
+        float yBodyRotO = livingEntity.yBodyRotO;
+        float yHeadRot = livingEntity.getYHeadRot();
+        float yHeadRotO = livingEntity.yHeadRotO;
 
         float entityScale = livingEntity.getScale();
         float relativeScale = scale / entityScale;
-        if (livingEntity.hasVehicle()) { yOffset += 0.25f; }
-        Vector3f translation = new Vector3f(0.0F, livingEntity.getHeight() / 2.0F + yOffset * entityScale, 0.0F);
+        if (livingEntity.isPassenger()) { yOffset += 0.25f; }
+        Vector3f translation = new Vector3f(0.0F, livingEntity.getBbHeight() / 2.0F + yOffset * entityScale, 0.0F);
 
         applyEntityTransforms(livingEntity, translation, rotation);
         drawEntity(context, x1, y1, x2, y2, relativeScale, translation, rotation, overrideCameraAngle, livingEntity, tickCounter);
 
-        livingEntity.setPitch(xRot);
-        livingEntity.lastPitch = xRotO;
-        livingEntity.setYaw(yRot);
-        livingEntity.lastYaw = yRotO;
-        livingEntity.setBodyYaw(yBodyRot);
-        livingEntity.lastBodyYaw = yBodyRotO;
-        livingEntity.setHeadYaw(yHeadRot);
-        livingEntity.lastHeadYaw = yHeadRotO;
+        livingEntity.setXRot(xRot);
+        livingEntity.xRotO = xRotO;
+        livingEntity.setYRot(yRot);
+        livingEntity.yRotO = yRotO;
+        livingEntity.setYBodyRot(yBodyRot);
+        livingEntity.yBodyRotO = yBodyRotO;
+        livingEntity.setYHeadRot(yHeadRot);
+        livingEntity.yHeadRotO = yHeadRotO;
     }
 
-    /** @see net.minecraft.client.gui.screen.ingame.InventoryScreen#drawEntity(DrawContext, int, int, int, int, float, Vector3f, Quaternionf, Quaternionf, LivingEntity)  **/
-    public static void drawEntity(DrawContext context, int x1, int y1, int x2, int y2, float scale, Vector3f translation,
-                                  Quaternionf rotation, @Nullable Quaternionf overrideCameraAngle, LivingEntity livingEntity, RenderTickCounter tickCounter) {
-        EntityRenderManager entityRenderManager = MinecraftClient.getInstance().getEntityRenderDispatcher();
+    /** @see net.minecraft.client.gui.screens.inventory.InventoryScreen#renderEntityInInventory(GuiGraphics, int, int, int, int, float, Vector3f, Quaternionf, Quaternionf, LivingEntity)  **/
+    public static void drawEntity(GuiGraphics context, int x1, int y1, int x2, int y2, float scale, Vector3f translation,
+                                  Quaternionf rotation, @Nullable Quaternionf overrideCameraAngle, LivingEntity livingEntity, DeltaTracker tickCounter) {
+        EntityRenderDispatcher entityRenderManager = Minecraft.getInstance().getEntityRenderDispatcher();
         EntityRenderer<? super LivingEntity, ?> entityRenderer = entityRenderManager.getRenderer(livingEntity);
-        EntityRenderState entityRenderState = entityRenderer.getAndUpdateRenderState(livingEntity, tickCounter.getTickProgress(false));
-        entityRenderState.displayName = null;
-        entityRenderState.hitbox = null;
-        entityRenderState.light = 15728880;
+        EntityRenderState entityRenderState = entityRenderer.createRenderState(livingEntity, tickCounter.getGameTimeDeltaPartialTick(false));
+        entityRenderState.nameTag = null;
+        entityRenderState.hitboxesRenderState = null;
+        entityRenderState.lightCoords = 15728880;
         entityRenderState.shadowPieces.clear();
         entityRenderState.outlineColor = 0;
-        context.addEntity(entityRenderState, scale, translation, rotation, overrideCameraAngle, x1, y1, x2, y2);
+        context.submitEntityRenderState(entityRenderState, scale, translation, rotation, overrideCameraAngle, x1, y1, x2, y2);
     }
 
     private void applyEntityTransforms(LivingEntity livingEntity, Vector3f translation, Quaternionf rotation) {
-        if (!headPitchEnabled || livingEntity.isGliding()) {
-            livingEntity.setPitch(7.5f);
-            livingEntity.lastPitch = 7.5f;
+        if (!headPitchEnabled || livingEntity.isFallFlying()) {
+            livingEntity.setXRot(7.5f);
+            livingEntity.xRotO = 7.5f;
         }
 
         float defaultRotationYaw = getDefaultRotationYaw();
-        if (livingEntity.getPose() == EntityPose.SLEEPING) {
-            translation.add(0.0f, livingEntity.getHeight() * 2, 0.0f);
+        if (livingEntity.getPose() == Pose.SLEEPING) {
+            translation.add(0.0f, livingEntity.getBbHeight() * 2, 0.0f);
 
-            rotation.mul(RotationAxis.NEGATIVE_X.rotationDegrees(40f));
+            rotation.mul(Axis.XN.rotationDegrees(40f));
             defaultRotationYaw = 90.0f - defaultRotationYaw;
         } else {
             defaultRotationYaw = 180.0f + defaultRotationYaw;
         }
 
-        livingEntity.bodyYaw = livingEntity.lastBodyYaw = defaultRotationYaw;
-        livingEntity.headYaw = defaultRotationYaw + headYawOffset;
-        livingEntity.lastHeadYaw = defaultRotationYaw + headYawOffsetO;
+        livingEntity.yBodyRot = livingEntity.yBodyRotO = defaultRotationYaw;
+        livingEntity.yHeadRot = defaultRotationYaw + headYawOffset;
+        livingEntity.yHeadRotO = defaultRotationYaw + headYawOffsetO;
     }
 
     private float getDefaultRotationYaw() { return (anchorPoint.x == 1) ? this.BODY_YAW_DEG : -this.BODY_YAW_DEG; }

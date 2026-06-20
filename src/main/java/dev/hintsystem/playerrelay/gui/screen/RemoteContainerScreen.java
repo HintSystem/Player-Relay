@@ -6,42 +6,42 @@ import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.PlayerInventoryPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerEquipmentData;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public abstract class RemoteContainerScreen extends Screen {
-    private static final Identifier EQUIPMENT_TEXTURE = CommonCore.identifier("textures/gui/container/remote_player_equipment.png");
-    private static final Identifier SLOT_HIGHLIGHT_BACK_TEXTURE = Identifier.ofVanilla("container/slot_highlight_back");
-    private static final Identifier SLOT_HIGHLIGHT_FRONT_TEXTURE = Identifier.ofVanilla("container/slot_highlight_front");
+    private static final ResourceLocation EQUIPMENT_TEXTURE = CommonCore.identifier("textures/gui/container/remote_player_equipment.png");
+    private static final ResourceLocation SLOT_HIGHLIGHT_BACK_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_back");
+    private static final ResourceLocation SLOT_HIGHLIGHT_FRONT_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_front");
 
     public static final int EQUIPMENT_TEXTURE_HEIGHT = 45;
     public static final int EQUIPMENT_TEXTURE_WIDTH = 176;
 
     public enum UIEquipmentSlot {
-        OFFHAND(EquipmentSlot.OFFHAND, 34, 15, Identifier.ofVanilla("container/slot/shield")),
-        FEET(EquipmentSlot.FEET, 107, 28, Identifier.ofVanilla("container/slot/boots")),
-        LEGS(EquipmentSlot.LEGS, 107, 1, Identifier.ofVanilla("container/slot/leggings")),
-        CHEST(EquipmentSlot.CHEST, 53, 28, Identifier.ofVanilla("container/slot/chestplate")),
-        HEAD(EquipmentSlot.HEAD, 53, 1, Identifier.ofVanilla("container/slot/helmet"));
+        OFFHAND(EquipmentSlot.OFFHAND, 34, 15, ResourceLocation.withDefaultNamespace("container/slot/shield")),
+        FEET(EquipmentSlot.FEET, 107, 28, ResourceLocation.withDefaultNamespace("container/slot/boots")),
+        LEGS(EquipmentSlot.LEGS, 107, 1, ResourceLocation.withDefaultNamespace("container/slot/leggings")),
+        CHEST(EquipmentSlot.CHEST, 53, 28, ResourceLocation.withDefaultNamespace("container/slot/chestplate")),
+        HEAD(EquipmentSlot.HEAD, 53, 1, ResourceLocation.withDefaultNamespace("container/slot/helmet"));
 
         final EquipmentSlot equipmentSlot;
-        final Identifier emptySlotTexture;
+        final ResourceLocation emptySlotTexture;
         final int slotX, slotY;
 
-        UIEquipmentSlot(EquipmentSlot equipmentSlot, int slotX, int slotY, Identifier emptySlotTexture) {
+        UIEquipmentSlot(EquipmentSlot equipmentSlot, int slotX, int slotY, ResourceLocation emptySlotTexture) {
             this.equipmentSlot = equipmentSlot;
             this.emptySlotTexture = emptySlotTexture;
             this.slotX = slotX; this.slotY = slotY;
@@ -50,19 +50,19 @@ public abstract class RemoteContainerScreen extends Screen {
 
     public final List<ItemStack> items;
     public final PlayerInfoPayload playerInfo;
-    public final AbstractClientPlayerEntity playerEntity;
+    public final AbstractClientPlayer playerEntity;
 
     private PlayerEquipmentData prevEquipment;
 
-    public RemoteContainerScreen(Text title, PlayerInventoryPayload inventoryPayload) throws Exception {
+    public RemoteContainerScreen(Component title, PlayerInventoryPayload inventoryPayload) throws Exception {
         this(title, inventoryPayload, null);
     }
 
-    public RemoteContainerScreen(Text title, PlayerInventoryPayload inventoryPayload, @Nullable PlayerInfoPayload playerPayload) throws Exception {
+    public RemoteContainerScreen(Component title, PlayerInventoryPayload inventoryPayload, @Nullable PlayerInfoPayload playerPayload) throws Exception {
         super(title);
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientWorld world = client.world;
+        Minecraft client = Minecraft.getInstance();
+        ClientLevel world = client.level;
         if (world == null) throw new Exception("Client not in a world");
 
         if (playerPayload == null) {
@@ -72,7 +72,7 @@ public abstract class RemoteContainerScreen extends Screen {
 
         this.items = inventoryPayload.inventoryItems;
         this.playerInfo = playerPayload;
-        this.playerEntity = new AbstractClientPlayerEntity(world, playerPayload.toGameProfile()) {};
+        this.playerEntity = new AbstractClientPlayer(world, playerPayload.toGameProfile()) {};
     }
 
     private void updatePlayerEntityEquipment(PlayerEquipmentData equipmentData) {
@@ -83,24 +83,24 @@ public abstract class RemoteContainerScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        super.renderInGameBackground(context);
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+        super.renderTransparentBackground(context);
         renderContainer(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
     }
 
-    protected abstract void renderContainer(DrawContext context, int mouseX, int mouseY, float delta);
+    protected abstract void renderContainer(GuiGraphics context, int mouseX, int mouseY, float delta);
 
-    protected void renderPlayerEquipment(DrawContext context, int centerX, int topY, int mouseX, int mouseY) {
+    protected void renderPlayerEquipment(GuiGraphics context, int centerX, int topY, int mouseX, int mouseY) {
         PlayerEquipmentData equipmentData = playerInfo.getComponent(PlayerEquipmentData.class);
         if (equipmentData == null) return;
 
         int x = centerX - (EQUIPMENT_TEXTURE_WIDTH / 2);
 
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, EQUIPMENT_TEXTURE, x, topY, 0.0F, 0.0F, EQUIPMENT_TEXTURE_WIDTH, EQUIPMENT_TEXTURE_HEIGHT, 256, 256);
+        context.blit(RenderPipelines.GUI_TEXTURED, EQUIPMENT_TEXTURE, x, topY, 0.0F, 0.0F, EQUIPMENT_TEXTURE_WIDTH, EQUIPMENT_TEXTURE_HEIGHT, 256, 256);
 
         updatePlayerEntityEquipment(equipmentData);
-        InventoryScreen.drawEntity(context,
+        InventoryScreen.renderEntityInInventoryFollowsMouse(context,
             x + 72, topY + 1,
             x + 104, topY + 44,
             22, 0.0625F, mouseX, mouseY, playerEntity);
@@ -108,23 +108,23 @@ public abstract class RemoteContainerScreen extends Screen {
         for (UIEquipmentSlot slot : UIEquipmentSlot.values()) {
             int slotX = x + slot.slotX;
             int slotY = topY + slot.slotY;
-            ItemStack equippedStack = playerEntity.getEquippedStack(slot.equipmentSlot);
+            ItemStack equippedStack = playerEntity.getItemBySlot(slot.equipmentSlot);
 
             renderSlot(context, equippedStack, slotX, slotY, mouseX, mouseY);
             if (equippedStack.isEmpty()) {
-                context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, slot.emptySlotTexture, slotX, slotY, 16, 16);
+                context.blitSprite(RenderPipelines.GUI_TEXTURED, slot.emptySlotTexture, slotX, slotY, 16, 16);
             }
         }
     }
 
-    protected void renderSlot(DrawContext context, ItemStack itemStack, int slotX, int slotY, int mouseX, int mouseY) {
+    protected void renderSlot(GuiGraphics context, ItemStack itemStack, int slotX, int slotY, int mouseX, int mouseY) {
         boolean highlighted = isMouseInSlot(mouseX, mouseY, slotX, slotY);
 
         if (highlighted) drawSlotHighlightBack(context, slotX, slotY);
 
         if (!itemStack.isEmpty()) {
-            context.drawItem(itemStack, slotX, slotY);
-            context.drawStackOverlay(this.textRenderer, itemStack, slotX, slotY);
+            context.renderItem(itemStack, slotX, slotY);
+            context.renderItemDecorations(this.font, itemStack, slotX, slotY);
 
             if (highlighted) {
                 drawSlotHighlightFront(context, slotX, slotY);
@@ -137,22 +137,22 @@ public abstract class RemoteContainerScreen extends Screen {
         return mouseX >= slotX - 1 && mouseX < slotX + 17 && mouseY >= slotY - 1 && mouseY < slotY + 17 ;
     }
 
-    protected static void drawSlotHighlightBack(DrawContext context, int slotX, int slotY) {
-        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, SLOT_HIGHLIGHT_BACK_TEXTURE, slotX - 4, slotY - 4, 24, 24);
+    protected static void drawSlotHighlightBack(GuiGraphics context, int slotX, int slotY) {
+        context.blitSprite(RenderPipelines.GUI_TEXTURED, SLOT_HIGHLIGHT_BACK_TEXTURE, slotX - 4, slotY - 4, 24, 24);
     }
 
-    protected static void drawSlotHighlightFront(DrawContext context, int slotX, int slotY) {
-        context.drawGuiTexture(RenderPipelines.GUI_TEXTURED, SLOT_HIGHLIGHT_FRONT_TEXTURE, slotX - 4, slotY - 4, 24, 24);
+    protected static void drawSlotHighlightFront(GuiGraphics context, int slotX, int slotY) {
+        context.blitSprite(RenderPipelines.GUI_TEXTURED, SLOT_HIGHLIGHT_FRONT_TEXTURE, slotX - 4, slotY - 4, 24, 24);
     }
 
-    protected void drawItemTooltip(DrawContext context, ItemStack itemStack, int mouseX, int mouseY) {
+    protected void drawItemTooltip(GuiGraphics context, ItemStack itemStack, int mouseX, int mouseY) {
         if (itemStack.isEmpty()) return;
 
-        context.drawTooltip(this.textRenderer,
-            getTooltipFromItem(MinecraftClient.getInstance(), itemStack),
-            itemStack.getTooltipData(),
+        context.setTooltipForNextFrame(this.font,
+            getTooltipFromItem(Minecraft.getInstance(), itemStack),
+            itemStack.getTooltipImage(),
             mouseX, mouseY,
-            itemStack.get(DataComponentTypes.TOOLTIP_STYLE)
+            itemStack.get(DataComponents.TOOLTIP_STYLE)
         );
     }
 }

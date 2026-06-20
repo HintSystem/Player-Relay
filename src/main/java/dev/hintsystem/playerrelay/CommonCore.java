@@ -10,8 +10,8 @@ import dev.hintsystem.playerrelay.network.connection.ServerConnectionCollector;
 import dev.hintsystem.playerrelay.party.PartyManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
@@ -37,8 +37,8 @@ public class CommonCore {
 
     public static final PartyManager partyManager = new PartyManager();
 
-    public static Identifier identifier(String path) {
-        return Identifier.of(PlayerRelay.MOD_ID, path);
+    public static ResourceLocation identifier(String path) {
+        return ResourceLocation.fromNamespaceAndPath(PlayerRelay.MOD_ID, path);
     }
 
     public static CommonConfig getConfig() { return commonConfig; }
@@ -74,7 +74,7 @@ public class CommonCore {
         PlayerInfoPayload getClientInfo();
 
         @Nullable
-        PlayerEntity getLocalPlayer();
+        Player getLocalPlayer();
 
         @Nullable
         UUID getLocalPlayerId();

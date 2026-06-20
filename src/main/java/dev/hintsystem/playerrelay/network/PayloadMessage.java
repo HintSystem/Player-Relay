@@ -5,15 +5,15 @@ import dev.hintsystem.playerrelay.payload.Payload;
 import dev.hintsystem.playerrelay.payload.PayloadRegistry;
 import dev.hintsystem.playerrelay.utils.PayloadUtils;
 
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.Unpooled;
-
 import java.io.*;
 import java.util.UUID;
+
 
 public class PayloadMessage {
     protected final NetworkProtocol preferredProtocol;
@@ -53,7 +53,7 @@ public class PayloadMessage {
             out.writeLong(this.messageId.getLeastSignificantBits());
         }
 
-        RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), PayloadUtils.getRegistryManager());
+        RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(), PayloadUtils.getRegistryManager());
         this.payload.write(buf);
 
         byte[] payloadBytes = PayloadUtils.bytesFromByteBuf(buf);
@@ -69,7 +69,7 @@ public class PayloadMessage {
 
         int payloadLen = in.readInt();
         byte[] payloadBytes = in.readNBytes(payloadLen);
-        RegistryByteBuf buf = new RegistryByteBuf(Unpooled.wrappedBuffer(payloadBytes), PayloadUtils.getRegistryManager());
+        RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.wrappedBuffer(payloadBytes), PayloadUtils.getRegistryManager());
 
         return new PayloadMessage(type.createPayload(buf), messageId, receivedVia);
     }
@@ -88,10 +88,10 @@ public class PayloadMessage {
         return readFrom(in, preferredProtocol);
     }
 
-    public static class Packet extends PayloadMessage implements CustomPayload {
-        public static final Identifier PACKET_ID = CommonCore.identifier("payload-message");
-        public static final CustomPayload.Id<Packet> PACKET_TYPE = new CustomPayload.Id<>(PACKET_ID);
-        public static final PacketCodec<RegistryByteBuf, Packet> PACKET_CODEC = PacketCodec.of(Packet::write, Packet::readSafe);
+    public static class Packet extends PayloadMessage implements CustomPacketPayload {
+        public static final ResourceLocation PACKET_ID = CommonCore.identifier("payload-message");
+        public static final CustomPacketPayload.Type<Packet> PACKET_TYPE = new CustomPacketPayload.Type<>(PACKET_ID);
+        public static final StreamCodec<RegistryFriendlyByteBuf, Packet> PACKET_CODEC = StreamCodec.ofMember(Packet::write, Packet::readSafe);
 
         public Packet(Payload payload, NetworkProtocol preferredProtocol) {
             super(payload, preferredProtocol);
@@ -105,21 +105,21 @@ public class PayloadMessage {
             super(payload, messageId, preferredProtocol);
         }
 
-        public void write(RegistryByteBuf buf) {
+        public void write(RegistryFriendlyByteBuf buf) {
             PayloadRegistry.PayloadType<?> payloadType = getPayloadType();
             buf.writeByte(payloadType.getId());
 
             if (hasMessageId(payloadType)) {
-                buf.writeUuid(this.messageId);
+                buf.writeUUID(this.messageId);
             }
 
             this.payload.write(buf);
         }
 
-        public static Packet readSafe(RegistryByteBuf buf) {
+        public static Packet readSafe(RegistryFriendlyByteBuf buf) {
             PayloadRegistry.PayloadType<?> type = PayloadRegistry.getById(buf.readByte());
 
-            UUID messageId = hasMessageId(type) ? buf.readUuid() : null;
+            UUID messageId = hasMessageId(type) ? buf.readUUID() : null;
             Payload payload = null;
             try {
                 payload = type.createPayload(buf);
@@ -132,6 +132,6 @@ public class PayloadMessage {
             return new Packet(payload, messageId, NetworkProtocol.TCP);
         }
 
-        public CustomPayload.Id<Packet> getId() { return PACKET_TYPE; }
+        public CustomPacketPayload.Type<Packet> type() { return PACKET_TYPE; }
     }
 }

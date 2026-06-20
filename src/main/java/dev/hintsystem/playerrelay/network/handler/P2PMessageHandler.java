@@ -8,7 +8,7 @@ import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
 import dev.hintsystem.playerrelay.payload.*;
 
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
@@ -63,9 +63,9 @@ public class P2PMessageHandler extends PayloadMessageHandler<PeerConnection> imp
     public void onPlayerInventory(PlayerInventoryPayload inventory, PeerConnection sender) {
         if (inventory.isRequest()) {
             if (clientInfoProvider == null) return;
-            PlayerEntity player = clientInfoProvider.getLocalPlayer();
+            Player player = clientInfoProvider.getLocalPlayer();
 
-            if (player != null && player.getUuid().equals(inventory.playerId)) {
+            if (player != null && player.getUUID().equals(inventory.playerId)) {
                 sender.sendMessage(PlayerInventoryPayload.respond(player, inventory.isEnderChest()).message());
             }
         } else {

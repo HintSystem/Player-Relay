@@ -12,11 +12,11 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.command.CommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 public abstract class PlayerArgument implements ArgumentType<String> {
     private static final SimpleCommandExceptionType PLAYER_NOT_FOUND =
-        new SimpleCommandExceptionType(Text.literal("Player not found in the list"));
+        new SimpleCommandExceptionType(Component.literal("Player not found in the list"));
 
     public static PlayerArgument partyPlayer() {
         return new PlayerArgument() {
@@ -46,10 +46,10 @@ public abstract class PlayerArgument implements ArgumentType<String> {
         return new PlayerArgument() {
             @Override
             protected Stream<String> getSuggestions() {
-                ClientPlayNetworkHandler networkHandler = MinecraftClient.getInstance().getNetworkHandler();
+                ClientPacketListener networkHandler = Minecraft.getInstance().getConnection();
                 if (networkHandler == null) return Stream.empty();
 
-                return networkHandler.getPlayerList().stream()
+                return networkHandler.getOnlinePlayers().stream()
                     .filter(p -> !p.getProfile().id().equals(ClientCore.getClientUuid()))
                     .map(p -> p.getProfile().name());
             }
@@ -66,11 +66,11 @@ public abstract class PlayerArgument implements ArgumentType<String> {
         };
     }
 
-    private static Optional<PlayerListEntry> findServerPlayerEntry(String playerName) {
-        ClientPlayNetworkHandler networkHandler = MinecraftClient.getInstance().getNetworkHandler();
+    private static Optional<PlayerInfo> findServerPlayerEntry(String playerName) {
+        ClientPacketListener networkHandler = Minecraft.getInstance().getConnection();
         if (networkHandler == null) return Optional.empty();
 
-        return networkHandler.getPlayerList().stream()
+        return networkHandler.getOnlinePlayers().stream()
             .filter(p -> p.getProfile().name().equalsIgnoreCase(playerName))
             .findAny();
     }
@@ -123,7 +123,7 @@ public abstract class PlayerArgument implements ArgumentType<String> {
 
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
-        return CommandSource.suggestMatching(
+        return SharedSuggestionProvider.suggest(
             getSuggestions().toList(), builder
         );
     }

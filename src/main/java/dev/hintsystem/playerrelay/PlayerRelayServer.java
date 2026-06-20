@@ -9,7 +9,7 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public class PlayerRelayServer implements DedicatedServerModInitializer {
     public static ServerConfig config = new ServerConfig();
@@ -36,7 +36,7 @@ public class PlayerRelayServer implements DedicatedServerModInitializer {
         PlayerRelay.LOGGER.info("Player Relay server initialized");
     }
 
-    public static void sendToClient(ServerPlayerEntity player, PayloadMessage.Packet payloadMessage) {
+    public static void sendToClient(ServerPlayer player, PayloadMessage.Packet payloadMessage) {
         if (ServerPlayNetworking.canSend(player, PayloadMessage.Packet.PACKET_ID)) {
             ServerPlayNetworking.send(player, payloadMessage);
         }

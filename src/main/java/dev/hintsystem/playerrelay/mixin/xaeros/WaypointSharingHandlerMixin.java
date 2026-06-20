@@ -8,13 +8,13 @@ import xaero.common.minimap.waypoints.Waypoint;
 import xaero.hud.minimap.waypoint.WaypointSharingHandler;
 import xaero.hud.minimap.world.MinimapWorld;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ConfirmScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -33,10 +33,10 @@ public class WaypointSharingHandlerMixin {
     private MinimapWorld minimapWorld;
 
     @Inject(
-        method = "shareWaypoint(Lnet/minecraft/client/gui/screen/Screen;Lxaero/common/minimap/waypoints/Waypoint;Lxaero/hud/minimap/world/MinimapWorld;)V",
+        method = "shareWaypoint(Lnet/minecraft/client/gui/screens/Screen;Lxaero/common/minimap/waypoints/Waypoint;Lxaero/hud/minimap/world/MinimapWorld;)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V"
+            target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"
         ),
         cancellable = true
     )
@@ -44,28 +44,28 @@ public class WaypointSharingHandlerMixin {
         if (!ClientCore.isNetworkActive() || !PlayerRelayClient.config.shareWaypointsViaRelay) return;
 
         ci.cancel();
-        MinecraftClient.getInstance().setScreen(new ConfirmScreen(
+        Minecraft.getInstance().setScreen(new ConfirmScreen(
             this::onBroadcastWaypointConfirmation,
-            Text.literal("Are you sure you would like to share this waypoint with §cEVERYONE§f connected to you with Player Relay?"),
-            Text.translatable("gui.xaero_share_msg2")
+            Component.literal("Are you sure you would like to share this waypoint with §cEVERYONE§f connected to you with Player Relay?"),
+            Component.translatable("gui.xaero_share_msg2")
         ));
     }
 
     @Unique
     private void onBroadcastWaypointConfirmation(boolean confirmed) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
 
         if (!confirmed) {
             client.setScreen(this.confirmScreenParent);
         } else {
-            RegistryKey<World> dimension = this.minimapWorld.getDimId();
+            ResourceKey<Level> dimension = this.minimapWorld.getDimId();
             BlockPos pos = new BlockPos(this.sharedWaypoint.getX(), this.sharedWaypoint.getY(), this.sharedWaypoint.getZ());
 
             ClientCore.broadcastPayload(new WaypointPayload(
                 ClientCore.getClientUuid(), this.sharedWaypoint.getName(), dimension, pos, this.sharedWaypoint.getYaw(), this.sharedWaypoint.getWaypointColor().getHex()
             ));
 
-            MinecraftClient.getInstance().setScreen(null);
+            Minecraft.getInstance().setScreen(null);
         }
     }
 }

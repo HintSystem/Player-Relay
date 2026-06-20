@@ -9,38 +9,42 @@ import dev.hintsystem.playerrelay.payload.player.PlayerStatsData;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.command.CommandSource;
-import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 
 import org.jetbrains.annotations.Nullable;
 
 public class ConnectionCommands extends ClientCommand {
     @Nullable
-    private static Text tryCreateCopyConnectButton(String buttonText) {
+    private static Component tryCreateCopyConnectButton(String buttonText) {
         try {
             String connectCommand = PlayerRelayCommands.connectCommand(
                 NetworkService.getConnectAddress()
             );
 
-            return Text.literal("[" + buttonText + "]").setStyle(Style.EMPTY
-                .withFormatting(Formatting.GREEN)
-                .withUnderline(true)
+            return Component.literal("[" + buttonText + "]").setStyle(Style.EMPTY
+                .applyFormat(ChatFormatting.GREEN)
+                .withUnderlined(true)
                 .withClickEvent(new ClickEvent.CopyToClipboard(connectCommand))
                 .withHoverEvent(new HoverEvent.ShowText(
-                    Text.literal("Click to copy\n")
-                        .append(Text.literal(connectCommand)
-                            .formatted(Formatting.GRAY, Formatting.ITALIC))
+                    Component.literal("Click to copy\n")
+                        .append(Component.literal(connectCommand)
+                            .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC))
                 )));
         } catch (Exception e) {
-            sendError(Text.empty()
-                .append(Text.literal("Failed to create connect command:\n")
-                    .formatted(Formatting.BOLD))
+            sendError(Component.empty()
+                .append(Component.literal("Failed to create connect command:\n")
+                    .withStyle(ChatFormatting.BOLD))
                 .append(e.getMessage() != null ? e.getMessage() : e.toString())
-                .append(Text.literal("\n[Retry]").setStyle(Style.EMPTY
-                    .withFormatting(Formatting.DARK_RED)
-                    .withUnderline(true)
+                .append(Component.literal("\n[Retry]").setStyle(Style.EMPTY
+                    .applyFormat(ChatFormatting.DARK_RED)
+                    .withUnderlined(true)
                     .withClickEvent(new ClickEvent.RunCommand(
                         PlayerRelayCommands.commandString(PlayerRelayCommands.BASE_COMMAND, "host", "connect-cmd")
                     )))));
@@ -48,21 +52,21 @@ public class ConnectionCommands extends ClientCommand {
         }
     }
 
-    public static <S extends CommandSource> LiteralArgumentBuilder<S> registerLiterals(LiteralArgumentBuilder<S> argument, P2PNetworkManager networkManager) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    public static <S extends SharedSuggestionProvider> LiteralArgumentBuilder<S> registerLiterals(LiteralArgumentBuilder<S> argument, P2PNetworkManager networkManager) {
+        Minecraft client = Minecraft.getInstance();
 
         return argument
             .then(LiteralArgumentBuilder.<S>literal("host")
                 .executes(context -> {
-                    sendFeedback(Text.literal("Starting Player Relay server..."));
+                    sendFeedback(Component.literal("Starting Player Relay server..."));
                     networkManager.startServerAsync()
                         .whenComplete((result, throwable) -> client.execute(() -> {
                             if (throwable != null) {
-                                sendError(Text.literal(throwable.getMessage()));
+                                sendError(Component.literal(throwable.getMessage()));
                             } else {
-                                MutableText feedback = Text.literal("Player Relay server started on port " + networkManager.getPort());
+                                MutableComponent feedback = Component.literal("Player Relay server started on port " + networkManager.getPort());
 
-                                Text copyConnect = tryCreateCopyConnectButton("Copy connect command");
+                                Component copyConnect = tryCreateCopyConnectButton("Copy connect command");
                                 if (copyConnect != null) feedback.append("\n").append(copyConnect);
 
                                 sendFeedback(feedback);
@@ -72,10 +76,10 @@ public class ConnectionCommands extends ClientCommand {
                 })
                 .then(LiteralArgumentBuilder.<S>literal("connect-cmd")
                     .executes(context -> {
-                        Text copyConnect = tryCreateCopyConnectButton("Copy");
+                        Component copyConnect = tryCreateCopyConnectButton("Copy");
                         if (copyConnect != null) {
-                            sendFeedback(Text.literal("Connect command created ")
-                                .formatted(Formatting.GRAY)
+                            sendFeedback(Component.literal("Connect command created ")
+                                .withStyle(ChatFormatting.GRAY)
                                 .append(copyConnect));
                             return 1;
                         }
@@ -86,7 +90,7 @@ public class ConnectionCommands extends ClientCommand {
             .then(LiteralArgumentBuilder.<S>literal("stop")
                 .executes(context -> {
                     networkManager.stopServer();
-                    sendFeedback(Text.literal("Player Relay stopped"));
+                    sendFeedback(Component.literal("Player Relay stopped"));
                     return 1;
                 }))
 
@@ -95,13 +99,13 @@ public class ConnectionCommands extends ClientCommand {
                     .executes(context -> {
                         String address = StringArgumentType.getString(context, "address");
 
-                        sendFeedback(Text.literal("Connecting to peer..."));
+                        sendFeedback(Component.literal("Connecting to peer..."));
 
                         tryOrSendError(() -> {
                             NetworkService.connect(address)
                                 .whenComplete((peer, throwable) -> client.execute(() -> {
                                     if (throwable != null) {
-                                        sendError(Text.literal(throwable.getCause().getMessage()));
+                                        sendError(Component.literal(throwable.getCause().getMessage()));
                                     }
                                 }));
                         });
@@ -111,23 +115,23 @@ public class ConnectionCommands extends ClientCommand {
 
             .then(LiteralArgumentBuilder.<S>literal("players")
                 .executes(context -> {
-                    MutableText playerList = Text.empty().append(Text.literal("=== Connected Players ===")
-                        .setStyle(Style.EMPTY.withColor(Formatting.GOLD).withBold(true)));
+                    MutableComponent playerList = Component.empty().append(Component.literal("=== Connected Players ===")
+                        .setStyle(Style.EMPTY.withColor(ChatFormatting.GOLD).withBold(true)));
 
                     for (PlayerInfoPayload player : CommonCore.connections.getTrackedPlayers().values()) {
-                        MutableText line = Text.empty().append(Text.literal("\n" + player.getName() + " ")
-                            .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true)));
+                        MutableComponent line = Component.empty().append(Component.literal("\n" + player.getName() + " ")
+                            .setStyle(Style.EMPTY.withColor(ChatFormatting.AQUA).withBold(true)));
 
                         PlayerStatsData playerStats = player.getComponent(PlayerStatsData.class);
                         if (playerStats != null) {
-                            line.append(Text.literal("❤ " + (int) playerStats.health + " ")
-                                    .setStyle(Style.EMPTY.withColor(Formatting.RED)))
-                                .append(Text.literal("✦ " + (int) playerStats.xp + " ")
-                                    .setStyle(Style.EMPTY.withColor(Formatting.GREEN)))
-                                .append(Text.literal("\uD83C\uDF56 " + playerStats.hunger + " ")
-                                    .setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
-                                .append(Text.literal("🛡 " + playerStats.armor)
-                                    .setStyle(Style.EMPTY.withColor(Formatting.BLUE)));
+                            line.append(Component.literal("❤ " + (int) playerStats.health + " ")
+                                    .setStyle(Style.EMPTY.withColor(ChatFormatting.RED)))
+                                .append(Component.literal("✦ " + (int) playerStats.xp + " ")
+                                    .setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)))
+                                .append(Component.literal("\uD83C\uDF56 " + playerStats.hunger + " ")
+                                    .setStyle(Style.EMPTY.withColor(ChatFormatting.GOLD)))
+                                .append(Component.literal("🛡 " + playerStats.armor)
+                                    .setStyle(Style.EMPTY.withColor(ChatFormatting.BLUE)));
                         }
 
                         playerList.append(line);
@@ -140,7 +144,7 @@ public class ConnectionCommands extends ClientCommand {
             .then(LiteralArgumentBuilder.<S>literal("status")
                 .executes(context -> {
                     String status = networkManager.getStatus();
-                    sendFeedback(Text.literal(status));
+                    sendFeedback(Component.literal(status));
                     return 1;
                 }));
     }

@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.gui;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 
 public enum AnchorPoint {
     TOP_LEFT(0, 0),
@@ -16,9 +16,9 @@ public enum AnchorPoint {
         this.y = y;
     }
 
-    public int[] resolve(DrawContext context, int elementWidth, int elementHeight) {
-        int x = (int) (this.x * (context.getScaledWindowWidth() - elementWidth));
-        int y = (int) (this.y * (context.getScaledWindowHeight() - elementHeight));
+    public int[] resolve(GuiGraphics context, int elementWidth, int elementHeight) {
+        int x = (int) (this.x * (context.guiWidth() - elementWidth));
+        int y = (int) (this.y * (context.guiHeight() - elementHeight));
 
         return new int[] { x, y };
     }

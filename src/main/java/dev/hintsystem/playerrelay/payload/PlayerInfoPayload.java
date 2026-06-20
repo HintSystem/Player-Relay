@@ -4,10 +4,10 @@ import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.payload.player.*;
 
 import com.mojang.authlib.GameProfile;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.world.World;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.*;
@@ -57,7 +57,7 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
         this.playerId = playerId;
     }
 
-    public PlayerListEntry toPlayerListEntry() { return new PlayerListEntry(toGameProfile(), false); }
+    public PlayerInfo toPlayerListEntry() { return new PlayerInfo(toGameProfile(), false); }
     public GameProfile toGameProfile() { return new GameProfile(this.playerId, getName()); }
 
     public boolean isAfk() { return hasFlag(FLAGS.AFK); }
@@ -73,7 +73,7 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
     }
 
     @Nullable
-    public RegistryKey<World> getDimension() {
+    public ResourceKey<Level> getDimension() {
         PlayerWorldData worldData = getComponent(PlayerWorldData.class);
         return (worldData != null) ? worldData.dimension : null;
     }
@@ -148,10 +148,10 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
     @Override
     public PayloadRegistry.PayloadType<PlayerInfoPayload> getPayloadType() { return PayloadRegistry.PLAYER_INFO; }
 
-    public PlayerInfoPayload(RegistryByteBuf buf) {
+    public PlayerInfoPayload(RegistryFriendlyByteBuf buf) {
         int beforePayload = buf.readerIndex();
 
-        this.playerId = buf.readUuid();
+        this.playerId = buf.readUUID();
         readFlags(buf, 1);
 
         StringBuilder componentLog = PlayerRelay.isDevelopment ? new StringBuilder() : null;
@@ -182,8 +182,8 @@ public class PlayerInfoPayload extends FlagHolder<PlayerInfoPayload.FLAGS>
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
-        buf.writeUuid(playerId);
+    public void write(RegistryFriendlyByteBuf buf) {
+        buf.writeUUID(playerId);
         writeFlags(buf, 1);
 
         for (ComponentInfo<?> info : COMPONENT_REGISTRY.values()) {

@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.payload;
 
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -25,10 +25,10 @@ public class PayloadRegistry {
 
     public static class PayloadType<T extends Payload> {
         private final byte id;
-        private final Function<RegistryByteBuf, T> factory;
+        private final Function<RegistryFriendlyByteBuf, T> factory;
         private final boolean shouldForward;
 
-        private PayloadType(byte id, Function<RegistryByteBuf, T> factory, boolean shouldForward) {
+        private PayloadType(byte id, Function<RegistryFriendlyByteBuf, T> factory, boolean shouldForward) {
             this.id = id;
             this.factory = factory;
             this.shouldForward = shouldForward;
@@ -37,7 +37,7 @@ public class PayloadRegistry {
         public byte getId() { return id; }
         public boolean shouldForward() { return shouldForward; }
 
-        public T createPayload(RegistryByteBuf buf) {
+        public T createPayload(RegistryFriendlyByteBuf buf) {
             return factory.apply(buf);
         }
 
@@ -47,7 +47,7 @@ public class PayloadRegistry {
         }
     }
 
-    public static <T extends Payload> PayloadType<T> register(Function<RegistryByteBuf, T> factory) {
+    public static <T extends Payload> PayloadType<T> register(Function<RegistryFriendlyByteBuf, T> factory) {
         PayloadType<T> type = new PayloadType<>(nextId++, factory, true);
 
         registerInternal(type);
@@ -55,7 +55,7 @@ public class PayloadRegistry {
     }
 
     /** Registers a payload type meant only for communication between 2 peers **/
-    public static <T extends Payload> PayloadType<T> registerPeer(Function<RegistryByteBuf, T> factory) {
+    public static <T extends Payload> PayloadType<T> registerPeer(Function<RegistryFriendlyByteBuf, T> factory) {
         PayloadType<T> type = new PayloadType<>(nextId++, factory, false);
 
         registerInternal(type);

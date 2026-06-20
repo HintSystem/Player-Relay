@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 import java.awt.Color;
 import java.util.Objects;
@@ -29,14 +29,14 @@ public class PlayerBasicData implements PlayerDataComponent {
     private int getOpaqueColor(int color) { return 0xFF000000 | (color & 0x00FFFFFF); }
 
     @Override
-    public void write(RegistryByteBuf buf) {
-        buf.writeString(name);
+    public void write(RegistryFriendlyByteBuf buf) {
+        buf.writeUtf(name);
         buf.writeInt(nameColor);
     }
 
     @Override
-    public void read(RegistryByteBuf buf) {
-        this.name = buf.readString();
+    public void read(RegistryFriendlyByteBuf buf) {
+        this.name = buf.readUtf();
         this.nameColor = getOpaqueColor(buf.readInt());
     }
 

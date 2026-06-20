@@ -5,9 +5,10 @@ import dev.hintsystem.playerrelay.PlayerRelayClient;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
+
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 
 import org.joml.Vector2i;
 import java.util.LinkedHashMap;
@@ -22,7 +23,7 @@ public class PlayerList implements HudElement {
 
     public final PlayerListEntry.Config entryConfig = new PlayerListEntry.Config();
 
-    public void onClientTickEnd(MinecraftClient client) {
+    public void onClientTickEnd(Minecraft client) {
         if (!PlayerRelayClient.config.showPlayerList) {
             entries.clear();
             return;
@@ -34,7 +35,7 @@ public class PlayerList implements HudElement {
         for (PlayerListEntry entry : entries.values()) entry.tick();
     }
 
-    public void render(DrawContext context, RenderTickCounter tickCounter) {
+    public void render(GuiGraphics context, DeltaTracker tickCounter) {
         AnchorPoint anchor = PlayerRelayClient.config.playerListAnchorPoint;
         Vector2i offset = PlayerRelayClient.config.playerListOffset;
 

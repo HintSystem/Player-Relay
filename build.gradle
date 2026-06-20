@@ -1,7 +1,7 @@
 plugins {
-	id "fabric-loom" version "${loom_version}"
+	id "net.fabricmc.fabric-loom-remap" version "${loom_version}"
 	id "maven-publish"
-    id "me.modmuss50.mod-publish-plugin" version "1.1.0"
+    id "me.modmuss50.mod-publish-plugin" version "2.0.1"
 }
 
 version = "${project.mod_version}+${project.minecraft_version}"
@@ -34,16 +34,29 @@ repositories {
         }
     }
 
+    maven {
+        name = 'ParchmentMC'
+        url = 'https://maven.parchmentmc.org'
+    }
+
     maven { url "https://maven.terraformersmc.com/" } // Mod menu
     maven { url "https://maven.isxander.dev/releases" } // YACL
+    maven {
+        url "https://chocolateminecraft.com/maven"
+        name "Xaero's Maven"
+    }
 
     mavenCentral()
 }
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    mappings loom.layered() {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${project.minecraft_version}:${project.parchment_mappings}@zip")
+    }
+
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
@@ -56,8 +69,8 @@ dependencies {
 
     modImplementation "maven.modrinth:ping-wheel:${project.pingwheel_version}"
 
-    modImplementation "maven.modrinth:xaeros-minimap:${project.xaerosminimap_version}"
-    modImplementation "maven.modrinth:xaeros-world-map:${project.xaerosworldmap_version}"
+    modImplementation "xaero.minimap:xaerominimap-fabric-${project.xaerosminimap_version}"
+    modImplementation "xaero.map:xaeroworldmap-fabric-${project.xaerosworldmap_version}"
 }
 
 loom {

@@ -6,8 +6,8 @@ import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 import dev.hintsystem.playerrelay.payload.player.PlayerWorldData;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 
 import com.google.common.collect.Iterators;
 
@@ -41,7 +41,7 @@ public class RelayPlayerTracker {
     }
 
     public Collection<UUID> getServerPlayerUuids() {
-        ClientPlayNetworkHandler networkHandler = MinecraftClient.getInstance().getNetworkHandler();
-        return (networkHandler != null) ? networkHandler.getPlayerUuids() : Collections.emptySet();
+        ClientPacketListener networkHandler = Minecraft.getInstance().getConnection();
+        return (networkHandler != null) ? networkHandler.getOnlinePlayerIds() : Collections.emptySet();
     }
 }

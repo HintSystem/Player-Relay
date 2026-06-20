@@ -12,7 +12,7 @@ import nx.pingwheel.common.network.PingLocationS2CPacket;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -28,17 +28,17 @@ public class PingWheelNetworkMixin {
 	@Inject(method = "sendToServer", at = @At("HEAD"))
 	public void onPingLocationPacket(IPacket packet, CallbackInfo ci) {
         if (packet instanceof PingLocationC2SPacket pingPacket) {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
 
             if (ClientCore.isP2PNetworkActive() && client.player != null) {
                 GenericPacketPayload pingPayload = new GenericPacketPayload(
-                    PingLocationS2CPacket.fromClientPacket(pingPacket, client.player.getUuid())
+                    PingLocationS2CPacket.fromClientPacket(pingPacket, client.player.getUUID())
                 );
 
                 try {
                     CommonCore.getP2PNetworkManager().broadcastMessage(pingPayload.message());
                     if (!ClientPlayNetworking.canSend(packet.getId())) {
-                        supportPingWheel.handlePacket(pingPayload, client.getNetworkHandler(), client); // Process same packet on client to see ping, when Ping Wheel isn't on current server
+                        supportPingWheel.handlePacket(pingPayload, client.getConnection(), client); // Process same packet on client to see ping, when Ping Wheel isn't on current server
                     }
                 } catch (Exception e) {
                     PlayerRelay.LOGGER.error("Failed to relay Ping Wheel packet over P2P: {}", e.getMessage());

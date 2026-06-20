@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.payload;
 
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 public class UdpPingPayload implements Payload {
     private final boolean isResponse;
@@ -20,14 +20,14 @@ public class UdpPingPayload implements Payload {
     @Override
     public PayloadRegistry.PayloadType<UdpPingPayload> getPayloadType() { return PayloadRegistry.UDP_PING; }
 
-    public UdpPingPayload(RegistryByteBuf buf) {
+    public UdpPingPayload(RegistryFriendlyByteBuf buf) {
         this.isResponse = buf.readBoolean();
         this.timestamp = buf.readLong();
         this.sequenceNumber = buf.readInt();
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
+    public void write(RegistryFriendlyByteBuf buf) {
         buf.writeBoolean(isResponse);
         buf.writeLong(timestamp);
         buf.writeInt(sequenceNumber);

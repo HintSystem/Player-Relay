@@ -6,8 +6,8 @@ import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import nx.pingwheel.common.render.DrawContext;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.Font;
+import net.minecraft.network.chat.Component;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -31,11 +31,11 @@ public class DrawContextMixin implements DrawContextAccessor {
         method = "renderLabel",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/DrawContext;drawText(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/Text;IIIZ)V"
+            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V"
         )
     )
-    private void modifyTextColor(net.minecraft.client.gui.DrawContext instance, TextRenderer textRenderer,
-                                 Text text, int x, int y, int color, boolean shadow) {
+    private void modifyTextColor(net.minecraft.client.gui.GuiGraphics instance, Font textRenderer,
+                                 Component text, int x, int y, int color, boolean shadow) {
         int newColor = color;
         boolean newShadow = shadow;
 
@@ -45,7 +45,7 @@ public class DrawContextMixin implements DrawContextAccessor {
             newShadow = true;
         }
 
-        instance.drawText(textRenderer, text, x, y, newColor, newShadow);
+        instance.drawString(textRenderer, text, x, y, newColor, newShadow);
     }
 
     @ModifyVariable(

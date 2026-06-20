@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.mixin.minecraft;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;

@@ -1,12 +1,12 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.entity.player.Player;
 
 public interface PlayerDataComponent {
-    default void applyToPlayer(PlayerEntity player) {}
-    void write(RegistryByteBuf buf);
-    void read(RegistryByteBuf buf);
+    default void applyToPlayer(Player player) {}
+    void write(RegistryFriendlyByteBuf buf);
+    void read(RegistryFriendlyByteBuf buf);
     boolean hasChanged(PlayerDataComponent other);
     PlayerDataComponent copy();
 }

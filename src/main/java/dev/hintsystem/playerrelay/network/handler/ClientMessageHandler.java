@@ -11,14 +11,14 @@ import dev.hintsystem.playerrelay.mods.SupportPingWheel;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
@@ -49,8 +49,8 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
     }
 
     public interface PacketHandler {
-        boolean canHandle(Identifier id);
-        void handlePacket(GenericPacketPayload packetPayload, ClientPlayNetworkHandler handler, MinecraftClient client);
+        boolean canHandle(ResourceLocation id);
+        void handlePacket(GenericPacketPayload packetPayload, ClientPacketListener handler, Minecraft client);
     }
 
     public static void registerPlayerInfoHandler(PlayerInfoHandler handler) { PLAYER_INFO_HANDLERS.add(handler); }
@@ -123,11 +123,11 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
         }
 
         ClientCore.addHudMessage(
-            Text.literal(String.format("%s shared waypoint \"%s\" from dimension \"%s\" with Player Relay ", playerName, waypoint.name, waypoint.getDimensionIdString()))
-                .append(Text.literal("[Add]").formatted(Formatting.DARK_GREEN).formatted(Formatting.UNDERLINE))
+            Component.literal(String.format("%s shared waypoint \"%s\" from dimension \"%s\" with Player Relay ", playerName, waypoint.name, waypoint.getDimensionIdString()))
+                .append(Component.literal("[Add]").withStyle(ChatFormatting.DARK_GREEN).withStyle(ChatFormatting.UNDERLINE))
                 .setStyle(Style.EMPTY
-                    .withFormatting(Formatting.GRAY)
-                    .withHoverEvent(new HoverEvent.ShowText(Text.literal(
+                    .applyFormat(ChatFormatting.GRAY)
+                    .withHoverEvent(new HoverEvent.ShowText(Component.literal(
                         waypoint.pos.getX() + ", " + waypoint.pos.getY() + ", " + waypoint.pos.getZ()
                     )))
                     .withClickEvent(new ClickEvent.RunCommand(
@@ -138,14 +138,14 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
     }
 
     public void onPacket(GenericPacketPayload packet) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayNetworkHandler networkHandler = client.getNetworkHandler();
+        Minecraft client = Minecraft.getInstance();
+        ClientPacketListener networkHandler = client.getConnection();
         if (networkHandler == null) {
             logger.warn().message("No network handler available, dropping packet").build();
             return;
         }
 
-        Identifier packetId = packet.getPacketId();
+        ResourceLocation packetId = packet.getPacketId();
 
         if (PlayerRelay.isDevelopment) logger.info().message("Received packet: {}", packetId).build();
 

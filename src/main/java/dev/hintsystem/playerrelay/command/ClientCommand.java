@@ -1,8 +1,8 @@
 package dev.hintsystem.playerrelay.command;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 public abstract class ClientCommand {
     @FunctionalInterface
@@ -15,18 +15,18 @@ public abstract class ClientCommand {
             action.run();
             return 1;
         } catch (Exception e) {
-            sendError(Text.literal(e.getMessage()));
+            sendError(Component.literal(e.getMessage()));
             return 0;
         }
     }
 
-    public static void sendFeedback(Text message) {
-        MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(message);
+    public static void sendFeedback(Component message) {
+        Minecraft.getInstance().gui.getChat().addMessage(message);
     }
 
-    public static void sendError(Text message) {
+    public static void sendError(Component message) {
         sendFeedback(
-            Text.empty().append(message).formatted(Formatting.RED)
+            Component.empty().append(message).withStyle(ChatFormatting.RED)
         );
     }
 }

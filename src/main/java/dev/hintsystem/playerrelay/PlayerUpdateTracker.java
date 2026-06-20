@@ -3,11 +3,10 @@ package dev.hintsystem.playerrelay;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.*;
 
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import java.util.UUID;
 
 /** Tracks player state changes and builds delta payloads */
@@ -42,7 +41,7 @@ public class PlayerUpdateTracker {
          * <p>
          * Excludes {@link PlayerBasicData} and {@link PlayerPositionData}
          */
-        public DeltaBuilder withCommon(@Nullable PlayerEntity player) {
+        public DeltaBuilder withCommon(@Nullable Player player) {
             if (player != null) {
                 this.with(new PlayerStatsData(player))
                     .with(new PlayerEquipmentData(player))

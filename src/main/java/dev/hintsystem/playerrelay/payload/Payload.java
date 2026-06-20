@@ -3,10 +3,10 @@ package dev.hintsystem.playerrelay.payload;
 import dev.hintsystem.playerrelay.network.NetworkProtocol;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
 
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 public interface Payload {
-    void write(RegistryByteBuf buf);
+    void write(RegistryFriendlyByteBuf buf);
 
     PayloadRegistry.PayloadType<? extends Payload> getPayloadType();
 

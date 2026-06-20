@@ -1,6 +1,6 @@
 package dev.hintsystem.playerrelay.payload;
 
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 public class UdpHandshakePayload implements Payload {
     private final short udpId;
@@ -21,13 +21,13 @@ public class UdpHandshakePayload implements Payload {
     @Override
     public PayloadRegistry.PayloadType<UdpHandshakePayload> getPayloadType() { return PayloadRegistry.UDP_HANDSHAKE; }
 
-    public UdpHandshakePayload(RegistryByteBuf buf) {
+    public UdpHandshakePayload(RegistryFriendlyByteBuf buf) {
         this.udpId = buf.readShort();
         this.udpPort = buf.readInt();
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
+    public void write(RegistryFriendlyByteBuf buf) {
         buf.writeShort(udpId);
         buf.writeInt(udpPort);
     }

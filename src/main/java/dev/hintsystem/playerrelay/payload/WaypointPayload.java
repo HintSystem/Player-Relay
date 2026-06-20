@@ -1,22 +1,22 @@
 package dev.hintsystem.playerrelay.payload;
 
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 import java.util.UUID;
 
 public class WaypointPayload implements Payload {
     public final UUID playerId;
     public final String name;
-    public final RegistryKey<World> dimension;
+    public final ResourceKey<Level> dimension;
     public final BlockPos pos;
     public final int yaw;
     public final int color;
 
-    public WaypointPayload(UUID playerId, String name, RegistryKey<World> dimension, BlockPos pos, int yaw, int color) {
+    public WaypointPayload(UUID playerId, String name, ResourceKey<Level> dimension, BlockPos pos, int yaw, int color) {
         this.playerId = playerId;
         this.name = name;
         this.dimension = dimension;
@@ -26,26 +26,26 @@ public class WaypointPayload implements Payload {
     }
 
     public String getDimensionIdString() {
-        return (dimension != null) ? dimension.getValue().toString() : "";
+        return (dimension != null) ? dimension.location().toString() : "";
     }
 
     @Override
     public PayloadRegistry.PayloadType<WaypointPayload> getPayloadType() { return PayloadRegistry.WAYPOINT; }
 
-    public WaypointPayload(RegistryByteBuf buf) {
-        this.playerId = buf.readUuid();
-        this.name = buf.readString();
-        this.dimension = RegistryKey.of(RegistryKeys.WORLD, buf.readIdentifier());
+    public WaypointPayload(RegistryFriendlyByteBuf buf) {
+        this.playerId = buf.readUUID();
+        this.name = buf.readUtf();
+        this.dimension = ResourceKey.create(Registries.DIMENSION, buf.readResourceLocation());
         this.pos = buf.readBlockPos();
         this.yaw = buf.readInt();
         this.color = buf.readInt();
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
-        buf.writeUuid(this.playerId);
-        buf.writeString(this.name);
-        buf.writeIdentifier(this.dimension.getValue());
+    public void write(RegistryFriendlyByteBuf buf) {
+        buf.writeUUID(this.playerId);
+        buf.writeUtf(this.name);
+        buf.writeResourceLocation(this.dimension.location());
         buf.writeBlockPos(this.pos);
         buf.writeInt(this.yaw);
         buf.writeInt(this.color);

@@ -1,17 +1,20 @@
 package dev.hintsystem.playerrelay.config;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import dev.hintsystem.playerrelay.gui.AnchorPoint;
 import dev.hintsystem.playerrelay.gui.PlayerListEntry;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
+
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import org.joml.Vector2i;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import org.joml.Vector2i;
 import java.awt.*;
 
 public class ClientConfig extends CommonConfig {
@@ -49,76 +52,76 @@ public class ClientConfig extends CommonConfig {
 
     public Screen createScreen(Screen parent) {
         return YetAnotherConfigLib.createBuilder()
-            .title(Text.literal("PlayerRelayClient Config"))
+            .title(Component.literal("PlayerRelayClient Config"))
 
             .category(ConfigCategory.createBuilder()
-                .name(Text.literal("General"))
+                .name(Component.literal("General"))
 
                 .group(OptionGroup.createBuilder()
-                    .name(Text.literal("Host"))
+                    .name(Component.literal("Host"))
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Auto Host"))
-                        .description(OptionDescription.of(Text.literal("Automatically start hosting a relay when the game launches.\n\n")
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Enabled").formatted(Formatting.GREEN, Formatting.BOLD))
-                            .append(Text.literal(" → Relay starts at game startup\n"))
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Disabled").formatted(Formatting.RED))
-                            .append(Text.literal(" → Relay must be started manually"))
+                        .name(Component.literal("Auto Host"))
+                        .description(OptionDescription.of(Component.literal("Automatically start hosting a relay when the game launches.\n\n")
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Enabled").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD))
+                            .append(Component.literal(" → Relay starts at game startup\n"))
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Disabled").withStyle(ChatFormatting.RED))
+                            .append(Component.literal(" → Relay must be started manually"))
                         ))
                         .binding(DEFAULTS.autoHost, () -> autoHost, val -> autoHost = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("UPnP Enabled"))
-                        .description(OptionDescription.of(Text.literal("Automatically configure port forwarding using UPnP.\n\n")
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Enabled").formatted(Formatting.GREEN, Formatting.BOLD))
-                            .append(Text.literal(" → Automatically opens the hosting port on your router\n"))
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Disabled").formatted(Formatting.RED))
-                            .append(Text.literal(" → You must manually forward the port\n\n"))
-                            .append(Text.literal("⚠ Requires a UPnP-capable router").formatted(Formatting.GOLD))
+                        .name(Component.literal("UPnP Enabled"))
+                        .description(OptionDescription.of(Component.literal("Automatically configure port forwarding using UPnP.\n\n")
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Enabled").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD))
+                            .append(Component.literal(" → Automatically opens the hosting port on your router\n"))
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Disabled").withStyle(ChatFormatting.RED))
+                            .append(Component.literal(" → You must manually forward the port\n\n"))
+                            .append(Component.literal("⚠ Requires a UPnP-capable router").withStyle(ChatFormatting.GOLD))
                         ))
                         .binding(DEFAULTS.UPnPEnabled, () -> UPnPEnabled, val -> UPnPEnabled = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<String>createBuilder()
-                        .name(Text.literal("Connection Address"))
-                        .description(OptionDescription.of(Text.literal("The address used when copying the connect command.\n\n")
-                            .append(Text.literal("• Any string ").formatted(Formatting.GRAY))
-                            .append(Text.literal("→ Uses this string directly\n\n"))
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("external").formatted(Formatting.YELLOW, Formatting.BOLD))
-                            .append(Text.literal(" → Uses your external IP\n"))
-                            .append(Text.literal("default, ")
-                                .append(Text.literal("requires UPnP\n\n").formatted(Formatting.BOLD))
-                                .formatted(Formatting.GRAY))
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("local").formatted(Formatting.GREEN, Formatting.BOLD))
-                            .append(Text.literal(" → Uses your local IP"))
+                        .name(Component.literal("Connection Address"))
+                        .description(OptionDescription.of(Component.literal("The address used when copying the connect command.\n\n")
+                            .append(Component.literal("• Any string ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("→ Uses this string directly\n\n"))
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("external").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                            .append(Component.literal(" → Uses your external IP\n"))
+                            .append(Component.literal("default, ")
+                                .append(Component.literal("requires UPnP\n\n").withStyle(ChatFormatting.BOLD))
+                                .withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("local").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD))
+                            .append(Component.literal(" → Uses your local IP"))
                         ))
                         .binding(DEFAULTS.connectionAddress, () -> connectionAddress, val -> connectionAddress = val)
                         .controller(StringControllerBuilder::create)
                         .build())
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Use Encrypted Join Codes"))
-                        .description(OptionDescription.of(Text.literal("When copying the connect command the Connection Address will be encrypted and displayed as a join code.\n\n")
-                            .append(Text.empty()
-                                .append(Text.literal("⚠ Warning!\n").formatted(Formatting.BOLD))
-                                .append(Text.literal(
+                        .name(Component.literal("Use Encrypted Join Codes"))
+                        .description(OptionDescription.of(Component.literal("When copying the connect command the Connection Address will be encrypted and displayed as a join code.\n\n")
+                            .append(Component.empty()
+                                .append(Component.literal("⚠ Warning!\n").withStyle(ChatFormatting.BOLD))
+                                .append(Component.literal(
                                 """
                                 This will not hide your ip address from people connecting to your relay.
                                 If you want to stay hidden you need to use a proxy or VPN.
                                 """
-                                )).formatted(Formatting.RED))
+                                )).withStyle(ChatFormatting.RED))
                         ))
                         .binding(DEFAULTS.useJoinCodes, () -> useJoinCodes, val -> useJoinCodes = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Integer>createBuilder()
-                        .name(Text.literal("Default Hosting Port"))
-                        .description(OptionDescription.of(Text.literal(
+                        .name(Component.literal("Default Hosting Port"))
+                        .description(OptionDescription.of(Component.literal(
                             """
                             The default port for hosting connections.
                             
@@ -127,27 +130,27 @@ public class ClientConfig extends CommonConfig {
                         )))
                         .binding(DEFAULTS.defaultHostingPort, () -> defaultHostingPort, val -> defaultHostingPort = val)
                         .controller(opt -> IntegerFieldControllerBuilder.create(opt)
-                            .formatValue(val -> Text.literal(String.format("%d", val)))
+                            .formatValue(val -> Component.literal(String.format("%d", val)))
                             .range(1, 65535))
                         .build())
                     .build())
 
                 .group(OptionGroup.createBuilder()
-                    .name(Text.literal("Client"))
+                    .name(Component.literal("Client"))
 //                    .option(Option.<String>createBuilder()
 //                        .name(Text.literal("Auto Connect Address"))
 //                        .binding(DEFAULTS.autoConnectAddress, () -> autoConnectAddress, val -> autoConnectAddress = val)
 //                        .controller(StringControllerBuilder::create)
 //                        .build())
                     .option(Option.<Color>createBuilder()
-                        .name(Text.literal("Display Name Color"))
+                        .name(Component.literal("Display Name Color"))
                         .binding(DEFAULTS.displayNameColor, () -> displayNameColor, val -> displayNameColor = val)
                         .controller(opt -> ColorControllerBuilder.create(opt)
                             .allowAlpha(true)) // TODO: set allowAlpha to false when YACL fixes the crash caused by ColorPickerWidget
                         .build())
                     .option(Option.<Integer>createBuilder()
-                        .name(Text.literal("AFK Timeout"))
-                        .description(OptionDescription.of(Text.literal(
+                        .name(Component.literal("AFK Timeout"))
+                        .description(OptionDescription.of(Component.literal(
                             "Time (in ms) before you are marked as AFK after no keyboard or mouse input."
                         )))
                         .binding(DEFAULTS.afkTimeout, () -> afkTimeout, val -> afkTimeout = val)
@@ -155,8 +158,8 @@ public class ClientConfig extends CommonConfig {
                             .range(4000, 30 * 60 * 1000))
                         .build())
                     .option(Option.<Double>createBuilder()
-                        .name(Text.literal("Minimum Player Movement"))
-                        .description(OptionDescription.of(Text.literal(
+                        .name(Component.literal("Minimum Player Movement"))
+                        .description(OptionDescription.of(Component.literal(
                             """
                             Minimum distance (in blocks) a player must move before broadcasting a new position.
                             
@@ -171,61 +174,61 @@ public class ClientConfig extends CommonConfig {
                 .build())
 
             .category(ConfigCategory.createBuilder()
-                .name(Text.literal("User Interface"))
+                .name(Component.literal("User Interface"))
 
                 .group(OptionGroup.createBuilder()
-                    .name(Text.literal("Player List"))
+                    .name(Component.literal("Player List"))
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Show"))
+                        .name(Component.literal("Show"))
                         .binding(DEFAULTS.showPlayerList, () -> showPlayerList, val -> showPlayerList = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Use Resource Pack Icons"))
-                        .description(OptionDescription.of(Text.literal("If enabled, then instead of using vanilla icons, the current resource pack icons will be used")))
+                        .name(Component.literal("Use Resource Pack Icons"))
+                        .description(OptionDescription.of(Component.literal("If enabled, then instead of using vanilla icons, the current resource pack icons will be used")))
                         .binding(DEFAULTS.useResourcePackIcons, () -> useResourcePackIcons, val -> useResourcePackIcons = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Integer>createBuilder()
-                        .name(Text.literal("Max Visible Players"))
+                        .name(Component.literal("Max Visible Players"))
                         .binding(DEFAULTS.playerListMaxPlayers, () -> playerListMaxPlayers, val -> playerListMaxPlayers = val)
                         .controller(opt -> IntegerFieldControllerBuilder.create(opt)
                             .range(1, 20))
                         .build())
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Show Dimension Icon"))
+                        .name(Component.literal("Show Dimension Icon"))
                         .binding(DEFAULTS.showPlayerListDimensionIcon, () -> showPlayerListDimensionIcon, val -> showPlayerListDimensionIcon = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<PlayerListEntry.PlayerIconType>createBuilder()
-                        .name(Text.literal("Player Icon Type"))
+                        .name(Component.literal("Player Icon Type"))
                         .binding(DEFAULTS.playerListIconType, () -> playerListIconType, val -> playerListIconType = val)
                         .controller(opt -> EnumControllerBuilder.create(opt)
                             .enumClass(PlayerListEntry.PlayerIconType.class))
                         .build())
                     .option(Option.<AnchorPoint>createBuilder()
-                        .name(Text.literal("Anchor Point"))
+                        .name(Component.literal("Anchor Point"))
                         .binding(DEFAULTS.playerListAnchorPoint, () -> playerListAnchorPoint, val -> playerListAnchorPoint = val)
                         .controller(opt -> EnumControllerBuilder.create(opt)
                             .enumClass(AnchorPoint.class))
                         .build())
                     .option(Option.<Integer>createBuilder()
-                        .name(Text.literal("X Offset"))
+                        .name(Component.literal("X Offset"))
                         .binding(DEFAULTS.playerListOffset.x, () -> playerListOffset.x, val -> playerListOffset.x = val)
                         .controller(IntegerFieldControllerBuilder::create)
                         .build())
                     .option(Option.<Integer>createBuilder()
-                        .name(Text.literal("Y Offset"))
+                        .name(Component.literal("Y Offset"))
                         .binding(DEFAULTS.playerListOffset.y, () -> playerListOffset.y, val -> playerListOffset.y = val)
                         .controller(IntegerFieldControllerBuilder::create)
                         .build())
                     .option(Option.<Integer>createBuilder()
-                        .name(Text.literal("Info Width"))
+                        .name(Component.literal("Info Width"))
                         .binding(DEFAULTS.playerListInfoWidth, () -> playerListInfoWidth, val -> playerListInfoWidth = val)
                         .controller(IntegerFieldControllerBuilder::create)
                         .build())
                     .option(Option.<Color>createBuilder()
-                        .name(Text.literal("Background Color"))
+                        .name(Component.literal("Background Color"))
                         .binding(DEFAULTS.playerListbackgroundColor, () -> playerListbackgroundColor, val -> playerListbackgroundColor = val)
                         .controller(opt -> ColorControllerBuilder.create(opt)
                             .allowAlpha(true))
@@ -233,30 +236,30 @@ public class ClientConfig extends CommonConfig {
                     .build())
 
                 .group(OptionGroup.createBuilder()
-                    .name(Text.literal("Xaero's Minimap / WorldMap"))
+                    .name(Component.literal("Xaero's Minimap / WorldMap"))
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Share Waypoints Via Player Relay"))
-                        .description(OptionDescription.of(Text.literal("Share waypoints through the connected relays instead of public chat.")))
+                        .name(Component.literal("Share Waypoints Via Player Relay"))
+                        .description(OptionDescription.of(Component.literal("Share waypoints through the connected relays instead of public chat.")))
                         .binding(DEFAULTS.shareWaypointsViaRelay, () -> shareWaypointsViaRelay, val -> shareWaypointsViaRelay = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Show Players"))
-                        .description(OptionDescription.of(Text.literal("Display connected relay players on Xaero's Minimap and World Map as tracked players.")))
+                        .name(Component.literal("Show Players"))
+                        .description(OptionDescription.of(Component.literal("Display connected relay players on Xaero's Minimap and World Map as tracked players.")))
                         .binding(DEFAULTS.showTrackedPlayers, () -> showTrackedPlayers, val -> showTrackedPlayers = val)
                         .controller(TickBoxControllerBuilder::create)
                         .build())
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Show Players From Other Servers"))
-                        .description(OptionDescription.of(Text.literal("Show relay players even when they're on different servers.\n\n")
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Enabled").formatted(Formatting.GREEN, Formatting.BOLD))
-                            .append(Text.literal(" → See all relay players across servers\n"))
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Disabled").formatted(Formatting.RED))
-                            .append(Text.literal(" → Only show players on your current server\n\n"))
-                            .append(Text.literal("Note: ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Requires 'Show Players' to be enabled").formatted(Formatting.YELLOW))
+                        .name(Component.literal("Show Players From Other Servers"))
+                        .description(OptionDescription.of(Component.literal("Show relay players even when they're on different servers.\n\n")
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Enabled").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD))
+                            .append(Component.literal(" → See all relay players across servers\n"))
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Disabled").withStyle(ChatFormatting.RED))
+                            .append(Component.literal(" → Only show players on your current server\n\n"))
+                            .append(Component.literal("Note: ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Requires 'Show Players' to be enabled").withStyle(ChatFormatting.YELLOW))
                         ))
                         .binding(DEFAULTS.showTrackedPlayersFromOtherServers, () -> showTrackedPlayersFromOtherServers, val -> showTrackedPlayersFromOtherServers = val)
                         .controller(TickBoxControllerBuilder::create)
@@ -264,16 +267,16 @@ public class ClientConfig extends CommonConfig {
                     .build())
 
                 .group(OptionGroup.createBuilder()
-                    .name(Text.literal("Ping Wheel"))
+                    .name(Component.literal("Ping Wheel"))
                     .option(Option.<Boolean>createBuilder()
-                        .name(Text.literal("Show Pings From Other Servers"))
-                        .description(OptionDescription.of(Text.literal("Display ping markers from relay players on different servers.\n\n")
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Enabled").formatted(Formatting.GREEN, Formatting.BOLD))
-                            .append(Text.literal(" → See pings across all servers\n"))
-                            .append(Text.literal("• ").formatted(Formatting.GRAY))
-                            .append(Text.literal("Disabled").formatted(Formatting.RED))
-                            .append(Text.literal(" → Only see pings on your current server\n\n"))
+                        .name(Component.literal("Show Pings From Other Servers"))
+                        .description(OptionDescription.of(Component.literal("Display ping markers from relay players on different servers.\n\n")
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Enabled").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD))
+                            .append(Component.literal(" → See pings across all servers\n"))
+                            .append(Component.literal("• ").withStyle(ChatFormatting.GRAY))
+                            .append(Component.literal("Disabled").withStyle(ChatFormatting.RED))
+                            .append(Component.literal(" → Only see pings on your current server\n\n"))
                         ))
                         .binding(DEFAULTS.showPingsFromOtherServers, () -> showPingsFromOtherServers, val -> showPingsFromOtherServers = val)
                         .controller(TickBoxControllerBuilder::create)
@@ -282,11 +285,11 @@ public class ClientConfig extends CommonConfig {
                 .build())
 
             .category(ConfigCategory.createBuilder()
-                .name(Text.literal("Advanced"))
+                .name(Component.literal("Advanced"))
 
                 .option(Option.<Integer>createBuilder()
-                    .name(Text.literal("Connection Timeout"))
-                    .description(OptionDescription.of(Text.literal(
+                    .name(Component.literal("Connection Timeout"))
+                    .description(OptionDescription.of(Component.literal(
                         "Maximum time (in ms) to wait for a peer version response before disconnecting."
                     )))
                     .binding(DEFAULTS.peerConnectionTimeout, () -> peerConnectionTimeout, val -> peerConnectionTimeout = val)
@@ -294,8 +297,8 @@ public class ClientConfig extends CommonConfig {
                         .range(50, 100_000))
                     .build())
                 .option(Option.<Integer>createBuilder()
-                    .name(Text.literal("TCP Send Interval"))
-                    .description(OptionDescription.of(Text.literal(
+                    .name(Component.literal("TCP Send Interval"))
+                    .description(OptionDescription.of(Component.literal(
                         """
                         Delay (in ms) between sending player updates via TCP.
                         
@@ -307,8 +310,8 @@ public class ClientConfig extends CommonConfig {
                         .range(50, 10_000))
                     .build())
                 .option(Option.<Integer>createBuilder()
-                    .name(Text.literal("UDP Send Interval"))
-                    .description(OptionDescription.of(Text.literal(
+                    .name(Component.literal("UDP Send Interval"))
+                    .description(OptionDescription.of(Component.literal(
                         "Delay (in ms) between sending player updates via UDP."
                     )))
                     .binding(DEFAULTS.udpSendIntervalMs, () -> udpSendIntervalMs, val -> udpSendIntervalMs = val)
@@ -316,8 +319,8 @@ public class ClientConfig extends CommonConfig {
                         .range(10, 10_000))
                     .build())
                 .option(Option.<Integer>createBuilder()
-                    .name(Text.literal("UDP Ping Interval"))
-                    .description(OptionDescription.of(Text.literal(
+                    .name(Component.literal("UDP Ping Interval"))
+                    .description(OptionDescription.of(Component.literal(
                         """
                         How often (in ms) to send a UDP ping to check connection health.
                         
@@ -329,8 +332,8 @@ public class ClientConfig extends CommonConfig {
                         .range(500, 50_000))
                     .build())
                 .option(Option.<Integer>createBuilder()
-                    .name(Text.literal("UDP Ping Timeout"))
-                    .description(OptionDescription.of(Text.literal(
+                    .name(Component.literal("UDP Ping Timeout"))
+                    .description(OptionDescription.of(Component.literal(
                         "Maximum time (in ms) to wait for a UDP ping response before counting it as failed."
                     )))
                     .binding(DEFAULTS.udpPingTimeoutMs, () -> udpPingTimeoutMs, val -> udpPingTimeoutMs = val)
@@ -338,8 +341,8 @@ public class ClientConfig extends CommonConfig {
                         .range(100, 10_000))
                     .build())
                 .option(Option.<Integer>createBuilder()
-                    .name(Text.literal("UDP Max Failed Pings"))
-                    .description(OptionDescription.of(Text.literal(
+                    .name(Component.literal("UDP Max Failed Pings"))
+                    .description(OptionDescription.of(Component.literal(
                         "Number of failed UDP pings allowed before marking the connection as unhealthy and falling back to TCP."
                     )))
                     .binding(DEFAULTS.maxFailedUdpPings, () -> maxFailedUdpPings, val -> maxFailedUdpPings = val)

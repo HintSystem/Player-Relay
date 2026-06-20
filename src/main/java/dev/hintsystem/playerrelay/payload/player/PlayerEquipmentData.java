@@ -1,10 +1,10 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.core.NonNullList;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,14 +27,14 @@ public class PlayerEquipmentData implements PlayerDataComponent {
         }
     }
 
-    public final DefaultedList<ItemStack> equipment = DefaultedList.ofSize(EQUIPMENT_SLOT_ORDER.length, ItemStack.EMPTY);
+    public final NonNullList<ItemStack> equipment = NonNullList.withSize(EQUIPMENT_SLOT_ORDER.length, ItemStack.EMPTY);
 
     public PlayerEquipmentData() {}
 
-    public PlayerEquipmentData(PlayerEntity player) {
+    public PlayerEquipmentData(Player player) {
         for (int i = 0; i < EQUIPMENT_SLOT_ORDER.length; i++) {
             EquipmentSlot slot = EQUIPMENT_SLOT_ORDER[i];
-            ItemStack stack = player.getEquippedStack(slot);
+            ItemStack stack = player.getItemBySlot(slot);
             this.equipment.set(i, stack.copy());
         }
     }
@@ -51,23 +51,23 @@ public class PlayerEquipmentData implements PlayerDataComponent {
     }
 
     @Override
-    public void applyToPlayer(PlayerEntity player) {
+    public void applyToPlayer(Player player) {
         for (int i = 0; i < EQUIPMENT_SLOT_ORDER.length; i++) {
-            player.equipStack(EQUIPMENT_SLOT_ORDER[i], equipment.get(i));
+            player.setItemSlot(EQUIPMENT_SLOT_ORDER[i], equipment.get(i));
         }
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
+    public void write(RegistryFriendlyByteBuf buf) {
         for (int i = 0; i < EQUIPMENT_SLOT_ORDER.length; i++) {
-            ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, equipment.get(i));
+            ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, equipment.get(i));
         }
     }
 
     @Override
-    public void read(RegistryByteBuf buf) {
+    public void read(RegistryFriendlyByteBuf buf) {
         for (int i = 0; i < EQUIPMENT_SLOT_ORDER.length; i++) {
-            ItemStack stack = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
+            ItemStack stack = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
             this.equipment.set(i, stack);
         }
     }
@@ -77,7 +77,7 @@ public class PlayerEquipmentData implements PlayerDataComponent {
         if (!(other instanceof PlayerEquipmentData otherEquipment)) return true;
 
         for (int i = 0; i < EQUIPMENT_SLOT_ORDER.length; i++) {
-            if (!ItemStack.areEqual(this.equipment.get(i), otherEquipment.equipment.get(i))) {
+            if (!ItemStack.matches(this.equipment.get(i), otherEquipment.equipment.get(i))) {
                 return true;
             }
         }

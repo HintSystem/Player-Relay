@@ -6,41 +6,40 @@ import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import xaero.hud.minimap.player.tracker.PlayerTrackerMinimapElement;
 import xaero.hud.minimap.player.tracker.PlayerTrackerMinimapElementRenderer;
 
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.MultiBufferSource;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-
 import org.joml.Matrix4f;
 
 @Mixin(PlayerTrackerMinimapElementRenderer.class)
 public class PlayerTrackerMinimapElementRendererMixin {
     @Redirect(
-        method = "renderElement(Lxaero/hud/minimap/player/tracker/PlayerTrackerMinimapElement;ZZDFDDLxaero/hud/minimap/element/render/MinimapElementRenderInfo;Lxaero/hud/minimap/element/render/MinimapElementGraphics;Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;)Z",
+        method = "renderElement(Lxaero/hud/minimap/player/tracker/PlayerTrackerMinimapElement;ZZDFDDLxaero/hud/minimap/element/render/MinimapElementRenderInfo;Lxaero/hud/minimap/element/render/MinimapElementGraphics;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;)Z",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/font/TextRenderer;draw(Ljava/lang/String;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/render/VertexConsumerProvider;Lnet/minecraft/client/font/TextRenderer$TextLayerType;II)V"
+            target = "Lnet/minecraft/client/gui/Font;drawInBatch(Ljava/lang/String;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)V"
         )
     )
     private void modifyColorValue(
-        TextRenderer textRenderer,
+        Font textRenderer,
         String text,
         float x,
         float y,
         int color,
-        boolean shadow,
-        Matrix4f matrix,
-        VertexConsumerProvider vertexConsumers,
-        TextRenderer.TextLayerType layerType,
+        boolean drawShadow,
+        Matrix4f pose,
+        MultiBufferSource bufferSource,
+        Font.DisplayMode mode,
         int backgroundColor,
-        int light,
+        int packedLightCoords,
         @Local(argsOnly = true) PlayerTrackerMinimapElement<?> e
     ) {
         int newColor = color;
-        boolean newShadow = shadow;
+        boolean newShadow = drawShadow;
 
         PlayerInfoPayload playerInfo = CommonCore.connections.getPlayer(e.getPlayerId());
         if (playerInfo != null) {
@@ -48,9 +47,9 @@ public class PlayerTrackerMinimapElementRendererMixin {
             newShadow = true;
         }
 
-        textRenderer.draw(
-            text, x, y, newColor, newShadow, matrix,
-            vertexConsumers, layerType, backgroundColor, light
+        textRenderer.drawInBatch(
+            text, x, y, newColor, newShadow, pose,
+            bufferSource, mode, backgroundColor, packedLightCoords
         );
     }
 }

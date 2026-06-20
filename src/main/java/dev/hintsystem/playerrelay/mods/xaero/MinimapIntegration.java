@@ -13,7 +13,7 @@ import xaero.hud.minimap.player.tracker.system.ITrackedPlayerReader;
 import xaero.hud.minimap.waypoint.WaypointColor;
 import xaero.hud.minimap.world.MinimapWorld;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import com.google.common.collect.Lists;
 
@@ -45,7 +45,7 @@ public class MinimapIntegration {
             WaypointColor.getRandom()
         );
 
-        MinecraftClient.getInstance().setScreen(new GuiAddWaypoint(
+        Minecraft.getInstance().setScreen(new GuiAddWaypoint(
             HudMod.INSTANCE,
             session,
             null,

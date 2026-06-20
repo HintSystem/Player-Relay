@@ -1,7 +1,7 @@
 package dev.hintsystem.playerrelay.payload.player;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.entity.player.Player;
 
 public class PlayerStatsData implements PlayerDataComponent {
     public float health, absorptionAmount, xp;
@@ -9,16 +9,16 @@ public class PlayerStatsData implements PlayerDataComponent {
 
     public PlayerStatsData() {}
 
-    public PlayerStatsData(PlayerEntity player) {
+    public PlayerStatsData(Player player) {
         this.health = player.getHealth();
         this.absorptionAmount = player.getAbsorptionAmount();
         this.xp = player.experienceLevel + player.experienceProgress;
-        this.hunger = (short) Math.min(player.getHungerManager().getFoodLevel(), Short.MAX_VALUE);
-        this.armor = (short) Math.min(player.getArmor(), Short.MAX_VALUE);
+        this.hunger = (short) Math.min(player.getFoodData().getFoodLevel(), Short.MAX_VALUE);
+        this.armor = (short) Math.min(player.getArmorValue(), Short.MAX_VALUE);
     }
 
     @Override
-    public void write(RegistryByteBuf buf) {
+    public void write(RegistryFriendlyByteBuf buf) {
         buf.writeFloat(health);
         buf.writeFloat(absorptionAmount);
         buf.writeFloat(xp);
@@ -27,7 +27,7 @@ public class PlayerStatsData implements PlayerDataComponent {
     }
 
     @Override
-    public void read(RegistryByteBuf buf) {
+    public void read(RegistryFriendlyByteBuf buf) {
         this.health = buf.readFloat();
         this.absorptionAmount = buf.readFloat();
         this.xp = buf.readFloat();

@@ -10,13 +10,13 @@ import dev.hintsystem.playerrelay.party.PartyPayloadHandler;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.PlayerList;
 
 import java.util.UUID;
 
 /** Handles messages received from the client on the server */
-public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity> {
+public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayer> {
     public final NetworkLogger logger;
     private final ServerCore server;
 
@@ -38,20 +38,20 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
         register(PayloadRegistry.PLAYER_INVENTORY, this::onPlayerInventory);
     }
 
-    public void onPlayerRelayVersion(RelayVersionPayload version, ServerPlayerEntity player) {
+    public void onPlayerRelayVersion(RelayVersionPayload version, ServerPlayer player) {
         PlayerRelayServer.sendToClient(player, new RelayVersionPayload().packet());
         if (version.networkVersion != RelayVersionPayload.NETWORK_VERSION) {
-            server.listeningPlayers.remove(player.getUuid());
+            server.listeningPlayers.remove(player.getUUID());
             return;
         }
 
-        boolean added = server.listeningPlayers.add(player.getUuid());
+        boolean added = server.listeningPlayers.add(player.getUUID());
         if (added) server.onPlayerSync(player);
     }
 
-    public void onPartyPayload(PartyPayload party, ServerPlayerEntity player) {
+    public void onPartyPayload(PartyPayload party, ServerPlayer player) {
         try {
-            PartyPayload authoritativeParty = party.withActorId(player.getUuid());
+            PartyPayload authoritativeParty = party.withActorId(player.getUUID());
             authoritativeParty.handleAction(partyPayloadHandler);
         } catch (Exception e) {
             String message = e.getMessage();
@@ -60,8 +60,8 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
         }
     }
 
-    public void onPlayerInfo(PlayerInfoPayload playerInfo, ServerPlayerEntity player) {
-        UUID playerId = player.getUuid();
+    public void onPlayerInfo(PlayerInfoPayload playerInfo, ServerPlayer player) {
+        UUID playerId = player.getUUID();
         PlayerUpdateTracker updateTracker = server.playerUpdateTrackers.get(playerId);
         if (updateTracker == null) { return; }
 
@@ -73,7 +73,7 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
         // Update name color if provided
         PlayerBasicData basicData = playerInfo.getComponent(PlayerBasicData.class);
         if (basicData != null) {
-            deltaBuilder.with(new PlayerBasicData(player.getStringifiedName(), basicData.nameColor));
+            deltaBuilder.with(new PlayerBasicData(player.getPlainTextName(), basicData.nameColor));
         }
 
         PlayerInfoPayload infoDelta = deltaBuilder.build();
@@ -82,16 +82,16 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
 
             server.broadcastPayload(
                 infoDelta.packet(),
-                player.getUuid()
+                player.getUUID()
             );
         }
     }
 
-    public void onPlayerInventory(PlayerInventoryPayload inventory, ServerPlayerEntity player) {
+    public void onPlayerInventory(PlayerInventoryPayload inventory, ServerPlayer player) {
         if (!inventory.isRequest()) return;
 
-        PlayerManager playerManager = player.getEntityWorld().getServer().getPlayerManager();
-        ServerPlayerEntity requestedPlayer = playerManager.getPlayer(inventory.playerId);
+        PlayerList playerManager = player.level().getServer().getPlayerList();
+        ServerPlayer requestedPlayer = playerManager.getPlayer(inventory.playerId);
         if (requestedPlayer == null) return;
 
         PlayerRelayServer.sendToClient(player,
@@ -100,14 +100,14 @@ public class C2SMessageHandler extends PayloadMessageHandler<ServerPlayerEntity>
     }
 
     @Override
-    protected void onMessagePass(PayloadMessage message, ServerPlayerEntity player) {
+    protected void onMessagePass(PayloadMessage message, ServerPlayer player) {
         if (!message.getPayloadType().shouldForward()) return;
 
         Payload payload = message.getPayload();
         if (payload instanceof WaypointPayload || payload instanceof GenericPacketPayload) {
             server.broadcastPayload(
                 payload.packet(),
-                player.getUuid()
+                player.getUUID()
             );
         }
     }

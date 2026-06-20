@@ -3,12 +3,12 @@ package dev.hintsystem.playerrelay.payload.player;
 import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.payload.FlagHolder;
 
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.*;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.player.Player;
 
 import com.google.common.collect.Ordering;
 
@@ -27,23 +27,23 @@ public class PlayerStatusEffectsData extends FlagHolder<PlayerStatusEffectsData.
     private long timestamp;
     private final List<StatusEffectEntry> effects = new ArrayList<>();
 
-    public record StatusEffectEntry(RegistryEntry<StatusEffect> statusEffect, int amplifier, int duration) {
+    public record StatusEffectEntry(Holder<MobEffect> statusEffect, int amplifier, int duration) {
         public boolean isInfinite() { return duration == -1; }
     }
 
     public PlayerStatusEffectsData() {}
 
-    public PlayerStatusEffectsData(PlayerEntity player) {
+    public PlayerStatusEffectsData(Player player) {
         this.timestamp = System.currentTimeMillis();
-        setFlag(FLAGS.FROZEN, player.isFrozen());
+        setFlag(FLAGS.FROZEN, player.isFullyFrozen());
         setFlag(FLAGS.ON_FIRE, player.isOnFire());
 
-        for (StatusEffectInstance effectInstance : Ordering.natural().reverse().sortedCopy(player.getStatusEffects())) {
+        for (MobEffectInstance effectInstance : Ordering.natural().reverse().sortedCopy(player.getActiveEffects())) {
             if (effectInstance == null) continue;
             if (effects.size() >= 255) break;
 
             effects.add(new StatusEffectEntry(
-                effectInstance.getEffectType(),
+                effectInstance.getEffect(),
                 effectInstance.getAmplifier(),
                 effectInstance.getDuration()
             ));
@@ -65,7 +65,7 @@ public class PlayerStatusEffectsData extends FlagHolder<PlayerStatusEffectsData.
         return Math.max(0, effectEndTime - currentTime);
     }
 
-    public boolean hasStatusEffect(RegistryEntry<StatusEffect> effect) {
+    public boolean hasStatusEffect(Holder<MobEffect> effect) {
         long currentTime = System.currentTimeMillis();
         return effects.stream()
             .filter(entry -> entry.statusEffect().equals(effect))
@@ -82,27 +82,27 @@ public class PlayerStatusEffectsData extends FlagHolder<PlayerStatusEffectsData.
     public List<StatusEffectEntry> getAllEffects() { return new ArrayList<>(effects); }
 
     @Override
-    public void write(RegistryByteBuf buf) {
+    public void write(RegistryFriendlyByteBuf buf) {
         buf.writeLong(timestamp);
         writeFlags(buf, 1);
 
         buf.writeByte(effects.size()); // max 255
         for (StatusEffectEntry e : effects) {
-            buf.writeVarInt(Registries.STATUS_EFFECT.getRawId(e.statusEffect.value()));
+            buf.writeVarInt(BuiltInRegistries.MOB_EFFECT.getId(e.statusEffect.value()));
             buf.writeByte(e.amplifier() & 0xFF);
             buf.writeInt(e.duration());
         }
     }
 
     @Override
-    public void read(RegistryByteBuf buf) {
+    public void read(RegistryFriendlyByteBuf buf) {
         this.timestamp = buf.readLong();
         readFlags(buf, 1);
 
         effects.clear();
         int count = buf.readUnsignedByte();
         for (int i = 0; i < count; i++) {
-            Optional<RegistryEntry.Reference<StatusEffect>> effectType = Registries.STATUS_EFFECT.getEntry(buf.readVarInt());
+            Optional<Holder.Reference<MobEffect>> effectType = BuiltInRegistries.MOB_EFFECT.get(buf.readVarInt());
             if (effectType.isEmpty()) continue;
 
             effects.add(new StatusEffectEntry(
