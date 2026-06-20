@@ -5,12 +5,12 @@ import dev.hintsystem.playerrelay.utils.PayloadUtils;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import io.netty.buffer.Unpooled;
 
 public class GenericPacketPayload implements Payload {
-    private final ResourceLocation packetId;
+    private final Identifier packetId;
     private final byte[] payload;
 
     public GenericPacketPayload(CustomPacketPayload packet) {
@@ -26,7 +26,7 @@ public class GenericPacketPayload implements Payload {
         }
     }
 
-    public ResourceLocation getPacketId() { return packetId; }
+    public Identifier getPacketId() { return packetId; }
     public byte[] getPayload() { return payload; }
 
     // Reconstruct packet instance from this message
@@ -43,7 +43,7 @@ public class GenericPacketPayload implements Payload {
     public PayloadRegistry.PayloadType<GenericPacketPayload> getPayloadType() { return PayloadRegistry.GENERIC_PACKET; }
 
     public GenericPacketPayload(RegistryFriendlyByteBuf buf) {
-        this.packetId = buf.readResourceLocation();
+        this.packetId = buf.readIdentifier();
         int length = buf.readVarInt();
 
         this.payload = new byte[length];
@@ -52,7 +52,7 @@ public class GenericPacketPayload implements Payload {
 
     @Override
     public void write(RegistryFriendlyByteBuf buf) {
-        buf.writeResourceLocation(packetId);
+        buf.writeIdentifier(packetId);
         buf.writeVarInt(payload.length);
         buf.writeBytes(this.payload);
     }

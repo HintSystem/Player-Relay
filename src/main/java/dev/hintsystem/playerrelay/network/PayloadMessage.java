@@ -8,7 +8,7 @@ import dev.hintsystem.playerrelay.utils.PayloadUtils;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import io.netty.buffer.Unpooled;
 import java.io.*;
@@ -89,7 +89,7 @@ public class PayloadMessage {
     }
 
     public static class Packet extends PayloadMessage implements CustomPacketPayload {
-        public static final ResourceLocation PACKET_ID = CommonCore.identifier("payload-message");
+        public static final Identifier PACKET_ID = CommonCore.identifier("payload-message");
         public static final CustomPacketPayload.Type<Packet> PACKET_TYPE = new CustomPacketPayload.Type<>(PACKET_ID);
         public static final StreamCodec<RegistryFriendlyByteBuf, Packet> PACKET_CODEC = StreamCodec.ofMember(Packet::write, Packet::readSafe);
 

@@ -4,7 +4,7 @@ import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 import dev.hintsystem.playerrelay.payload.player.*;
 
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -15,7 +15,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.CommonColors;
 import net.minecraft.util.Mth;
@@ -34,11 +34,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PlayerListEntry {
-    private final ResourceLocation ARMOR_FULL_TEXTURE;
-    private final ResourceLocation ARMOR_HALF_TEXTURE;
-    private final ResourceLocation ARMOR_EMPTY_TEXTURE;
-    private final ResourceLocation XP_BACKGROUND;
-    private final ResourceLocation XP_PROGRESS;
+    private final Identifier ARMOR_FULL_TEXTURE;
+    private final Identifier ARMOR_HALF_TEXTURE;
+    private final Identifier ARMOR_EMPTY_TEXTURE;
+    private final Identifier XP_BACKGROUND;
+    private final Identifier XP_PROGRESS;
 
     public static final float PLAYER_MODEL_ASPECT_RATIO = 1.58f;
 
@@ -84,8 +84,8 @@ public class PlayerListEntry {
         this.XP_PROGRESS = iconIdentifier("hud/experience_bar_progress");
     }
 
-    public ResourceLocation iconIdentifier(String path) {
-        if (config.useResourcePackIcons) return ResourceLocation.withDefaultNamespace(path);
+    public Identifier iconIdentifier(String path) {
+        if (config.useResourcePackIcons) return Identifier.withDefaultNamespace(path);
 
         return CommonCore.identifier(path);
     }
@@ -142,7 +142,7 @@ public class PlayerListEntry {
             .playerSkin();
     }
 
-    private ResourceLocation getHeartTypeTexture(Gui.HeartType heartType, boolean half, boolean blinking) {
+    private Identifier getHeartTypeTexture(Gui.HeartType heartType, boolean half, boolean blinking) {
         PlayerWorldData world = playerInfo.getComponent(PlayerWorldData.class);
         return iconIdentifier(
             heartType.getSprite(
@@ -153,7 +153,7 @@ public class PlayerListEntry {
         );
     }
 
-    private ResourceLocation getHeartTexture(boolean half, boolean blinking) {
+    private Identifier getHeartTexture(boolean half, boolean blinking) {
         PlayerStatusEffectsData effects = playerInfo.getComponent(PlayerStatusEffectsData.class);
 
         Gui.HeartType heartType = Gui.HeartType.NORMAL;
@@ -172,7 +172,7 @@ public class PlayerListEntry {
         return getHeartTypeTexture(heartType, half, blinking);
     }
 
-    private ResourceLocation getFoodTexture(int value) {
+    private Identifier getFoodTexture(int value) {
         PlayerStatusEffectsData effects = playerInfo.getComponent(PlayerStatusEffectsData.class);
 
         if (effects != null && effects.hasStatusEffect(MobEffects.HUNGER)) {
@@ -223,14 +223,14 @@ public class PlayerListEntry {
         // Render health
         boolean shouldBlink = updateBlinkState(playerStats);
         boolean isHalfHeart = playerStats.health < 10;
-        ResourceLocation heartTexture = (playerStats.health > 0) ? getHeartTexture(isHalfHeart, shouldBlink) : null;
+        Identifier heartTexture = (playerStats.health > 0) ? getHeartTexture(isHalfHeart, shouldBlink) : null;
 
         drawStat(context, getHeartTypeTexture(Gui.HeartType.CONTAINER, isHalfHeart, shouldBlink), heartTexture,
             (int) Math.ceil(playerStats.health + playerStats.absorptionAmount),
             x, y, 0xFFFF6666, StatAnchor.LEFT);
 
         // Render armor
-        ResourceLocation armorTexture = (playerStats.armor >= 10) ? ARMOR_FULL_TEXTURE
+        Identifier armorTexture = (playerStats.armor >= 10) ? ARMOR_FULL_TEXTURE
             : (playerStats.armor > 0) ? ARMOR_HALF_TEXTURE
             : ARMOR_EMPTY_TEXTURE;
 
@@ -366,7 +366,7 @@ public class PlayerListEntry {
                 opacity = Mth.clamp(opacity, 0.0f, 1.0f);
             }
 
-            ResourceLocation effectTexture = Gui.getMobEffectSprite(effect.statusEffect());
+            Identifier effectTexture = Gui.getMobEffectSprite(effect.statusEffect());
             context.blitSprite(RenderPipelines.GUI_TEXTURED, effectTexture, x, y, effectIconSize, effectIconSize, ARGB.white(opacity));
             endX = x;
         }
@@ -376,8 +376,8 @@ public class PlayerListEntry {
     enum StatAnchor { LEFT, CENTER, RIGHT }
 
     private void drawStat(GuiGraphics context,
-                          ResourceLocation iconBase,
-                          ResourceLocation iconOverlay,
+                          Identifier iconBase,
+                          Identifier iconOverlay,
                           int value,
                           int x, int y,
                           int color,

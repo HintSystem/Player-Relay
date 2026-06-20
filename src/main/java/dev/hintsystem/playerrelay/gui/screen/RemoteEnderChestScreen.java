@@ -6,14 +6,14 @@ import dev.hintsystem.playerrelay.payload.PlayerInventoryPayload;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.CommonColors;
 import net.minecraft.world.item.ItemStack;
 
 import org.jetbrains.annotations.Nullable;
 
 public class RemoteEnderChestScreen extends RemoteContainerScreen {
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.withDefaultNamespace("textures/gui/container/generic_54.png");
+    private static final Identifier BACKGROUND_TEXTURE = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
 
     public static final int backgroundWidth = 176;
 

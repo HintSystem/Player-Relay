@@ -172,14 +172,13 @@ public class PaperDollRenderer {
         livingEntity.yHeadRotO = yHeadRotO;
     }
 
-    /** @see net.minecraft.client.gui.screens.inventory.InventoryScreen#renderEntityInInventory(GuiGraphics, int, int, int, int, float, Vector3f, Quaternionf, Quaternionf, LivingEntity)  **/
+    /** @see net.minecraft.client.gui.screens.inventory.InventoryScreen#extractRenderState(LivingEntity) **/
     public static void drawEntity(GuiGraphics context, int x1, int y1, int x2, int y2, float scale, Vector3f translation,
                                   Quaternionf rotation, @Nullable Quaternionf overrideCameraAngle, LivingEntity livingEntity, DeltaTracker tickCounter) {
         EntityRenderDispatcher entityRenderManager = Minecraft.getInstance().getEntityRenderDispatcher();
         EntityRenderer<? super LivingEntity, ?> entityRenderer = entityRenderManager.getRenderer(livingEntity);
         EntityRenderState entityRenderState = entityRenderer.createRenderState(livingEntity, tickCounter.getGameTimeDeltaPartialTick(false));
         entityRenderState.nameTag = null;
-        entityRenderState.hitboxesRenderState = null;
         entityRenderState.lightCoords = 15728880;
         entityRenderState.shadowPieces.clear();
         entityRenderState.outlineColor = 0;

@@ -13,7 +13,7 @@ import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;

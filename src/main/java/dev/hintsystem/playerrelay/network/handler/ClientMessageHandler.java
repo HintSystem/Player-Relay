@@ -18,7 +18,7 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
     }
 
     public interface PacketHandler {
-        boolean canHandle(ResourceLocation id);
+        boolean canHandle(Identifier id);
         void handlePacket(GenericPacketPayload packetPayload, ClientPacketListener handler, Minecraft client);
     }
 
@@ -145,7 +145,7 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
             return;
         }
 
-        ResourceLocation packetId = packet.getPacketId();
+        Identifier packetId = packet.getPacketId();
 
         if (PlayerRelay.isDevelopment) logger.info().message("Received packet: {}", packetId).build();
 

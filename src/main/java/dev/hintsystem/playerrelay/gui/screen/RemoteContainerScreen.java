@@ -15,7 +15,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 
@@ -23,25 +23,25 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public abstract class RemoteContainerScreen extends Screen {
-    private static final ResourceLocation EQUIPMENT_TEXTURE = CommonCore.identifier("textures/gui/container/remote_player_equipment.png");
-    private static final ResourceLocation SLOT_HIGHLIGHT_BACK_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_back");
-    private static final ResourceLocation SLOT_HIGHLIGHT_FRONT_TEXTURE = ResourceLocation.withDefaultNamespace("container/slot_highlight_front");
+    private static final Identifier EQUIPMENT_TEXTURE = CommonCore.identifier("textures/gui/container/remote_player_equipment.png");
+    private static final Identifier SLOT_HIGHLIGHT_BACK_TEXTURE = Identifier.withDefaultNamespace("container/slot_highlight_back");
+    private static final Identifier SLOT_HIGHLIGHT_FRONT_TEXTURE = Identifier.withDefaultNamespace("container/slot_highlight_front");
 
     public static final int EQUIPMENT_TEXTURE_HEIGHT = 45;
     public static final int EQUIPMENT_TEXTURE_WIDTH = 176;
 
     public enum UIEquipmentSlot {
-        OFFHAND(EquipmentSlot.OFFHAND, 34, 15, ResourceLocation.withDefaultNamespace("container/slot/shield")),
-        FEET(EquipmentSlot.FEET, 107, 28, ResourceLocation.withDefaultNamespace("container/slot/boots")),
-        LEGS(EquipmentSlot.LEGS, 107, 1, ResourceLocation.withDefaultNamespace("container/slot/leggings")),
-        CHEST(EquipmentSlot.CHEST, 53, 28, ResourceLocation.withDefaultNamespace("container/slot/chestplate")),
-        HEAD(EquipmentSlot.HEAD, 53, 1, ResourceLocation.withDefaultNamespace("container/slot/helmet"));
+        OFFHAND(EquipmentSlot.OFFHAND, 34, 15, Identifier.withDefaultNamespace("container/slot/shield")),
+        FEET(EquipmentSlot.FEET, 107, 28, Identifier.withDefaultNamespace("container/slot/boots")),
+        LEGS(EquipmentSlot.LEGS, 107, 1, Identifier.withDefaultNamespace("container/slot/leggings")),
+        CHEST(EquipmentSlot.CHEST, 53, 28, Identifier.withDefaultNamespace("container/slot/chestplate")),
+        HEAD(EquipmentSlot.HEAD, 53, 1, Identifier.withDefaultNamespace("container/slot/helmet"));
 
         final EquipmentSlot equipmentSlot;
-        final ResourceLocation emptySlotTexture;
+        final Identifier emptySlotTexture;
         final int slotX, slotY;
 
-        UIEquipmentSlot(EquipmentSlot equipmentSlot, int slotX, int slotY, ResourceLocation emptySlotTexture) {
+        UIEquipmentSlot(EquipmentSlot equipmentSlot, int slotX, int slotY, Identifier emptySlotTexture) {
             this.equipmentSlot = equipmentSlot;
             this.emptySlotTexture = emptySlotTexture;
             this.slotX = slotX; this.slotY = slotY;

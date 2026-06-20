@@ -9,12 +9,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.UUID;
 
 public class SupportPingWheel implements ClientMessageHandler.PacketHandler {
-    private static final ResourceLocation PING_LOCATION_ID = ResourceLocation.fromNamespaceAndPath("ping-wheel-s2c", "ping-location");
+    private static final Identifier PING_LOCATION_ID = Identifier.fromNamespaceAndPath("ping-wheel-s2c", "ping-location");
     private static final String PING_WHEEL_CLASS = "nx.pingwheel.common.network.PingLocationS2CPacket";
 
     private static Class<? extends CustomPacketPayload> pingLocationPacketClass;
@@ -37,7 +37,7 @@ public class SupportPingWheel implements ClientMessageHandler.PacketHandler {
     }
 
     @Override
-    public boolean canHandle(ResourceLocation id) {
+    public boolean canHandle(Identifier id) {
         return PING_LOCATION_ID.equals(id);
     }
 

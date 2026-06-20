@@ -45,7 +45,7 @@ public class PlayerWorldData extends FlagHolder<PlayerWorldData.FLAGS>
 
         if (hasFlag(FLAGS.IN_WORLD)) {
             assert dimension != null && difficulty != null : "dimension and difficulty must be set when IN_WORLD is true";
-            buf.writeResourceLocation(dimension.location());
+            buf.writeIdentifier(dimension.identifier());
             Difficulty.STREAM_CODEC.encode(buf, difficulty);
         }
     }
@@ -55,7 +55,7 @@ public class PlayerWorldData extends FlagHolder<PlayerWorldData.FLAGS>
         readFlags(buf, 1);
 
         if (hasFlag(FLAGS.IN_WORLD)) {
-            this.dimension = ResourceKey.create(Registries.DIMENSION, buf.readResourceLocation());
+            this.dimension = ResourceKey.create(Registries.DIMENSION, buf.readIdentifier());
             this.difficulty = Difficulty.STREAM_CODEC.decode(buf);
         }
     }

@@ -26,7 +26,7 @@ public class WaypointPayload implements Payload {
     }
 
     public String getDimensionIdString() {
-        return (dimension != null) ? dimension.location().toString() : "";
+        return (dimension != null) ? dimension.identifier().toString() : "";
     }
 
     @Override
@@ -35,7 +35,7 @@ public class WaypointPayload implements Payload {
     public WaypointPayload(RegistryFriendlyByteBuf buf) {
         this.playerId = buf.readUUID();
         this.name = buf.readUtf();
-        this.dimension = ResourceKey.create(Registries.DIMENSION, buf.readResourceLocation());
+        this.dimension = ResourceKey.create(Registries.DIMENSION, buf.readIdentifier());
         this.pos = buf.readBlockPos();
         this.yaw = buf.readInt();
         this.color = buf.readInt();
@@ -45,7 +45,7 @@ public class WaypointPayload implements Payload {
     public void write(RegistryFriendlyByteBuf buf) {
         buf.writeUUID(this.playerId);
         buf.writeUtf(this.name);
-        buf.writeResourceLocation(this.dimension.location());
+        buf.writeIdentifier(this.dimension.identifier());
         buf.writeBlockPos(this.pos);
         buf.writeInt(this.yaw);
         buf.writeInt(this.color);
