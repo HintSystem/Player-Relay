@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = PingLocationRenderer.class, remap = false)
 public class PingLocationRendererMixin {
     @Inject(method = "draw", at = @At("HEAD"))
-    private static void captureAuthorId(DrawContext ctx, PingView ping, CallbackInfo ci) {
+    private static void playerrelay$captureAuthorId(DrawContext ctx, PingView ping, CallbackInfo ci) {
         // Store the authorId in DrawContext before renderPing is called
         ((DrawContextAccessor) ctx).playerrelay$setAuthorId(ping.authorId);
     }

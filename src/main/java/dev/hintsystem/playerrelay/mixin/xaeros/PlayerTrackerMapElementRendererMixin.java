@@ -23,13 +23,9 @@ public class PlayerTrackerMapElementRendererMixin {
             target = "Lxaero/map/element/MapElementGraphics;drawString(Lnet/minecraft/client/gui/Font;Ljava/lang/String;III)V"
         )
     )
-    private void modifyColorValue(
-        MapElementGraphics instance,
-        Font font,
-        String text,
-        int x,
-        int y,
-        int color,
+    private void playerrelay$modifyColorValue(
+        MapElementGraphics instance, Font font, String text,
+        int x, int y, int color,
         @Local(argsOnly = true) PlayerTrackerMapElement<?> e
     ) {
         // Extract alpha from original color (highest 8 bits)

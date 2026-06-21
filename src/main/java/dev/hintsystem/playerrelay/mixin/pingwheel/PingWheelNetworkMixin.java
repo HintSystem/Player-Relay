@@ -23,10 +23,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = nx.pingwheel.fabric.platform.PlatformNetworkServiceImpl.class, remap = false)
 public class PingWheelNetworkMixin {
     @Unique
-    private static final SupportPingWheel supportPingWheel = new SupportPingWheel();
+    private static final SupportPingWheel playerrelay$supportPingWheel = new SupportPingWheel();
 
 	@Inject(method = "sendToServer", at = @At("HEAD"))
-	public void onPingLocationPacket(IPacket packet, CallbackInfo ci) {
+	public void playerrelay$broadcastPingPacket(IPacket packet, CallbackInfo ci) {
         if (packet instanceof PingLocationC2SPacket pingPacket) {
             Minecraft client = Minecraft.getInstance();
 
@@ -38,7 +38,7 @@ public class PingWheelNetworkMixin {
                 try {
                     CommonCore.getP2PNetworkManager().broadcastMessage(pingPayload.message());
                     if (!ClientPlayNetworking.canSend(packet.getId())) {
-                        supportPingWheel.handlePacket(pingPayload, client.getConnection(), client); // Process same packet on client to see ping, when Ping Wheel isn't on current server
+                        playerrelay$supportPingWheel.handlePacket(pingPayload, client.getConnection(), client); // Process same packet on client to see ping, when Ping Wheel isn't on current server
                     }
                 } catch (Exception e) {
                     PlayerRelay.LOGGER.error("Failed to relay Ping Wheel packet over P2P: {}", e.getMessage());

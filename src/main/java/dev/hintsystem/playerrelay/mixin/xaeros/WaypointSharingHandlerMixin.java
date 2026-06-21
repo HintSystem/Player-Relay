@@ -40,19 +40,19 @@ public class WaypointSharingHandlerMixin {
         ),
         cancellable = true
     )
-    public void modifyWaypointShare(CallbackInfo ci) {
+    public void playerrelay$modifyWaypointShare(CallbackInfo ci) {
         if (!ClientCore.isNetworkActive() || !PlayerRelayClient.config.shareWaypointsViaRelay) return;
 
         ci.cancel();
         Minecraft.getInstance().setScreen(new ConfirmScreen(
-            this::onBroadcastWaypointConfirmation,
+            this::playerrelay$onBroadcastWaypointConfirmation,
             Component.literal("Are you sure you would like to share this waypoint with §cEVERYONE§f connected to you with Player Relay?"),
             Component.translatable("gui.xaero_share_msg2")
         ));
     }
 
     @Unique
-    private void onBroadcastWaypointConfirmation(boolean confirmed) {
+    private void playerrelay$onBroadcastWaypointConfirmation(boolean confirmed) {
         Minecraft client = Minecraft.getInstance();
 
         if (!confirmed) {

@@ -6,6 +6,7 @@ import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
 import nx.pingwheel.common.render.DrawContext;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
 
@@ -34,27 +35,28 @@ public class DrawContextMixin implements DrawContextAccessor {
             target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V"
         )
     )
-    private void modifyTextColor(net.minecraft.client.gui.GuiGraphics instance, Font textRenderer,
-                                 Component text, int x, int y, int color, boolean shadow) {
-        int newColor = color;
-        boolean newShadow = shadow;
+    private void playerrelay$modifyTextColor(
+        GuiGraphics graphics, Font font,
+        Component text, int x, int y, int color, boolean drawShadow
+    ) {
+        int nameColor = color;
+        boolean useShadow = drawShadow;
 
         PlayerInfoPayload playerInfo = ClientCore.getTrackedPlayer(this.playerrelay$authorId);
         if (playerInfo != null) {
-            newColor = playerInfo.getNameColor();
-            newShadow = true;
+            nameColor = playerInfo.getNameColor();
+            useShadow = true;
         }
 
-        instance.drawString(textRenderer, text, x, y, newColor, newShadow);
+        graphics.drawString(font, text, x, y, nameColor, useShadow);
     }
 
     @ModifyVariable(
         method = "renderPing",
         at = @At("HEAD"),
-        argsOnly = true,
-        ordinal = 0
+        argsOnly = true, ordinal = 0
     )
-    private int modifyPingColor(int color) {
+    private int playerrelay$modifyPingColor(int color) {
         PlayerInfoPayload playerInfo = ClientCore.getTrackedPlayer(this.playerrelay$authorId);
         if (playerInfo != null) return playerInfo.getNameColor();
 
@@ -64,11 +66,10 @@ public class DrawContextMixin implements DrawContextAccessor {
     @ModifyVariable(
         method = "renderArrowIcon",
         at = @At("HEAD"),
-        argsOnly = true,
-        ordinal = 0,
+        argsOnly = true, ordinal = 0,
         remap = false
     )
-    private int modifyArrowColor(int color) {
+    private int playerrelay$modifyArrowColor(int color) {
         PlayerInfoPayload playerInfo = ClientCore.getTrackedPlayer(this.playerrelay$authorId);
         if (playerInfo != null) return playerInfo.getNameColor();
 

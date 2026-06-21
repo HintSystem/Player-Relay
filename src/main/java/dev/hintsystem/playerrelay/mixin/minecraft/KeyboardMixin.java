@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(KeyboardHandler.class)
 public class KeyboardMixin {
     @Inject(method = "keyPress", at = @At("HEAD"))
-    private void onKey(long window, int action, KeyEvent input, CallbackInfo ci) {
+    private void playerrelay$onKey(long window, int action, KeyEvent input, CallbackInfo ci) {
         // Only count press or repeat (not release)
         if (action != 0) ClientCore.updateInputActivity();
     }

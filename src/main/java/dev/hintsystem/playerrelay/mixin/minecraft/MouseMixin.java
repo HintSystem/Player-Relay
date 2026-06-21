@@ -13,12 +13,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MouseHandler.class)
 public class MouseMixin {
     @Inject(method = "onButton", at = @At("HEAD"))
-    private void onMouseButton(long window, MouseButtonInfo input, int action, CallbackInfo ci) {
+    private void playerrelay$onMouseButton(long window, MouseButtonInfo input, int action, CallbackInfo ci) {
         if (action != 0) ClientCore.updateInputActivity();
     }
 
     @Inject(method = "onMove", at = @At("HEAD"))
-    private void onCursorPos(long window, double x, double y, CallbackInfo ci) {
+    private void playerrelay$onCursorPos(long window, double x, double y, CallbackInfo ci) {
         ClientCore.updateInputActivity();
     }
 }

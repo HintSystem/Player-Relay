@@ -59,7 +59,7 @@ public class P2PNetworkManager {
     }
 
     public void startServer() throws Exception {
-        if (running.get()) { throw new Exception("Server already running"); }
+        if (running.get()) throw new Exception("Server already running");
 
         if (upnpManager == null && config.UPnPEnabled) {
             try {

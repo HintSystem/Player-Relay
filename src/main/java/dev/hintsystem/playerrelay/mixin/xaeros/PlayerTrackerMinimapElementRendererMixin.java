@@ -24,18 +24,11 @@ public class PlayerTrackerMinimapElementRendererMixin {
             target = "Lnet/minecraft/client/gui/Font;drawInBatch(Ljava/lang/String;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)V"
         )
     )
-    private void modifyColorValue(
-        Font textRenderer,
-        String text,
-        float x,
-        float y,
-        int color,
-        boolean drawShadow,
-        Matrix4f pose,
-        MultiBufferSource bufferSource,
-        Font.DisplayMode mode,
-        int backgroundColor,
-        int packedLightCoords,
+    private void playerrelay$modifyColorValue(
+        Font textRenderer, String text,
+        float x, float y, int color, boolean drawShadow,
+        Matrix4f pose, MultiBufferSource bufferSource, Font.DisplayMode mode,
+        int backgroundColor, int packedLightCoords,
         @Local(argsOnly = true) PlayerTrackerMinimapElement<?> e
     ) {
         int newColor = color;
