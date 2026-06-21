@@ -1,25 +1,15 @@
 package dev.hintsystem.playerrelay.gui;
 
-import dev.hintsystem.playerrelay.mixin.minecraft.EntityAccessor;
-import dev.hintsystem.playerrelay.mixin.minecraft.LivingEntityInvoker;
-
+import com.mojang.authlib.GameProfile;
 import com.mojang.math.Axis;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.world.entity.*;
 
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
@@ -30,8 +20,6 @@ public class PaperDollRenderer {
     public final float MAX_HEAD_YAW_DEG;
     public final float HEAD_YAW_RETURN_SPEED;
 
-    private Pose lastPose = Pose.STANDING;
-    private Entity fakeVehicle;
     private float centerYaw;
     private float headYawOffset;
     private float headYawOffsetO;
@@ -42,39 +30,58 @@ public class PaperDollRenderer {
 
     public PaperDollRenderer() { this(10.0f, 40.0f, 4.0f); }
 
+    // TODO replace with custom render state extraction
+    public static class FakePlayer extends AbstractClientPlayer {
+        protected Pose lastPose = Pose.STANDING;
+
+        public FakePlayer(ClientLevel clientLevel, GameProfile gameProfile) {
+            super(clientLevel, gameProfile);
+            setId(-1);
+        }
+
+        // noPhysics doesn't work because of Player.tick(), so override methods
+        @Override public boolean isInWall() { return false; }
+        @Override protected boolean isAffectedByBlocks() { return false; }
+        @Override protected void pushEntities() {}
+
+        @Override public boolean isPassenger() {
+            return hasPose(Pose.SITTING);
+        }
+
+        @Override public boolean isVisuallySwimming() {
+            return hasPose(Pose.SWIMMING);
+        }
+
+        @Override public boolean isAutoSpinAttack() {
+            return hasPose(Pose.SPIN_ATTACK);
+        }
+
+        @Override public void setPose(Pose pose) {}
+
+        public void applyPose(Pose newPose) {
+            if (newPose == lastPose) return;
+
+            // Clean up previous pose
+            if (lastPose == Pose.FALL_FLYING) {
+                setDeltaMovement(0, 0, 0);
+                stopFallFlying();
+            }
+
+            // Apply new pose
+            if (newPose == Pose.FALL_FLYING) {
+                setDeltaMovement(0, 5, 0);
+                startFallFlying();
+            }
+
+            super.setPose(newPose);
+            lastPose = newPose;
+        }
+    }
+
     public PaperDollRenderer(float bodyYawDeg, float maxHeadYawDeg, float headYawReturnSpeed) {
         this.BODY_YAW_DEG = bodyYawDeg;
         this.MAX_HEAD_YAW_DEG = maxHeadYawDeg;
         this.HEAD_YAW_RETURN_SPEED = headYawReturnSpeed;
-    }
-
-    public void applyPoseToPlayer(Player player, Pose newPose) {
-        if (newPose == lastPose) return;
-
-        // Clean up previous pose
-        switch (lastPose) {
-            case Pose.FALL_FLYING -> {
-                player.setDeltaMovement(0, 0, 0);
-                player.stopFallFlying();
-            }
-            case Pose.SITTING -> removeVehicle(player);
-            case Pose.SPIN_ATTACK -> ((LivingEntityInvoker) player)
-                .invokeSetLivingFlag(LivingEntityInvoker.getRiptideFlag(), false);
-        }
-
-        // Apply new pose
-        switch (newPose) {
-            case Pose.FALL_FLYING -> {
-                player.setDeltaMovement(0, 5, 0);
-                player.startFallFlying();
-            }
-            case Pose.SITTING -> setFakeVehicle(player);
-            case Pose.SPIN_ATTACK -> ((LivingEntityInvoker)player)
-                .invokeSetLivingFlag(LivingEntityInvoker.getRiptideFlag(), true);
-        }
-
-        player.setPose(newPose);
-        lastPose = newPose;
     }
 
     public void applyHealth(LivingEntity livingEntity, float health) {
@@ -85,26 +92,6 @@ public class PaperDollRenderer {
 
         livingEntity.setHealth(health);
     }
-
-    public void setFakeVehicle(LivingEntity livingEntity) {
-        if (fakeVehicle == null) {
-            fakeVehicle = new Entity(EntityType.ARMOR_STAND, livingEntity.level()) {
-                @Override
-                protected void defineSynchedData(SynchedEntityData.Builder builder) {}
-                @Override
-                public boolean hurtServer(ServerLevel world, DamageSource source, float amount) { return false; }
-                @Override
-                protected void readAdditionalSaveData(ValueInput view) {}
-                @Override
-                protected void addAdditionalSaveData(ValueOutput view) {}
-            };
-            fakeVehicle.setInvisible(true);
-        }
-
-        ((EntityAccessor)livingEntity).setVehicle(fakeVehicle);
-    }
-
-    public void removeVehicle(LivingEntity livingEntity) { ((EntityAccessor)livingEntity).setVehicle(null); }
 
     public void tick(LivingEntity livingEntity) {
         if (headYawEnabled) {
@@ -132,57 +119,67 @@ public class PaperDollRenderer {
         }
     }
 
-    public void renderPaperDoll(GuiGraphics context, int x1, int y1, int x2, int y2, int scale, LivingEntity livingEntity, DeltaTracker tickCounter) {
+    public void renderPaperDoll(
+        GuiGraphics context, int x1, int y1, int x2, int y2, int scale,
+        FakePlayer player, DeltaTracker tickCounter
+    ) {
         renderPaperDoll(context,
             x1, y1,
             x2, y2,
             scale,
-            0.0F, livingEntity, tickCounter);
+            0.0F, player, tickCounter);
     }
 
-    public void renderPaperDoll(GuiGraphics context, int x1, int y1, int x2, int y2, int scale, float yOffset, LivingEntity livingEntity, DeltaTracker tickCounter) {
+    public void renderPaperDoll(
+        GuiGraphics context, int x1, int y1, int x2, int y2, int scale,
+        float yOffset, FakePlayer player, DeltaTracker tickCounter
+    ) {
         Quaternionf rotation = new Quaternionf().rotateZ((float) Math.PI);
         Quaternionf overrideCameraAngle = new Quaternionf().rotateX((float) Math.toRadians(15.0F));
         rotation.mul(overrideCameraAngle);
 
-        float xRot = livingEntity.getXRot();
-        float xRotO = livingEntity.xRotO;
-        float yRot = livingEntity.getYRot();
-        float yRotO = livingEntity.yRotO;
-        float yBodyRot = livingEntity.getVisualRotationYInDegrees();
-        float yBodyRotO = livingEntity.yBodyRotO;
-        float yHeadRot = livingEntity.getYHeadRot();
-        float yHeadRotO = livingEntity.yHeadRotO;
+        float xRot = player.getXRot();
+        float xRotO = player.xRotO;
+        float yRot = player.getYRot();
+        float yRotO = player.yRotO;
+        float yBodyRot = player.getVisualRotationYInDegrees();
+        float yBodyRotO = player.yBodyRotO;
+        float yHeadRot = player.getYHeadRot();
+        float yHeadRotO = player.yHeadRotO;
 
-        float entityScale = livingEntity.getScale();
+        float entityScale = player.getScale();
         float relativeScale = scale / entityScale;
-        if (livingEntity.isPassenger()) { yOffset += 0.25f; }
-        Vector3f translation = new Vector3f(0.0F, livingEntity.getBbHeight() / 2.0F + yOffset * entityScale, 0.0F);
+        if (player.isPassenger()) { yOffset += 0.25f; }
+        Vector3f translation = new Vector3f(0.0F, player.getBbHeight() / 1.7F + yOffset * entityScale, 0.0F);
 
-        applyEntityTransforms(livingEntity, translation, rotation);
-        drawEntity(context, x1, y1, x2, y2, relativeScale, translation, rotation, overrideCameraAngle, livingEntity, tickCounter);
+        applyEntityTransforms(player, translation, rotation);
+        drawEntity(context, x1, y1, x2, y2, relativeScale, translation, rotation, overrideCameraAngle, player, tickCounter);
 
-        livingEntity.setXRot(xRot);
-        livingEntity.xRotO = xRotO;
-        livingEntity.setYRot(yRot);
-        livingEntity.yRotO = yRotO;
-        livingEntity.setYBodyRot(yBodyRot);
-        livingEntity.yBodyRotO = yBodyRotO;
-        livingEntity.setYHeadRot(yHeadRot);
-        livingEntity.yHeadRotO = yHeadRotO;
+        player.setXRot(xRot);
+        player.xRotO = xRotO;
+        player.setYRot(yRot);
+        player.yRotO = yRotO;
+        player.setYBodyRot(yBodyRot);
+        player.yBodyRotO = yBodyRotO;
+        player.setYHeadRot(yHeadRot);
+        player.yHeadRotO = yHeadRotO;
     }
 
     /** @see net.minecraft.client.gui.screens.inventory.InventoryScreen#extractRenderState(LivingEntity) **/
-    public static void drawEntity(GuiGraphics context, int x1, int y1, int x2, int y2, float scale, Vector3f translation,
-                                  Quaternionf rotation, @Nullable Quaternionf overrideCameraAngle, LivingEntity livingEntity, DeltaTracker tickCounter) {
-        EntityRenderDispatcher entityRenderManager = Minecraft.getInstance().getEntityRenderDispatcher();
-        EntityRenderer<? super LivingEntity, ?> entityRenderer = entityRenderManager.getRenderer(livingEntity);
-        EntityRenderState entityRenderState = entityRenderer.createRenderState(livingEntity, tickCounter.getGameTimeDeltaPartialTick(false));
-        entityRenderState.nameTag = null;
-        entityRenderState.lightCoords = 15728880;
-        entityRenderState.shadowPieces.clear();
-        entityRenderState.outlineColor = 0;
-        context.submitEntityRenderState(entityRenderState, scale, translation, rotation, overrideCameraAngle, x1, y1, x2, y2);
+    public static void drawEntity(
+        GuiGraphics context, int x1, int y1, int x2, int y2, float scale, Vector3f translation,
+        Quaternionf rotation, @Nullable Quaternionf overrideCameraAngle, FakePlayer fakePlayer, DeltaTracker tickCounter
+    ) {
+        EntityRenderDispatcher entityRenderDispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+        var playerRenderer = entityRenderDispatcher.getPlayerRenderer(fakePlayer);
+
+        AvatarRenderState renderState = playerRenderer.createRenderState(fakePlayer, tickCounter.getGameTimeDeltaPartialTick(false));
+        renderState.nameTag = null;
+        renderState.lightCoords = 15728880;
+        renderState.shadowPieces.clear();
+        renderState.outlineColor = 0;
+
+        context.submitEntityRenderState(renderState, scale, translation, rotation, overrideCameraAngle, x1, y1, x2, y2);
     }
 
     private void applyEntityTransforms(LivingEntity livingEntity, Vector3f translation, Quaternionf rotation) {

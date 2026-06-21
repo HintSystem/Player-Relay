@@ -12,7 +12,6 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
@@ -20,7 +19,6 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.CommonColors;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -45,7 +43,7 @@ public class PlayerListEntry {
     public PlayerInfoPayload playerInfo;
     public final Config config;
 
-    private RemotePlayer playerEntity;
+    private PaperDollRenderer.FakePlayer playerEntity;
     private final PaperDollRenderer paperDollRenderer;
 
     private float lastHealth = 0f;
@@ -93,14 +91,14 @@ public class PlayerListEntry {
     public void tick() {
         if (config.playerIconType != PlayerIconType.PLAYER_MODEL) return;
 
-        RemotePlayer player = getRenderPlayerEntity();
+        var player = getRenderPlayerEntity();
         if (player != null) {
             paperDollRenderer.tick(player);
             applyInfoToPlayer(player);
         }
     }
 
-    private void applyInfoToPlayer(Player player) {
+    private void applyInfoToPlayer(PaperDollRenderer.FakePlayer player) {
         PlayerPositionData positionData = playerInfo.getComponent(PlayerPositionData.class);
         if (positionData != null) {
             player.xo = player.getX();
@@ -110,7 +108,7 @@ public class PlayerListEntry {
             player.xRotO = player.getXRot();
             player.moveOrInterpolateTo(positionData.coords, positionData.yaw, positionData.pitch);
 
-            paperDollRenderer.applyPoseToPlayer(player, positionData.pose);
+            player.applyPose(positionData.pose);
         }
 
         PlayerStatsData statsData = playerInfo.getComponent(PlayerStatsData.class);
@@ -127,10 +125,15 @@ public class PlayerListEntry {
     }
 
     @Nullable
-    public RemotePlayer getRenderPlayerEntity() {
+    public PaperDollRenderer.FakePlayer getRenderPlayerEntity() {
         ClientLevel world = Minecraft.getInstance().level;
-        if ((this.playerEntity == null || this.playerEntity.level() != world) && world != null) {
-            this.playerEntity = new RemotePlayer(world, playerInfo.toGameProfile());
+
+        if (this.playerEntity != null && this.playerEntity.level() != world) {
+            this.playerEntity = null;
+        }
+
+        if (this.playerEntity == null && world != null) {
+            this.playerEntity = new PaperDollRenderer.FakePlayer(world, playerInfo.toGameProfile());
         }
 
         return this.playerEntity;
