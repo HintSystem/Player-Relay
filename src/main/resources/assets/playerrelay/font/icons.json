@@ -8,7 +8,7 @@
         },
         {
             "type": "bitmap",
-            "file": "player-relay:icons/player_relay.png",
+            "file": "playerrelay:icons/player_relay.png",
             "height": 9,
             "ascent": 8,
             "chars": ["@"]

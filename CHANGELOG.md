@@ -1,3 +1,8 @@
-- Player list HUD fixes
-  - Raise player model camera to not clip player head
-  - Fix bug where you could get pushed by a player in another server when rendering player model
+## 🔧️ Changes & Improvements
+
+* Changed mod id from `player-relay` to `playerrelay`
+  * Settings will get reset to default
+
+## 🐛 Found a Bug?
+
+Please report any problems you find to [GitHub Issues](https://github.com/HintSystem/Player-Relay/issues)
