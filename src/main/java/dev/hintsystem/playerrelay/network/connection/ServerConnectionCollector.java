@@ -8,7 +8,11 @@ import java.util.UUID;
 
 public class ServerConnectionCollector extends ConnectionCollector<ServerConnection> {
     // Should only be connected to one game server at a time, so store only 1 connection
-    private final ServerConnection serverConnection = new ServerConnection();
+    private final ServerConnection serverConnection;
+
+    public ServerConnectionCollector(ServerConnection serverConnection) {
+        this.serverConnection = serverConnection;
+    }
 
     /** Always returns one server connection, use {@link Connection#isVersionValid()} to check if connection is usable */
     @NotNull

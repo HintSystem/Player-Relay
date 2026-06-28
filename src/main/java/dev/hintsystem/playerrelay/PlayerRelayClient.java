@@ -1,9 +1,11 @@
 package dev.hintsystem.playerrelay;
 
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.command.PlayerRelayCommands;
 import dev.hintsystem.playerrelay.config.ClientConfig;
 import dev.hintsystem.playerrelay.gui.PlayerList;
-import dev.hintsystem.playerrelay.logging.ClientLogHandler;
+import dev.hintsystem.playerrelay.logging.handler.ClientOutputHandler;
+import dev.hintsystem.playerrelay.logging.handler.ClientNetworkLogTransformer;
 import dev.hintsystem.playerrelay.mods.SupportXaerosMapMods;
 import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
@@ -30,8 +32,11 @@ public class PlayerRelayClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        CommonCore.networkLogger
-            .addLogHandler(new ClientLogHandler());
+        CommonCore.logPipeline
+            .useFirst(new ClientNetworkLogTransformer())
+            .addHandler(new ClientOutputHandler());
+
+        NetworkLogger logger = new NetworkLogger(CommonCore.logPipeline);
 
         CommonCore.initConfig(config);
         CommonCore.initP2PNetwork(
@@ -40,11 +45,11 @@ public class PlayerRelayClient implements ClientModInitializer {
                 new P2PMessageHandler(
                     CommonCore.peerConnections,
                     new ClientCore.ClientInfoProvider(),
-                    new ClientMessageHandler<>(CommonCore.networkLogger),
-                    CommonCore.networkLogger
+                    new ClientMessageHandler<>(logger),
+                    logger
                 ),
                 config,
-                CommonCore.networkLogger
+                logger
             )
         );
 

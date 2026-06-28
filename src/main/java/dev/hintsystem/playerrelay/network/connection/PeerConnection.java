@@ -1,12 +1,10 @@
 package dev.hintsystem.playerrelay.network.connection;
 
-import dev.hintsystem.playerrelay.logging.LogEvent;
-import dev.hintsystem.playerrelay.logging.LogEventTypes;
-import dev.hintsystem.playerrelay.logging.NetworkLogger;
-import dev.hintsystem.playerrelay.logging.LogLocation;
+import dev.hintsystem.playerrelay.network.logging.LogEventLocation;
 import dev.hintsystem.playerrelay.network.NetworkProtocol;
 import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.network.logging.events.HandshakeFailEvent;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 import dev.hintsystem.playerrelay.payload.UdpHandshakePayload;
 import dev.hintsystem.playerrelay.payload.UdpPingPayload;
@@ -17,8 +15,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class PeerConnection extends Connection implements Runnable {
-    private final NetworkLogger logger;
-
     private final Socket tcpSocket;
     private final DataInputStream tcpInput;
     private final DataOutputStream tcpOutput;
@@ -40,7 +36,8 @@ public class PeerConnection extends Connection implements Runnable {
     private int consecutiveFailedUdpPings = 0;
 
     public PeerConnection(Socket socket, P2PNetworkManager manager) throws IOException {
-        this.logger = manager.logger.withLocation(LogLocation.PEER_CONNECTION);
+        super(manager.logger
+            .withLocation(LogEventLocation.PEER_CONNECTION));
 
         this.tcpSocket = socket;
         this.manager = manager;
@@ -84,27 +81,22 @@ public class PeerConnection extends Connection implements Runnable {
     @Override
     public void onVersionHandshake(RelayVersionPayload versionPayload) {
         if (versionHandshake.isDone()) return;
+        super.onVersionHandshake(versionPayload);
 
         if (isVersionValid(versionPayload)) {
-            this.versionPayload = versionPayload;
             versionHandshake.complete(versionPayload);
         } else {
-            LogEvent logMessage = logger.versionMismatch(versionPayload).build();
-
-            versionHandshake.completeExceptionally(new IllegalStateException(logMessage.getTitle()));
+            versionHandshake.completeExceptionally(HandshakeFailEvent.exception());
         }
     }
 
     private void onVersionHandshakeTimeout() {
         if (versionHandshake.isDone()) return;
 
-        String errTitle = "Version handshake timeout";
-        logger.error()
-            .type(LogEventTypes.VERSION_FAIL)
-            .title(errTitle)
-            .message("No version reply received for {} ms", manager.config.peerConnectionTimeout).build();
+        var logEvent = logger.log(HandshakeFailEvent.Builder.timeout()
+            .message("No version reply received for {} ms", manager.config.peerConnectionTimeout));
 
-        versionHandshake.completeExceptionally(new TimeoutException(errTitle));
+        versionHandshake.completeExceptionally(new TimeoutException(logEvent.getTitle()));
     }
 
     private void processPendingMessages() {
@@ -114,7 +106,9 @@ public class PeerConnection extends Connection implements Runnable {
                 try {
                     manager.handleMessage(this, message);
                 } catch (Exception e) {
-                    logger.error().message("Error processing pending message: {}", e.getMessage(), e).build();
+                    logger.builder()
+                        .message("Error processing pending message: {}", e.getMessage())
+                        .error();
                 }
             }
         }
@@ -127,7 +121,9 @@ public class PeerConnection extends Connection implements Runnable {
         if (versionHandshakeRequired && !versionHandshake.isDone()) {
             synchronized (pendingIncomingMessages) {
                 pendingIncomingMessages.offer(message);
-                logger.debug().message("Queued message type {} until version handshake completes", message.getPayload().getClass()).build();
+                logger.builder()
+                    .message("Queued message type {} until version handshake completes", message.getPayload().getClass())
+                    .error();
             }
             return false;
         }
@@ -150,7 +146,9 @@ public class PeerConnection extends Connection implements Runnable {
                 manager.config.udpPingTimeoutMs, TimeUnit.MILLISECONDS);
 
         } catch (Exception e) {
-            logger.warn().message("Failed to send UDP ping: {}", e.getMessage()).build();
+            logger.builder()
+                .message("Failed to send UDP ping: {}", e.getMessage())
+                .warn();
             onUdpPingFailed();
         }
     }
@@ -167,8 +165,9 @@ public class PeerConnection extends Connection implements Runnable {
         if (consecutiveFailedUdpPings >= manager.config.maxFailedUdpPings) {
             if (udpHealthy) {
                 udpHealthy = false;
-                logger.warn().message("UDP connection to {} marked as unhealthy after {} failed pings",
-                    getAddressFingerprint(), consecutiveFailedUdpPings).build();
+                logger.builder()
+                    .message("UDP connection to {} marked as unhealthy after {} failed pings", getAddressFingerprint(), consecutiveFailedUdpPings)
+                    .warn();
             }
         }
     }
@@ -186,8 +185,9 @@ public class PeerConnection extends Connection implements Runnable {
 
                 if (!udpHealthy) {
                     udpHealthy = true;
-                    logger.info().message("UDP connection to {} restored (RTT: {}ms)",
-                        getAddressFingerprint(), roundTripTime).build();
+                    logger.builder()
+                        .message("UDP connection to {} restored (RTT: {}ms)", getAddressFingerprint(), roundTripTime)
+                        .info();
                 }
             }
         }
@@ -202,7 +202,9 @@ public class PeerConnection extends Connection implements Runnable {
                 if (shouldProcessMessage(message)) manager.handleMessage(this, message);
             }
         } catch (Exception e) {
-            if (connected) logger.error().message("Error in peer connection: {}", e.getMessage()).build();
+            if (connected) logger.builder()
+                .message("Error in peer connection: {}", e.getMessage())
+                .error();
         } finally {
             if (connected) disconnect();
         }
@@ -220,14 +222,17 @@ public class PeerConnection extends Connection implements Runnable {
                 sendTcpMessage(message);
             }
         } catch (IOException e) {
-            logger.error().message("Failed to send message via {}: {}",
-                message.getPreferredProtocol(), e.getMessage()).build();
+            logger.builder()
+                .message("Failed to send message via {}: {}", message.getPreferredProtocol(), e.getMessage())
+                .error();
 
             if (message.getPreferredProtocol() == NetworkProtocol.UDP) {
                 try {
                     sendTcpMessage(message);
                 } catch (IOException tcpE) {
-                    logger.error().message("TCP fallback also failed: {}", tcpE.getMessage()).build();
+                    logger.builder()
+                        .message("TCP fallback also failed: {}", tcpE.getMessage())
+                        .error();
                 }
             }
         }
@@ -303,7 +308,9 @@ public class PeerConnection extends Connection implements Runnable {
             if (tcpOutput != null) tcpOutput.close();
             if (tcpSocket != null && !tcpSocket.isClosed()) tcpSocket.close();
         } catch (IOException e) {
-            logger.error().message("Error closing connection: {}", e.getMessage()).build();
+            logger.builder()
+                .message("Error closing connection: {}", e.getMessage())
+                .error();
         }
 
         manager.onPeerDisconnected(this);

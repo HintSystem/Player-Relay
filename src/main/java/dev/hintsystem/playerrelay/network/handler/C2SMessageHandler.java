@@ -3,7 +3,7 @@ package dev.hintsystem.playerrelay.network.handler;
 import dev.hintsystem.playerrelay.PlayerRelayServer;
 import dev.hintsystem.playerrelay.PlayerUpdateTracker;
 import dev.hintsystem.playerrelay.ServerCore;
-import dev.hintsystem.playerrelay.logging.NetworkLogger;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.party.PartyMethods;
 import dev.hintsystem.playerrelay.party.PartyPayloadHandler;

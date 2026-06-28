@@ -1,12 +1,16 @@
 package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.config.CommonConfig;
-import dev.hintsystem.playerrelay.logging.ConsoleLogHandler;
-import dev.hintsystem.playerrelay.logging.NetworkLogger;
+import dev.hintsystem.playerrelay.logging.EventLogger;
+import dev.hintsystem.playerrelay.logging.LogPipeline;
+import dev.hintsystem.playerrelay.logging.handler.ConsoleOutputHandler;
 import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.network.connection.ConnectionCollectorGroup;
 import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
+import dev.hintsystem.playerrelay.network.connection.ServerConnection;
 import dev.hintsystem.playerrelay.network.connection.ServerConnectionCollector;
+import dev.hintsystem.playerrelay.network.logging.LogEventLocation;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.party.PartyManager;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
 
@@ -22,13 +26,16 @@ public class CommonCore {
 
     private static CommonConfig commonConfig = CommonConfig.DEFAULTS;
 
-    public static final NetworkLogger networkLogger = new NetworkLogger()
-        .addLogHandler(new ConsoleLogHandler(PlayerRelay.LOGGER));
+    public static final LogPipeline logPipeline = new LogPipeline()
+        .addHandler(new ConsoleOutputHandler(PlayerRelay.LOGGER));
+
+    public static final EventLogger eventLogger = new EventLogger(logPipeline);
 
     private static P2PNetworkManager p2pNetworkManager;
 
-    public static final ServerConnectionCollector serverConnection = new ServerConnectionCollector();
     public static final PeerConnectionCollector peerConnections = new PeerConnectionCollector();
+    public static final ServerConnectionCollector serverConnection = new ServerConnectionCollector(new ServerConnection(
+        new NetworkLogger(logPipeline).withLocation(LogEventLocation.SERVER_CONNECTION)));
 
     public static final ConnectionCollectorGroup connections = ConnectionCollectorGroup.with(
         peerConnections,
@@ -60,7 +67,7 @@ public class CommonCore {
 
     public static void initP2PNetwork(P2PNetworkManager networkManager) {
         if (p2pNetworkManager != null) {
-            networkLogger.warn("P2P Network manager already initialized!");
+            eventLogger.warn("P2P Network manager already initialized!");
             return;
         }
 

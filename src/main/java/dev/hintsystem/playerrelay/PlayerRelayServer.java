@@ -5,6 +5,7 @@ import dev.hintsystem.playerrelay.network.P2PNetworkManager;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.network.handler.P2PMessageHandler;
 
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -16,6 +17,8 @@ public class PlayerRelayServer implements DedicatedServerModInitializer {
 
     @Override
     public void onInitializeServer() {
+        NetworkLogger logger = new NetworkLogger(CommonCore.logPipeline);
+
         CommonCore.initConfig(config);
         CommonCore.initP2PNetwork(
             new P2PNetworkManager(
@@ -24,10 +27,10 @@ public class PlayerRelayServer implements DedicatedServerModInitializer {
                     CommonCore.peerConnections,
                     null,
                     null,
-                    CommonCore.networkLogger
+                    logger
                 ),
                 config,
-                CommonCore.networkLogger
+                logger
             )
         );
 

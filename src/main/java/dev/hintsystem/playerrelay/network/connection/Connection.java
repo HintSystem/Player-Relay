@@ -1,6 +1,8 @@
 package dev.hintsystem.playerrelay.network.connection;
 
 import dev.hintsystem.playerrelay.network.PayloadMessage;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
+import dev.hintsystem.playerrelay.network.logging.events.HandshakeFailEvent;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
 
 import java.net.InetAddress;
@@ -12,8 +14,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Connection {
+    protected final NetworkLogger logger;
     protected volatile boolean connected = true;
     protected volatile RelayVersionPayload versionPayload = null;
+
+    public Connection(NetworkLogger logger) {
+        this.logger = logger;
+    }
 
     public final Set<UUID> announcedPlayers = ConcurrentHashMap.newKeySet();
 
@@ -42,6 +49,9 @@ public abstract class Connection {
 
     public void onVersionHandshake(RelayVersionPayload versionPayload) {
         this.versionPayload = versionPayload;
+
+        if (!isVersionValid())
+            logger.log(HandshakeFailEvent.Builder.badVersion(versionPayload));
     }
 
     public abstract void sendMessage(PayloadMessage message);

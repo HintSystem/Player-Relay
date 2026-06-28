@@ -5,8 +5,8 @@ import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.EnderChestTracker;
 import dev.hintsystem.playerrelay.PlayerRelay;
 import dev.hintsystem.playerrelay.command.PlayerRelayCommands;
-import dev.hintsystem.playerrelay.logging.LogLocation;
-import dev.hintsystem.playerrelay.logging.NetworkLogger;
+import dev.hintsystem.playerrelay.network.logging.LogEventLocation;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.mods.SupportPingWheel;
 import dev.hintsystem.playerrelay.payload.*;
 import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
@@ -38,7 +38,7 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
     }
 
     public ClientMessageHandler(NetworkLogger logger) {
-        this.logger = logger.withLocation(LogLocation.CLIENT_MESSAGE_HANDLER);
+        this.logger = logger.withLocation(LogEventLocation.CLIENT_MESSAGE_HANDLER);
 
         init();
     }
@@ -141,13 +141,18 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
         Minecraft client = Minecraft.getInstance();
         ClientPacketListener networkHandler = client.getConnection();
         if (networkHandler == null) {
-            logger.warn().message("No network handler available, dropping packet").build();
+            logger.builder()
+                .message("No network handler available, dropping packet")
+                .warn();
             return;
         }
 
         Identifier packetId = packet.getPacketId();
 
-        if (PlayerRelay.isDevelopment) logger.info().message("Received packet: {}", packetId).build();
+        if (PlayerRelay.isDevelopment)
+            logger.builder()
+                .message("Received packet: {}", packetId)
+                .info();
 
         boolean packetUsed = false;
         for (PacketHandler packetHandler : PACKET_HANDLERS) {
@@ -157,6 +162,9 @@ public class ClientMessageHandler<T> extends PayloadMessageHandler<T> {
             }
         }
 
-        if (!packetUsed) logger.warn().message("Unknown packet type: {}", packetId).build();
+        if (!packetUsed)
+            logger.builder()
+                .message("Unknown packet type: {}", packetId)
+                .warn();
     }
 }

@@ -1,8 +1,8 @@
 package dev.hintsystem.playerrelay.network.handler;
 
 import dev.hintsystem.playerrelay.CommonCore;
-import dev.hintsystem.playerrelay.logging.LogLocation;
-import dev.hintsystem.playerrelay.logging.NetworkLogger;
+import dev.hintsystem.playerrelay.network.logging.LogEventLocation;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
@@ -28,7 +28,7 @@ public class P2PMessageHandler extends PayloadMessageHandler<PeerConnection> imp
         @Nullable PayloadMessageHandler<Void> clientMessageHandler,
         NetworkLogger logger
     ) {
-        this.logger = logger.withLocation(LogLocation.P2P_MESSAGE_HANDLER);
+        this.logger = logger.withLocation(LogEventLocation.P2P_MESSAGE_HANDLER);
         this.peerConnections = peerConnections;
         this.clientInfoProvider = clientInfoProvider;
         this.clientMessageHandler = clientMessageHandler;
@@ -43,7 +43,9 @@ public class P2PMessageHandler extends PayloadMessageHandler<PeerConnection> imp
         register(PayloadRegistry.UDP_HANDSHAKE, (udpHandshake, sender) -> {
             sender.setPeerUdpId(udpHandshake.getUdpId(), udpHandshake.getUdpPort());
 
-            logger.info().message("UDP handshake received, id: {}, port: {}", udpHandshake.getUdpId(), udpHandshake.getUdpPort()).build();
+            logger.builder()
+                .message("UDP handshake received, id: {}, port: {}", udpHandshake.getUdpId(), udpHandshake.getUdpPort())
+                .info();
         });
 
         register(PayloadRegistry.UDP_PING, (udpPing, sender) -> sender.onUdpPingReceived(udpPing));

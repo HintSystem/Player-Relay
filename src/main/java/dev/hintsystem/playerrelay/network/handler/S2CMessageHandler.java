@@ -3,7 +3,7 @@ package dev.hintsystem.playerrelay.network.handler;
 import dev.hintsystem.playerrelay.ClientCore;
 import dev.hintsystem.playerrelay.CommonCore;
 import dev.hintsystem.playerrelay.command.PlayerRelayCommands;
-import dev.hintsystem.playerrelay.logging.NetworkLogger;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.network.connection.ServerConnectionCollector;
 import dev.hintsystem.playerrelay.party.Party;
 import dev.hintsystem.playerrelay.party.PartyPayloadHandler;
@@ -162,9 +162,6 @@ public class S2CMessageHandler extends ClientMessageHandler<Void> {
 
     public void onPlayerRelayVersion(RelayVersionPayload version, Void unused) {
         connection.get().onVersionHandshake(version);
-        if (version.networkVersion != RelayVersionPayload.NETWORK_VERSION) {
-            logger.versionMismatch(version).build();
-        }
     }
 
     public void onPartyPayload(PartyPayload party, Void unused) {

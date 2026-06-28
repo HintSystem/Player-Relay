@@ -6,6 +6,7 @@ import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.network.connection.Connection;
 import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 import dev.hintsystem.playerrelay.network.handler.S2CMessageHandler;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.party.ClientPartyService;
 import dev.hintsystem.playerrelay.party.Party;
 import dev.hintsystem.playerrelay.payload.*;
@@ -13,13 +14,12 @@ import dev.hintsystem.playerrelay.payload.player.PlayerBasicData;
 import dev.hintsystem.playerrelay.payload.player.PlayerPositionData;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.*;
+import net.minecraft.util.CommonColors;
 import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
 import net.minecraft.world.entity.player.Player;
 
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class ClientCore {
-    public static final S2CMessageHandler messageHandler = new S2CMessageHandler(CommonCore.networkLogger, CommonCore.serverConnection);
+    public static final S2CMessageHandler messageHandler = new S2CMessageHandler(
+        new NetworkLogger(CommonCore.logPipeline), CommonCore.serverConnection);
     public static final ClientPartyService partyService = new ClientPartyService(CommonCore.partyManager);
 
     private static final PlayerUpdateTracker c2sTracker = new PlayerUpdateTracker(getClientUuid());
@@ -44,6 +45,23 @@ public class ClientCore {
     public static final ConcurrentMap<UUID, CompletableFuture<PlayerInventoryPayload>> pendingEnderChestRequests = new ConcurrentHashMap<>();
 
     public static long lastInputTime = Util.getMillis();
+
+    public static Style getIconStyle() {
+        return Style.EMPTY.withColor(CommonColors.WHITE)
+            .withFont(new FontDescription.Resource(CommonCore.identifier("icons")));
+    }
+
+    public static boolean isNetworkActive() {
+        return isServerNetworkActive() || isP2PNetworkActive();
+    }
+
+    public static boolean isP2PNetworkActive() {
+        return CommonCore.getP2PNetworkManager() != null && CommonCore.getP2PNetworkManager().getPeerCount() != 0;
+    }
+
+    public static boolean isServerNetworkActive() {
+        return CommonCore.serverConnection.get().isVersionValid();
+    }
 
     public static void onServerJoin(Minecraft client) {
         CommonCore.partyManager.reset();
@@ -108,24 +126,12 @@ public class ClientCore {
         }
     }
 
-    public static boolean isNetworkActive() {
-        return isServerNetworkActive() || isP2PNetworkActive();
-    }
-
-    public static boolean isP2PNetworkActive() {
-        return CommonCore.getP2PNetworkManager() != null && CommonCore.getP2PNetworkManager().getPeerCount() != 0;
-    }
-
-    public static boolean isServerNetworkActive() {
-        return CommonCore.serverConnection.get().isVersionValid();
+    public static boolean isClientAfk() {
+        return Util.getMillis() - lastInputTime > PlayerRelayClient.config.afkTimeout;
     }
 
     public static void updateInputActivity() {
         lastInputTime = Util.getMillis();
-    }
-
-    public static boolean isClientAfk() {
-        return Util.getMillis() - lastInputTime > PlayerRelayClient.config.afkTimeout;
     }
 
     public static String getClientPlayerName() {

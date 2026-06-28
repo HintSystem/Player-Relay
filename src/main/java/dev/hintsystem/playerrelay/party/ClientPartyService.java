@@ -22,7 +22,7 @@ public class ClientPartyService {
     }
 
     private void requireConnection() {
-        if (!CommonCore.serverConnection.get().isVersionValid()) {
+        if (!ClientCore.isServerNetworkActive()) {
             throw new IllegalStateException("Parties can only be used when connected to a server with Player Relay installed");
         }
     }

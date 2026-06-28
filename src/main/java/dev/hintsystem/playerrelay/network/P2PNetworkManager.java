@@ -1,13 +1,13 @@
 package dev.hintsystem.playerrelay.network;
 
-import dev.hintsystem.playerrelay.logging.LogEventTypes;
-import dev.hintsystem.playerrelay.logging.NetworkLogger;
+import dev.hintsystem.playerrelay.network.logging.LogEventTypes;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.network.connection.Connection;
 import dev.hintsystem.playerrelay.network.connection.PeerConnection;
 import dev.hintsystem.playerrelay.network.connection.PeerConnectionCollector;
 import dev.hintsystem.playerrelay.network.handler.IP2PMessageHandler;
 import dev.hintsystem.playerrelay.payload.RelayVersionPayload;
-import dev.hintsystem.playerrelay.logging.LogLocation;
+import dev.hintsystem.playerrelay.network.logging.LogEventLocation;
 
 import org.jetbrains.annotations.Nullable;
 import java.io.*;
@@ -51,7 +51,7 @@ public class P2PNetworkManager {
         this.connections = connectionCollector;
         this.messageHandler = p2pMessageHandler;
         this.config = config;
-        this.logger = logger.withLocation(LogLocation.NETWORK_MANAGER);
+        this.logger = logger.withLocation(LogEventLocation.NETWORK_MANAGER);
 
         this.executor = Executors.newCachedThreadPool();
 
@@ -65,10 +65,10 @@ public class P2PNetworkManager {
             try {
                 upnpManager = new UPnPManager(logger);
             } catch (Exception e) {
-                logger.warn()
+                logger.builder()
                     .type(LogEventTypes.UPNP_FAIL)
                     .title("UPnP not available")
-                    .exception(e).build();
+                    .cause(e).warn();
             }
         }
 
@@ -79,9 +79,9 @@ public class P2PNetworkManager {
             udpSocket = new DatagramSocket(serverPort);
             udpSocket.setSoTimeout(UDP_RECEIVE_TIMEOUT);
         } catch (SocketException e) {
-            logger.error()
+            logger.builder()
                 .title("Failed to create UDP socket for server")
-                .exception(e).build();
+                .cause(e).error();
         }
 
         // Open port via UPnP if available
@@ -89,11 +89,14 @@ public class P2PNetworkManager {
             boolean tcpOpened = upnpManager.openPort(serverPort, "TCP");
             boolean udpOpened = upnpManager.openPort(serverPort, "UDP");
             if (tcpOpened && udpOpened) {
-                logger.info().message("Ports TCP/UDP '{}' forwarded successfully.", serverPort).build();
+                logger.builder()
+                    .message("Ports TCP/UDP '{}' forwarded successfully.", serverPort)
+                    .info();
             } else {
-                logger.warn()
+                logger.builder()
                     .title("Port forwarding incomplete")
-                    .message("TCP - {}, UDP - {}", tcpOpened ? "open" : "closed", udpOpened ? "open" : "closed").build();
+                    .message("TCP - {}, UDP - {}", tcpOpened ? "open" : "closed", udpOpened ? "open" : "closed")
+                    .warn();
             }
         }
 
@@ -103,7 +106,9 @@ public class P2PNetworkManager {
         executor.submit(this::acceptTcpConnections);
         executor.submit(this::handleUdpMessages);
 
-        logger.info().message("Player Relay server started on port {}", serverPort).build();
+        logger.builder()
+            .message("Player Relay server started on port {}", serverPort)
+            .info();
     }
 
     public void stopServer() {
@@ -119,7 +124,9 @@ public class P2PNetworkManager {
             try {
                 serverSocket.close();
             } catch (IOException e) {
-                logger.error().message("Error closing TCP server socket: {}", e.getMessage()).build();
+                logger.builder()
+                    .message("Error closing TCP server socket: {}", e.getMessage())
+                    .error();
             }
         }
 
@@ -133,7 +140,9 @@ public class P2PNetworkManager {
             upnpManager.closePort(serverPort, "UDP");
         }
 
-        logger.info().message("Player Relay server stopped").build();
+        logger.builder()
+            .message("Player Relay server stopped")
+            .info();
     }
 
     public PeerConnection connectToPeer(InetSocketAddress socketAddress) throws Exception {
@@ -164,9 +173,9 @@ public class P2PNetworkManager {
                 udpSocket.setSoTimeout(UDP_RECEIVE_TIMEOUT);
                 executor.submit(this::handleUdpMessages);
             } catch (SocketException e) {
-                logger.warn()
+                logger.builder()
                     .title("Failed to create UDP socket for client")
-                    .exception(e).build();
+                    .cause(e).warn();
             }
         }
 
@@ -180,7 +189,9 @@ public class P2PNetworkManager {
             onConnectedToPeer(peer);
             executor.submit(peer);
 
-            logger.info().message("Connected to peer: " + peer.getAddressFingerprint()).build();
+            logger.builder()
+                .message("Connected to peer: " + peer.getAddressFingerprint())
+                .info();
             return peer;
         } catch (SocketTimeoutException e) {
             cancelPeerConnection(peer, socket);
@@ -232,13 +243,17 @@ public class P2PNetworkManager {
         byte[] buffer = new byte[MAX_UDP_PACKET_SIZE];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-        logger.info().message("UDP socket listening on port {}", udpSocket.getLocalPort()).build();
+        logger.builder()
+            .message("UDP socket listening on port {}", udpSocket.getLocalPort())
+            .info();
         while (running.get() && udpSocket != null && !udpSocket.isClosed()) {
             try {
                 udpSocket.receive(packet);
 
                 if (packet.getLength() < 2) {
-                    logger.warn().message("Received UDP packet too small to contain ID").build();
+                    logger.builder()
+                        .message("Received UDP packet too small to contain ID")
+                        .warn();
                     continue;
                 }
 
@@ -247,7 +262,9 @@ public class P2PNetworkManager {
 
                 PeerConnection senderPeer = connections.getByUdpId(udpId);
                 if (senderPeer == null) {
-                    logger.warn().message("Received UDP packet from unknown peer ID: {}", udpId).build();
+                    logger.builder()
+                        .message("Received UDP packet from unknown peer ID: {}", udpId)
+                        .warn();
                     continue;
                 }
 
@@ -257,15 +274,16 @@ public class P2PNetworkManager {
                 PayloadMessage message = PayloadMessage.fromBytes(messageData, NetworkProtocol.UDP);
                 handleMessage(senderPeer, message);
 
-                logger.debug().message("Received UDP message from {}:{}, type: {}",
-                    packet.getAddress(), packet.getPort(), message.getPayloadType()
-                ).build();
+                logger.builder()
+                    .message("Received UDP message from {}:{}, type: {}", packet.getAddress(), packet.getPort(), message.getPayloadType())
+                    .debug();
             } catch (SocketTimeoutException e) {
                 // Normal timeout, continue loop
             } catch (IOException e) {
-                if (running.get()) {
-                    logger.error().message("Error receiving UDP packet: {}", e.getMessage()).build();
-                }
+                if (running.get())
+                    logger.builder()
+                        .message("Error receiving UDP packet: {}", e.getMessage())
+                        .error();
             }
         }
     }
@@ -273,7 +291,9 @@ public class P2PNetworkManager {
     private void assignUdpId(PeerConnection peer) {
         short udpId = connections.assignUdpId(peer);
 
-        logger.info().message("Assigned UDP ID {} to peer {}", udpId, peer.getAddressFingerprint()).build();
+        logger.builder()
+            .message("Assigned UDP ID {} to peer {}", udpId, peer.getAddressFingerprint())
+            .info();
     }
 
     private void acceptTcpConnections() {
@@ -287,7 +307,9 @@ public class P2PNetworkManager {
                 onPeerAccepted(peer);
             } catch (IOException e) {
                 if (running.get()) {
-                    logger.error().message("Error accepting connection: {}", e.getMessage()).build();
+                    logger.builder()
+                        .message("Error accepting connection: {}", e.getMessage())
+                        .error();
                 }
             }
         }
@@ -381,6 +403,8 @@ public class P2PNetworkManager {
         // Remove connection and related announced players after event, because it might rely on player info
         connections.remove(peer);
 
-        logger.info().message("Peer disconnected. Active connections: {}", connections.count()).build();
+        logger.builder()
+            .message("Peer disconnected. Active connections: {}", connections.count())
+            .info();
     }
 }

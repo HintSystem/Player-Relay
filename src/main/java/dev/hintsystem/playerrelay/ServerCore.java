@@ -2,6 +2,7 @@ package dev.hintsystem.playerrelay;
 
 import dev.hintsystem.playerrelay.network.PayloadMessage;
 import dev.hintsystem.playerrelay.network.handler.C2SMessageHandler;
+import dev.hintsystem.playerrelay.network.logging.NetworkLogger;
 import dev.hintsystem.playerrelay.party.Party;
 import dev.hintsystem.playerrelay.party.ServerPartyService;
 import dev.hintsystem.playerrelay.payload.PlayerInfoPayload;
@@ -21,7 +22,7 @@ public class ServerCore {
     private final MinecraftServer minecraftServer;
 
     public final ServerPartyService partyService = new ServerPartyService(this, CommonCore.partyManager);
-    public final C2SMessageHandler messageHandler = new C2SMessageHandler(CommonCore.networkLogger, this, partyService);
+    public final C2SMessageHandler messageHandler = new C2SMessageHandler(new NetworkLogger(CommonCore.logPipeline), this, partyService);
 
     public final Set<UUID> listeningPlayers = new HashSet<>();
     public final Map<UUID, PlayerUpdateTracker> playerUpdateTrackers = new HashMap<>();
